@@ -5,6 +5,7 @@ import { authConfig } from "@/lib/auth.config";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { consumeLoginTicket } from "@/lib/login-ticket";
+import { getOrCreateDevTestUser, verifyDevLoginSecret } from "@/lib/dev-login";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -14,8 +15,24 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       name: "WhatsApp",
       credentials: {
         token: { label: "Ticket", type: "text" },
+        devSecret: { label: "Dev Secret", type: "text" },
       },
       async authorize(credentials) {
+        // Secret-gated test login — completely inert unless DEV_LOGIN_SECRET is set in
+        // the environment. Intended as a temporary way to exercise the app while the
+        // real WhatsApp webhook is being configured; remove the env var to disable.
+        if (verifyDevLoginSecret(credentials?.devSecret)) {
+          console.warn("[dev-login] Secret-gated test login used");
+          const testUser = await getOrCreateDevTestUser();
+          return {
+            id: testUser._id.toString(),
+            mobile: testUser.mobile,
+            name: testUser.name ?? null,
+            role: testUser.role,
+            needsOnboarding: !testUser.name,
+          };
+        }
+
         const token = credentials?.token;
         if (!token || typeof token !== "string") {
           return null;
