@@ -31,6 +31,35 @@ const guideArticles = [
 - A collapsible bag or duffel is useful for laundry runs, weekend trips home, and future packing.`,
   },
   {
+    title: "NIFT-Specific Packing Advice",
+    slug: "nift-specific-packing-advice",
+    category: "Packing" as const,
+    icon: "Scissors",
+    summary: "Design school hostel life has its own rules — pack (and plan) accordingly.",
+    order: 2,
+    content: `NIFT hostel life comes with a few things generic packing guides don't cover — late-night submissions, borrowed stationery, and small rooms that fill up fast.
+
+## Expect late nights
+- Submissions and juries mean genuinely late nights are normal, not occasional — keep snacks and something caffeinated on hand rather than running out at 2am.
+- A table lamp earns its space; overhead hostel lighting is rarely enough for detailed work.
+
+## Stationery disappears
+- Carry extra pencils, erasers, and fineliners beyond what you think you need — people borrow constantly, and you rarely get it back the same day.
+- Keep one "emergency" set you never lend out, for the day before a submission.
+
+## Back up your work
+- Keep both digital and physical backups of ongoing work. A crashed laptop or a misplaced sketchbook the night before a jury is a real, common disaster.
+- A cheap USB drive or a synced cloud folder is enough — just make it a habit, not an afterthought.
+
+## Pack for your campus and climate
+- Mumbai and similarly warm campuses: prioritize light, breathable clothing over bulky layers.
+- Whatever the city, hostel rooms are small — avoid overpacking bulky, rarely-used items "just in case." You can always get more from home later.
+
+## What to bring now vs. later
+- Bring now: documents, bedding, a full toiletries kit, your core design tools, and enough clothing for 10-14 days.
+- Bring later (once you know your routine): specialty art supplies for specific projects, seasonal clothing, and anything your seniors say is easy to buy locally.`,
+  },
+  {
     title: "Doing Laundry Without a Washing Machine",
     slug: "laundry-without-a-machine",
     category: "Laundry" as const,
