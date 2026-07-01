@@ -1,13 +1,17 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ClipboardCheck } from "lucide-react";
+import { ClipboardCheck, Sparkles, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/shared/page-header";
 import { CHECKLIST_CATEGORY_ICONS } from "@/lib/checklist-icons";
+import { loadStarterChecklistAction } from "@/actions/checklist";
 
 interface CategorySummary {
   category: string;
@@ -29,12 +33,40 @@ export function ChecklistOverview({
 }) {
   const overallPercent =
     overall.total > 0 ? Math.round((overall.completed / overall.total) * 100) : 0;
+  const [isLoadingStarter, setIsLoadingStarter] = useState(false);
+
+  async function handleLoadStarterChecklist() {
+    setIsLoadingStarter(true);
+    const result = await loadStarterChecklistAction();
+    setIsLoadingStarter(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+
+    toast.success(
+      result.count > 0
+        ? `Added ${result.count} new item${result.count === 1 ? "" : "s"} from the starter checklist`
+        : "You already have every starter checklist item",
+    );
+  }
 
   return (
     <div>
       <PageHeader
         title="Packing Checklist"
         description="Track everything you need to pack, category by category"
+        action={
+          <Button variant="outline" size="sm" onClick={handleLoadStarterChecklist} disabled={isLoadingStarter}>
+            {isLoadingStarter ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Sparkles className="size-4" />
+            )}
+            Load Starter Checklist
+          </Button>
+        }
       />
 
       <Card className="mb-6 p-6">

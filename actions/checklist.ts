@@ -9,12 +9,17 @@ import {
   checklistItemUpdateSchema,
 } from "@/lib/validations/checklist";
 import {
+  addMissingTemplateItems,
   bulkUpdateItems,
   createChecklistItem,
   deleteChecklistItem,
   updateChecklistItem,
 } from "@/services/checklistService";
 import type { ActionResult } from "@/actions/profile";
+
+export type LoadStarterChecklistResult =
+  | { success: true; count: number }
+  | { success: false; error: string };
 
 export async function createChecklistItemAction(input: unknown): Promise<ActionResult> {
   const session = await auth();
@@ -69,4 +74,13 @@ export async function bulkChecklistAction(input: unknown): Promise<ActionResult>
   await bulkUpdateItems(session.user.id, parsed.data.ids, parsed.data.action);
   revalidatePath("/checklist");
   return { success: true };
+}
+
+export async function loadStarterChecklistAction(): Promise<LoadStarterChecklistResult> {
+  const session = await auth();
+  if (!session?.user) return { success: false, error: "Not authenticated" };
+
+  const { count } = await addMissingTemplateItems(session.user.id);
+  revalidatePath("/checklist");
+  return { success: true, count };
 }

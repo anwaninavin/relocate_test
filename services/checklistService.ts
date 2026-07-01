@@ -50,6 +50,27 @@ export async function seedDefaultChecklistIfEmpty(userId: string) {
   return { seeded: true, count: docs.length };
 }
 
+/** Adds any starter-template items the user doesn't already have (by category + item name). */
+export async function addMissingTemplateItems(userId: string) {
+  await connectDB();
+
+  const existing = await ChecklistItem.find({ userId }).select("category item").lean();
+  const existingKeys = new Set(
+    existing.map((i) => `${i.category}::${i.item.trim().toLowerCase()}`),
+  );
+
+  const missing = DEFAULT_CHECKLIST_TEMPLATE.filter(
+    (template) => !existingKeys.has(`${template.category}::${template.item.trim().toLowerCase()}`),
+  );
+
+  if (missing.length === 0) {
+    return { count: 0 };
+  }
+
+  await ChecklistItem.insertMany(missing.map((template) => ({ userId, ...template })));
+  return { count: missing.length };
+}
+
 export async function createChecklistItem(userId: string, input: ChecklistItemInput) {
   await connectDB();
   return ChecklistItem.create({ userId, ...input });
