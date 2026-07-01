@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import { LogOut, UserRound } from "lucide-react";
@@ -26,7 +27,8 @@ export function Navbar({ name, mobile, avatar }: NavbarProps) {
 
   return (
     <header className="glass sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 lg:px-8">
-      <div className="lg:hidden">
+      <div className="flex items-center gap-2 lg:hidden">
+        <Image src="/logo.png" alt="" width={24} height={24} />
         <span className="font-display font-bold">Hostel Essentials</span>
       </div>
       <div className="hidden flex-1 lg:block">

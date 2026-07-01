@@ -1,8 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MessageCircle } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { ADMIN_NAV_ITEM, PRIMARY_NAV_ITEMS, PROFILE_NAV_ITEM } from "@/lib/nav-items";
@@ -15,9 +15,7 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   return (
     <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r px-4 py-6 lg:flex">
       <Link href="/dashboard" className="mb-8 flex items-center gap-2 px-2">
-        <div className="gradient-brand flex size-9 items-center justify-center rounded-xl shadow-md shadow-primary/20">
-          <MessageCircle className="size-5 text-white" />
-        </div>
+        <Image src="/logo.png" alt="" width={36} height={36} className="shrink-0" />
         <span className="font-display text-lg font-bold">Hostel Essentials</span>
       </Link>
 

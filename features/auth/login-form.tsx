@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
+import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
 import { MessageCircle, Phone, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
@@ -111,9 +112,7 @@ export function LoginForm() {
   return (
     <div className="glass relative w-full max-w-md overflow-hidden rounded-3xl p-8 shadow-2xl">
       <div className="mb-8 flex flex-col items-center gap-3 text-center">
-        <div className="gradient-brand flex size-14 items-center justify-center rounded-2xl shadow-lg shadow-primary/25">
-          <MessageCircle className="size-7 text-white" />
-        </div>
+        <Image src="/logo.png" alt="" width={64} height={64} priority />
         <h1 className="font-display text-2xl font-bold">Hostel Essentials</h1>
         <p className="text-muted-foreground text-sm">
           No passwords. Log in instantly with WhatsApp.
