@@ -1,4 +1,7 @@
-import "dotenv/config";
+import { config } from "dotenv";
+config({ path: ".env.local" });
+config();
+
 import mongoose from "mongoose";
 
 import { Product } from "@/models/Product";

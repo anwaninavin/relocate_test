@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { normalizeWaId } from "@/lib/phone";
 import { verifyLoginTicket, WHATSAPP_LOGIN_KEYWORD } from "@/lib/login-ticket";
 import { logInboundMessage, sendTextMessage } from "@/lib/whatsapp";
+import { verifyMetaSignature } from "@/lib/webhook-signature";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -37,7 +38,18 @@ interface WhatsAppWebhookPayload {
 const LOGIN_COMMAND_REGEX = new RegExp(`^${WHATSAPP_LOGIN_KEYWORD}\\s+([a-f0-9]{20,})$`, "i");
 
 export async function POST(request: Request) {
-  const payload = (await request.json().catch(() => null)) as WhatsAppWebhookPayload | null;
+  const rawBody = await request.text();
+
+  if (!verifyMetaSignature(rawBody, request.headers.get("x-hub-signature-256"))) {
+    return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
+  }
+
+  let payload: WhatsAppWebhookPayload | null = null;
+  try {
+    payload = rawBody ? (JSON.parse(rawBody) as WhatsAppWebhookPayload) : null;
+  } catch {
+    payload = null;
+  }
 
   if (!payload) {
     return NextResponse.json({ ok: true });
