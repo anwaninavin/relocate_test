@@ -18,6 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { ProgressRing } from "@/components/shared/progress-ring";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
+import { SuccessLottie } from "@/components/shared/success-lottie";
 import { ExpenseMiniChart } from "@/features/dashboard/expense-mini-chart";
 import { CHECKLIST_CATEGORY_ICONS } from "@/lib/checklist-icons";
 import type { ChecklistPriority } from "@/types";
@@ -64,9 +65,19 @@ export function DashboardView({
 
       <div className="grid gap-4 lg:grid-cols-4">
         <Card className="items-center justify-center gap-2 p-6 lg:col-span-1">
-          <ProgressRing value={completionPercent} label="Packed" />
+          <div className="relative">
+            <ProgressRing value={completionPercent} label="Packed" />
+            {completionPercent >= 100 && (
+              <div className="pointer-events-none absolute -top-3 -right-3">
+                <SuccessLottie size={48} />
+              </div>
+            )}
+          </div>
           <p className="text-muted-foreground mt-2 text-center text-sm">
-            {overallProgress.completed} of {overallProgress.total} items packed
+            {overallProgress.total === 0
+              ? "Add items to your checklist to get started"
+              : `${overallProgress.completed} of ${overallProgress.total} items packed`}
+            {completionPercent >= 100 && overallProgress.total > 0 && " — all packed! 🎉"}
           </p>
         </Card>
 

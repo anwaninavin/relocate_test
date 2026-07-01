@@ -58,14 +58,14 @@ export function DocumentsView({ initialDocuments }: { initialDocuments: Document
                     <DocumentFormDialog
                       document={document}
                       trigger={
-                        <Button variant="ghost" size="icon" className="size-7">
+                        <Button variant="ghost" size="icon" className="size-7" aria-label="Edit document">
                           <Pencil className="size-3.5" />
                         </Button>
                       }
                     />
                     <ConfirmDialog
                       trigger={
-                        <Button variant="ghost" size="icon" className="size-7">
+                        <Button variant="ghost" size="icon" className="size-7" aria-label="Delete document">
                           <Trash2 className="size-3.5" />
                         </Button>
                       }

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -126,13 +126,5 @@ export function NoteFormDialog({ note, trigger }: NoteFormDialogProps) {
         </Form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-export function EditNoteTrigger() {
-  return (
-    <Button variant="ghost" size="icon" className="size-8">
-      <Pencil className="size-4" />
-    </Button>
   );
 }

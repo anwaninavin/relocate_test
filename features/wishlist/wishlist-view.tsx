@@ -54,14 +54,14 @@ function WishlistCard({
             <WishlistFormDialog
               item={item}
               trigger={
-                <Button variant="ghost" size="icon" className="size-7">
+                <Button variant="ghost" size="icon" className="size-7" aria-label="Edit wishlist item">
                   <Pencil className="size-3.5" />
                 </Button>
               }
             />
             <ConfirmDialog
               trigger={
-                <Button variant="ghost" size="icon" className="size-7">
+                <Button variant="ghost" size="icon" className="size-7" aria-label="Delete wishlist item">
                   <Trash2 className="size-3.5" />
                 </Button>
               }

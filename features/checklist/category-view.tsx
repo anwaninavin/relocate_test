@@ -324,7 +324,7 @@ export function CategoryView({
                     {!selectMode && (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="size-8 shrink-0">
+                          <Button variant="ghost" size="icon" className="size-8 shrink-0" aria-label="Item actions">
                             <MoreVertical className="size-4" />
                           </Button>
                         </DropdownMenuTrigger>

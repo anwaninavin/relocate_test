@@ -60,14 +60,14 @@ export function ContactsView({ initialContacts }: { initialContacts: EmergencyCo
                     <ContactFormDialog
                       contact={contact}
                       trigger={
-                        <Button variant="ghost" size="icon" className="size-7">
+                        <Button variant="ghost" size="icon" className="size-7" aria-label="Edit contact">
                           <Pencil className="size-3.5" />
                         </Button>
                       }
                     />
                     <ConfirmDialog
                       trigger={
-                        <Button variant="ghost" size="icon" className="size-7">
+                        <Button variant="ghost" size="icon" className="size-7" aria-label="Delete contact">
                           <Trash2 className="size-3.5" />
                         </Button>
                       }

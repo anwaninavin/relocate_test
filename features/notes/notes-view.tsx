@@ -64,6 +64,7 @@ export function NotesView({ initialNotes }: { initialNotes: NoteDTO[] }) {
                       variant="ghost"
                       size="icon"
                       className="size-7"
+                      aria-label={note.pinned ? "Unpin note" : "Pin note"}
                       onClick={() => togglePin(note)}
                     >
                       {note.pinned ? (
@@ -75,14 +76,14 @@ export function NotesView({ initialNotes }: { initialNotes: NoteDTO[] }) {
                     <NoteFormDialog
                       note={note}
                       trigger={
-                        <Button variant="ghost" size="icon" className="size-7">
+                        <Button variant="ghost" size="icon" className="size-7" aria-label="Edit note">
                           <StickyNote className="size-3.5" />
                         </Button>
                       }
                     />
                     <ConfirmDialog
                       trigger={
-                        <Button variant="ghost" size="icon" className="size-7">
+                        <Button variant="ghost" size="icon" className="size-7" aria-label="Delete note">
                           <Trash2 className="size-3.5" />
                         </Button>
                       }

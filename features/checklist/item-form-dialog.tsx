@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Loader2, Pencil, Plus } from "lucide-react";
+import { Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -350,13 +350,5 @@ export function ItemFormDialog({ category, item, trigger }: ItemFormDialogProps)
         </Form>
       </DialogContent>
     </Dialog>
-  );
-}
-
-export function EditItemTrigger() {
-  return (
-    <Button variant="ghost" size="icon" className="size-8">
-      <Pencil className="size-4" />
-    </Button>
   );
 }
