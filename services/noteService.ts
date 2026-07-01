@@ -17,7 +17,7 @@ export async function createNote(userId: string, input: NoteInput) {
 export async function updateNote(userId: string, input: NoteUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return Note.findOneAndUpdate({ _id: id, userId }, rest, { new: true }).lean();
+  return Note.findOneAndUpdate({ _id: id, userId }, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteNote(userId: string, id: string) {

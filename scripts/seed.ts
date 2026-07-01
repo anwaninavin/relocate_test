@@ -381,7 +381,7 @@ async function seed() {
   for (const article of guideArticles) {
     await GuideArticle.findOneAndUpdate({ slug: article.slug }, article, {
       upsert: true,
-      new: true,
+      returnDocument: "after",
     });
   }
   console.log(`Seeded ${guideArticles.length} guide articles`);
@@ -390,7 +390,7 @@ async function seed() {
     await Product.findOneAndUpdate(
       { name: product.name, store: product.store },
       product,
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: "after" },
     );
   }
   console.log(`Seeded ${products.length} products`);

@@ -27,7 +27,7 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
       hostel: input.hostel || null,
       roomNumber: input.roomNumber || null,
     },
-    { new: true },
+    { returnDocument: "after" },
   ).lean();
 }
 
@@ -42,13 +42,13 @@ export async function updateProfile(userId: string, input: ProfileUpdateInput) {
       roomNumber: input.roomNumber || null,
       ...(input.avatar ? { avatar: input.avatar } : {}),
     },
-    { new: true },
+    { returnDocument: "after" },
   ).lean();
 }
 
 export async function setNotificationPreference(userId: string, enabled: boolean) {
   await connectDB();
-  return User.findByIdAndUpdate(userId, { notificationsEnabled: enabled }, { new: true }).lean();
+  return User.findByIdAndUpdate(userId, { notificationsEnabled: enabled }, { returnDocument: "after" }).lean();
 }
 
 export async function listUsers(page: number, pageSize: number) {

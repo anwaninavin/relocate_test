@@ -17,7 +17,7 @@ export async function createWishlistItem(userId: string, input: WishlistItemInpu
 export async function updateWishlistItem(userId: string, input: WishlistItemUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return WishlistItem.findOneAndUpdate({ _id: id, userId }, rest, { new: true }).lean();
+  return WishlistItem.findOneAndUpdate({ _id: id, userId }, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteWishlistItem(userId: string, id: string) {

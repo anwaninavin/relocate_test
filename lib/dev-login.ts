@@ -37,7 +37,7 @@ export async function getOrCreateDevTestUser() {
         role: "student",
       },
     },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 
   return user;

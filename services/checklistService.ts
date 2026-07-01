@@ -42,7 +42,7 @@ export async function createChecklistItem(userId: string, input: ChecklistItemIn
 export async function updateChecklistItem(userId: string, input: ChecklistItemUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return ChecklistItem.findOneAndUpdate({ _id: id, userId }, rest, { new: true }).lean();
+  return ChecklistItem.findOneAndUpdate({ _id: id, userId }, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteChecklistItem(userId: string, id: string) {

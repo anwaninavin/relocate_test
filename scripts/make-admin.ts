@@ -27,7 +27,7 @@ async function main() {
 
   await mongoose.connect(uri);
 
-  const user = await User.findOneAndUpdate({ mobile }, { role: "admin" }, { new: true });
+  const user = await User.findOneAndUpdate({ mobile }, { role: "admin" }, { returnDocument: "after" });
 
   if (!user) {
     console.error(

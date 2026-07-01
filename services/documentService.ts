@@ -17,7 +17,7 @@ export async function createDocument(userId: string, input: DocumentItemInput) {
 export async function updateDocument(userId: string, input: DocumentItemUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return DocumentItem.findOneAndUpdate({ _id: id, userId }, rest, { new: true }).lean();
+  return DocumentItem.findOneAndUpdate({ _id: id, userId }, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteDocument(userId: string, id: string) {

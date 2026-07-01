@@ -38,7 +38,7 @@ export async function createBudgetEntry(userId: string, input: BudgetEntryInput)
 export async function updateBudgetEntry(userId: string, input: BudgetEntryUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return BudgetEntry.findOneAndUpdate({ _id: id, userId }, rest, { new: true }).lean();
+  return BudgetEntry.findOneAndUpdate({ _id: id, userId }, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteBudgetEntry(userId: string, id: string) {

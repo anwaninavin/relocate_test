@@ -22,7 +22,7 @@ export async function createGuideArticle(input: GuideArticleInput) {
 export async function updateGuideArticle(input: GuideArticleUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return GuideArticle.findByIdAndUpdate(id, rest, { new: true }).lean();
+  return GuideArticle.findByIdAndUpdate(id, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteGuideArticle(id: string) {

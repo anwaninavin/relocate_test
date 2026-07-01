@@ -20,7 +20,7 @@ export async function createContact(userId: string, input: EmergencyContactInput
 export async function updateContact(userId: string, input: EmergencyContactUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return EmergencyContact.findOneAndUpdate({ _id: id, userId }, rest, { new: true }).lean();
+  return EmergencyContact.findOneAndUpdate({ _id: id, userId }, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteContact(userId: string, id: string) {

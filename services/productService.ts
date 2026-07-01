@@ -45,7 +45,7 @@ export async function createProduct(input: ProductInput) {
 export async function updateProduct(input: ProductUpdateInput) {
   await connectDB();
   const { id, ...rest } = input;
-  return Product.findByIdAndUpdate(id, rest, { new: true }).lean();
+  return Product.findByIdAndUpdate(id, rest, { returnDocument: "after" }).lean();
 }
 
 export async function deleteProduct(id: string) {
