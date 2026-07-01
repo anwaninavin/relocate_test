@@ -1,0 +1,59 @@
+import { z } from "zod";
+
+import { CHECKLIST_CATEGORIES, GUIDE_CATEGORIES } from "@/types";
+
+export const productSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  imageUrl: z.string().trim().url().optional().or(z.literal("")),
+  category: z.enum(CHECKLIST_CATEGORIES),
+  store: z.string().trim().min(1).max(80),
+  price: z.coerce.number().min(0),
+  discountPercent: z.coerce.number().min(0).max(100).default(0),
+  rating: z.coerce.number().min(0).max(5).default(4),
+  pros: z.array(z.string().trim().min(1)).default([]),
+  cons: z.array(z.string().trim().min(1)).default([]),
+  buyLinks: z.object({
+    amazon: z.string().trim().url().optional().or(z.literal("")),
+    flipkart: z.string().trim().url().optional().or(z.literal("")),
+    myntra: z.string().trim().url().optional().or(z.literal("")),
+    decathlon: z.string().trim().url().optional().or(z.literal("")),
+    local: z.string().trim().url().optional().or(z.literal("")),
+  }),
+  budgetAlternative: z.string().optional().nullable(),
+  premiumAlternative: z.string().optional().nullable(),
+  featured: z.boolean().default(false),
+});
+
+export const productUpdateSchema = productSchema.partial().extend({
+  id: z.string().min(1),
+});
+
+export const guideArticleSchema = z.object({
+  title: z.string().trim().min(1).max(150),
+  slug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(150)
+    .regex(/^[a-z0-9-]+$/, "Slug may only contain lowercase letters, numbers, and hyphens"),
+  category: z.enum(GUIDE_CATEGORIES),
+  icon: z.string().trim().max(60).default("BookOpen"),
+  summary: z.string().trim().max(300).optional().or(z.literal("")),
+  content: z.string().trim().min(1),
+  order: z.coerce.number().default(0),
+});
+
+export const guideArticleUpdateSchema = guideArticleSchema.partial().extend({
+  id: z.string().min(1),
+});
+
+export const broadcastSchema = z.object({
+  message: z.string().trim().min(1, "Message is required").max(1000),
+  audience: z.enum(["all", "incomplete-checklist"]).default("all"),
+});
+
+export type ProductInput = z.infer<typeof productSchema>;
+export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
+export type GuideArticleInput = z.infer<typeof guideArticleSchema>;
+export type GuideArticleUpdateInput = z.infer<typeof guideArticleUpdateSchema>;
+export type BroadcastInput = z.infer<typeof broadcastSchema>;
