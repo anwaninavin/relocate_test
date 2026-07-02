@@ -1,13 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
-import type { LucideIcon } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface StatCardProps {
-  icon: LucideIcon;
+  icon: React.ReactNode;
   label: string;
   value: string;
   hint?: string;
@@ -23,7 +22,7 @@ const TONE_CLASSES: Record<NonNullable<StatCardProps["tone"]>, string> = {
   destructive: "bg-destructive/10 text-destructive",
 };
 
-export function StatCard({ icon: Icon, label, value, hint, tone = "primary", delay = 0 }: StatCardProps) {
+export function StatCard({ icon, label, value, hint, tone = "primary", delay = 0 }: StatCardProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -32,7 +31,7 @@ export function StatCard({ icon: Icon, label, value, hint, tone = "primary", del
     >
       <Card className="gap-3 p-5">
         <div className={cn("flex size-10 items-center justify-center rounded-xl", TONE_CLASSES[tone])}>
-          <Icon className="size-5" />
+          {icon}
         </div>
         <div>
           <p className="font-display text-2xl font-bold">{value}</p>

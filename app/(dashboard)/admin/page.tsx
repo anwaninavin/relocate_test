@@ -14,9 +14,14 @@ export default async function AdminAnalyticsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <StatCard icon={Users} label="Total students" value={String(analytics.totalUsers)} tone="primary" />
         <StatCard
-          icon={UserCheck}
+          icon={<Users className="size-5" />}
+          label="Total students"
+          value={String(analytics.totalUsers)}
+          tone="primary"
+        />
+        <StatCard
+          icon={<UserCheck className="size-5" />}
           label="Active in last 7 days"
           value={String(analytics.activeUsers7d)}
           hint={`${analytics.activeUsers30d} active in last 30 days`}
@@ -24,7 +29,7 @@ export default async function AdminAnalyticsPage() {
           delay={0.05}
         />
         <StatCard
-          icon={TrendingUp}
+          icon={<TrendingUp className="size-5" />}
           label="Overall completion rate"
           value={`${Math.round(analytics.completionRate)}%`}
           hint={`${analytics.completedItems} of ${analytics.totalItems} items packed`}
@@ -32,21 +37,21 @@ export default async function AdminAnalyticsPage() {
           delay={0.1}
         />
         <StatCard
-          icon={ListChecks}
+          icon={<ListChecks className="size-5" />}
           label="Checklist items tracked"
           value={String(analytics.totalItems)}
           tone="warning"
           delay={0.15}
         />
         <StatCard
-          icon={ShoppingBag}
+          icon={<ShoppingBag className="size-5" />}
           label="Products curated"
           value={String(analytics.totalProducts)}
           tone="primary"
           delay={0.2}
         />
         <StatCard
-          icon={BookOpen}
+          icon={<BookOpen className="size-5" />}
           label="Guide articles"
           value={String(analytics.totalGuideArticles)}
           tone="success"

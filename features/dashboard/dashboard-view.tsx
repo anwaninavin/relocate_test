@@ -83,7 +83,7 @@ export function DashboardView({
 
         <div className="grid gap-4 sm:grid-cols-3 lg:col-span-3">
           <StatCard
-            icon={Wallet}
+            icon={<Wallet className="size-5" />}
             label="Budget used"
             value={`${Math.round(budgetUsedPercent)}%`}
             hint={`₹${budgetSummary.spent.toLocaleString("en-IN")} of ₹${budgetSummary.planned.toLocaleString("en-IN")}`}
@@ -91,7 +91,7 @@ export function DashboardView({
             delay={0.05}
           />
           <StatCard
-            icon={ListTodo}
+            icon={<ListTodo className="size-5" />}
             label="Items remaining"
             value={String(itemsRemaining)}
             hint="Still to pack or buy"
@@ -99,7 +99,7 @@ export function DashboardView({
             delay={0.1}
           />
           <StatCard
-            icon={Heart}
+            icon={<Heart className="size-5" />}
             label="Wishlist"
             value={String(wishlistCount)}
             hint="Items you're eyeing"
