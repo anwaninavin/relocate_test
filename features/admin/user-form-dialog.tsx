@@ -102,6 +102,7 @@ export function UserFormDialog({ user, trigger }: UserFormDialogProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [revealedPin, setRevealedPin] = useState<string | null>(null);
+  const [revealedMobile, setRevealedMobile] = useState<string | null>(null);
   const isEdit = Boolean(user);
 
   const createForm = useForm<CreateUserByAdminInput>({
@@ -117,6 +118,7 @@ export function UserFormDialog({ user, trigger }: UserFormDialogProps) {
   useEffect(() => {
     if (open) {
       setRevealedPin(null);
+      setRevealedMobile(null);
       createForm.reset({ mobile: "" });
       editForm.reset({ id: user?.id ?? "", mobile: user?.mobile ?? "", role: user?.role ?? "student" });
     }
@@ -134,6 +136,7 @@ export function UserFormDialog({ user, trigger }: UserFormDialogProps) {
     }
 
     toast.success("User created");
+    setRevealedMobile(result.mobile);
     setRevealedPin(result.pin);
   }
 
@@ -162,6 +165,7 @@ export function UserFormDialog({ user, trigger }: UserFormDialogProps) {
       return;
     }
 
+    setRevealedMobile(user.mobile);
     setRevealedPin(result.pin);
   }
 
@@ -185,12 +189,8 @@ export function UserFormDialog({ user, trigger }: UserFormDialogProps) {
           )}
         </DialogHeader>
 
-        {revealedPin ? (
-          <PinRevealPanel
-            mobile={isEdit ? user!.mobile : createForm.getValues("mobile")}
-            pin={revealedPin}
-            onDone={() => setOpen(false)}
-          />
+        {revealedPin && revealedMobile ? (
+          <PinRevealPanel mobile={revealedMobile} pin={revealedPin} onDone={() => setOpen(false)} />
         ) : isEdit ? (
           <Form {...editForm}>
             <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="flex flex-col gap-4">
