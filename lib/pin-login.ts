@@ -19,6 +19,7 @@ export async function authenticateWithPin(rawMobile: string, pin: string) {
 
   const mobile = normalizeMobile(rawMobile);
   if (!mobile) {
+    console.error("[pin-login] rejected: raw mobile didn't normalize", { rawMobile });
     return null;
   }
 
@@ -30,12 +31,26 @@ export async function authenticateWithPin(rawMobile: string, pin: string) {
   });
 
   if (!allowed) {
+    console.error("[pin-login] rate limited", { mobile });
     throw new RateLimitedError("Too many attempts. Please try again in a few minutes.");
   }
 
   const user = await User.findOne({ mobile });
 
-  if (!user || !user.loginPinHash || !/^\d{7}$/.test(pin)) {
+  if (!user) {
+    console.error("[pin-login] rejected: no user for mobile", { mobile });
+    await LoginAttempt.create({ mobile, success: false });
+    return null;
+  }
+
+  if (!user.loginPinHash) {
+    console.error("[pin-login] rejected: user has no loginPinHash set", { mobile });
+    await LoginAttempt.create({ mobile, success: false });
+    return null;
+  }
+
+  if (!/^\d{7}$/.test(pin)) {
+    console.error("[pin-login] rejected: submitted pin isn't 7 digits", { mobile, pinLength: pin.length });
     await LoginAttempt.create({ mobile, success: false });
     return null;
   }
@@ -44,6 +59,7 @@ export async function authenticateWithPin(rawMobile: string, pin: string) {
   await LoginAttempt.create({ mobile, success: isValid });
 
   if (!isValid) {
+    console.error("[pin-login] rejected: pin didn't match hash", { mobile });
     return null;
   }
 
