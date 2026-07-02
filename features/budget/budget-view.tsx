@@ -112,15 +112,13 @@ export function BudgetView({
       <PageHeader
         title="Budget & Expenses"
         description="Track what you planned to spend versus what you actually spent"
-        action={<EntryFormDialog />}
       />
 
       {entries.length === 0 ? (
         <EmptyState
           icon={Wallet}
           title="No budget entries yet"
-          description="Add a planned budget or log an expense to start tracking your spending."
-          action={<EntryFormDialog />}
+          description="Tap the + button below to add a planned budget or log an expense."
         />
       ) : (
         <div className="flex flex-col gap-6">

@@ -36,7 +36,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { productSchema, type ProductInput } from "@/lib/validations/admin";
 import { createProductAction, updateProductAction } from "@/actions/admin";
-import { CHECKLIST_CATEGORIES } from "@/types";
+import { DEFAULT_CHECKLIST_CATEGORIES } from "@/types";
 import type { AdminProductDTO } from "@/features/admin/product-dto";
 
 const NONE_VALUE = "__none__";
@@ -62,7 +62,7 @@ export function ProductFormDialog({ product, products, trigger }: ProductFormDia
   const defaultValues: ProductInput = {
     name: product?.name ?? "",
     imageUrl: product?.imageUrl ?? "",
-    category: product?.category ?? CHECKLIST_CATEGORIES[0],
+    category: product?.category ?? DEFAULT_CHECKLIST_CATEGORIES[0],
     store: product?.store ?? "",
     price: product?.price ?? 0,
     discountPercent: product?.discountPercent ?? 0,
@@ -154,7 +154,7 @@ export function ProductFormDialog({ product, products, trigger }: ProductFormDia
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {CHECKLIST_CATEGORIES.map((c) => (
+                          {DEFAULT_CHECKLIST_CATEGORIES.map((c) => (
                             <SelectItem key={c} value={c}>
                               {c}
                             </SelectItem>

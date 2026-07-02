@@ -1,4 +1,4 @@
-# Hostel Essentials
+# Pack with Me
 
 Your all-in-one hostel survival kit — checklist, budget, notes, documents, emergency contacts, shopping recommendations, and a hostel survival guide, for students moving into a hostel for the first time. No passwords, no email, no forms — login is a WhatsApp deep-link.
 

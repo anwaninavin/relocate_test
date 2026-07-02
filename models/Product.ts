@@ -1,12 +1,12 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 
-import { CHECKLIST_CATEGORIES } from "@/types";
+import { DEFAULT_CHECKLIST_CATEGORIES } from "@/types";
 
 const ProductSchema = new Schema(
   {
     name: { type: String, required: true, trim: true, maxlength: 120 },
     imageUrl: { type: String, default: null },
-    category: { type: String, enum: CHECKLIST_CATEGORIES, required: true, index: true },
+    category: { type: String, enum: DEFAULT_CHECKLIST_CATEGORIES, required: true, index: true },
     store: { type: String, required: true, trim: true },
     price: { type: Number, required: true, min: 0 },
     discountPercent: { type: Number, default: 0, min: 0, max: 100 },

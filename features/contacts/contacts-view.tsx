@@ -26,18 +26,13 @@ export function ContactsView({ initialContacts }: { initialContacts: EmergencyCo
 
   return (
     <div>
-      <PageHeader
-        title="Emergency Contacts"
-        description="People you can reach in a hurry"
-        action={<ContactFormDialog />}
-      />
+      <PageHeader title="Emergency Contacts" description="People you can reach in a hurry" />
 
       {contacts.length === 0 ? (
         <EmptyState
           icon={Users}
           title="No contacts yet"
-          description="Add your parents, guardian, warden, or family doctor so they're one tap away."
-          action={<ContactFormDialog />}
+          description="Tap the + button below to add your parents, guardian, warden, or family doctor so they're one tap away."
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

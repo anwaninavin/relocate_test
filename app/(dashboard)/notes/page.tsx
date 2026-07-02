@@ -6,7 +6,7 @@ import { toPlain } from "@/lib/serialize";
 import { NotesView } from "@/features/notes/notes-view";
 import type { NoteDTO } from "@/types";
 
-export const metadata: Metadata = { title: "Notes — Hostel Essentials" };
+export const metadata: Metadata = { title: "Notes — Pack with Me" };
 
 export default async function NotesPage() {
   const session = await auth();

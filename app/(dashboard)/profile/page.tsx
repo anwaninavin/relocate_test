@@ -6,7 +6,7 @@ import { toPlain } from "@/lib/serialize";
 import { ProfileView } from "@/features/profile/profile-view";
 import type { UserRole } from "@/types";
 
-export const metadata: Metadata = { title: "Profile — Hostel Essentials" };
+export const metadata: Metadata = { title: "Profile — Pack with Me" };
 
 export interface ProfileDTO {
   id: string;

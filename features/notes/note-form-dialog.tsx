@@ -32,12 +32,24 @@ import type { NoteDTO } from "@/types";
 interface NoteFormDialogProps {
   note?: NoteDTO;
   trigger?: React.ReactNode;
+  /** When provided, open/close is driven by a parent (e.g. the FAB) instead of internal state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function NoteFormDialog({ note, trigger }: NoteFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function NoteFormDialog({
+  note,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: NoteFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = Boolean(note);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
   const form = useForm<NoteInput>({
     resolver: zodResolver(noteSchema),
@@ -76,14 +88,16 @@ export function NoteFormDialog({ note, trigger }: NoteFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
+      {trigger !== undefined ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="size-4" />
             New note
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      ) : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit note" : "New note"}</DialogTitle>

@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Loader2, ShieldAlert } from "lucide-react";
 
+import { HOME_ROUTE } from "@/lib/nav-items";
+
 function DevLoginInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -23,7 +25,7 @@ function DevLoginInner() {
         setStatus("error");
         return;
       }
-      router.push("/dashboard");
+      router.push(HOME_ROUTE);
       router.refresh();
     });
   }, [router, searchParams]);

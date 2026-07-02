@@ -26,18 +26,13 @@ export function DocumentsView({ initialDocuments }: { initialDocuments: Document
 
   return (
     <div>
-      <PageHeader
-        title="Documents"
-        description="Keep important links and files within reach"
-        action={<DocumentFormDialog />}
-      />
+      <PageHeader title="Documents" description="Keep important links and files within reach" />
 
       {documents.length === 0 ? (
         <EmptyState
           icon={FileText}
           title="No documents yet"
-          description="Save links to your Aadhaar, admission letter, or any file you might need in a hurry."
-          action={<DocumentFormDialog />}
+          description="Tap the + button below to save links to your Aadhaar, admission letter, or any file you might need in a hurry."
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

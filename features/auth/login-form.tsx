@@ -12,6 +12,8 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { BrandName } from "@/components/shared/brand-name";
+import { HOME_ROUTE } from "@/lib/nav-items";
 
 type Step = "mobile" | "waiting" | "verified";
 
@@ -89,7 +91,7 @@ export function LoginForm() {
             return;
           }
 
-          router.push("/dashboard");
+          router.push(HOME_ROUTE);
           router.refresh();
         } else if (data.status === "expired" || data.status === "not_found") {
           if (pollRef.current) clearInterval(pollRef.current);
@@ -113,7 +115,9 @@ export function LoginForm() {
     <div className="glass relative w-full max-w-md overflow-hidden rounded-3xl p-8 shadow-2xl">
       <div className="mb-8 flex flex-col items-center gap-3 text-center">
         <Image src="/logo.png" alt="" width={64} height={64} priority />
-        <h1 className="font-display text-2xl font-bold">Hostel Essentials</h1>
+        <h1 className="text-2xl">
+          <BrandName />
+        </h1>
         <p className="text-muted-foreground text-sm">
           No passwords. Log in instantly with WhatsApp.
         </p>

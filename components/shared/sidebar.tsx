@@ -5,7 +5,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
-import { ADMIN_NAV_ITEM, PRIMARY_NAV_ITEMS, PROFILE_NAV_ITEM } from "@/lib/nav-items";
+import { ADMIN_NAV_ITEM, HOME_ROUTE, PRIMARY_NAV_ITEMS, PROFILE_NAV_ITEM } from "@/lib/nav-items";
+import { BrandName } from "@/components/shared/brand-name";
 
 export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
@@ -14,9 +15,9 @@ export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
 
   return (
     <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r px-4 py-6 lg:flex">
-      <Link href="/dashboard" className="mb-8 flex items-center gap-2 px-2">
+      <Link href={HOME_ROUTE} className="mb-8 flex items-center gap-2 px-2">
         <Image src="/logo.png" alt="" width={36} height={36} className="shrink-0" />
-        <span className="font-display text-lg font-bold">Hostel Essentials</span>
+        <BrandName className="text-lg" />
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">

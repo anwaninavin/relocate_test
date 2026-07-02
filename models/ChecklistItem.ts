@@ -1,11 +1,11 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 
-import { CHECKLIST_CATEGORIES, CHECKLIST_PRIORITIES, STORE_OPTIONS } from "@/types";
+import { CHECKLIST_PRIORITIES, STORE_OPTIONS } from "@/types";
 
 const ChecklistItemSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
-    category: { type: String, enum: CHECKLIST_CATEGORIES, required: true, index: true },
+    category: { type: String, required: true, trim: true, maxlength: 60, index: true },
     item: { type: String, required: true, trim: true, maxlength: 120 },
     description: { type: String, default: "", maxlength: 500 },
     imageUrl: { type: String, default: null },

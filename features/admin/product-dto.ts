@@ -1,10 +1,10 @@
-import type { ChecklistCategory } from "@/types";
+import type { ProductCategory } from "@/types";
 
 export interface AdminProductDTO {
   id: string;
   name: string;
   imageUrl: string | null;
-  category: ChecklistCategory;
+  category: ProductCategory;
   store: string;
   price: number;
   discountPercent: number;

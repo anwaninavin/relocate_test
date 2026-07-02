@@ -6,7 +6,7 @@ import { toPlain } from "@/lib/serialize";
 import { DocumentsView } from "@/features/documents/documents-view";
 import type { DocumentItemDTO } from "@/features/documents/document-dto";
 
-export const metadata: Metadata = { title: "Documents — Hostel Essentials" };
+export const metadata: Metadata = { title: "Documents — Pack with Me" };
 
 export default async function DocumentsPage() {
   const session = await auth();

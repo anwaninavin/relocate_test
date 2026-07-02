@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
 
 import { authConfig } from "@/lib/auth.config";
+import { HOME_ROUTE } from "@/lib/routes";
 
 const { auth } = NextAuth(authConfig);
 
@@ -22,7 +23,7 @@ export default auth((req) => {
   }
 
   if (isAuthRoute) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL(HOME_ROUTE, req.url));
   }
 
   if (session.user.needsOnboarding && !isOnboardingRoute) {
@@ -30,11 +31,11 @@ export default auth((req) => {
   }
 
   if (!session.user.needsOnboarding && isOnboardingRoute) {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL(HOME_ROUTE, req.url));
   }
 
   if (isAdminRoute && session.user.role !== "admin") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL(HOME_ROUTE, req.url));
   }
 
   return NextResponse.next();

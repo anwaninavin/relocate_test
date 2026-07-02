@@ -31,12 +31,24 @@ import type { DocumentItemDTO } from "@/features/documents/document-dto";
 interface DocumentFormDialogProps {
   document?: DocumentItemDTO;
   trigger?: React.ReactNode;
+  /** When provided, open/close is driven by a parent (e.g. the FAB) instead of internal state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function DocumentFormDialog({ document, trigger }: DocumentFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function DocumentFormDialog({
+  document,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: DocumentFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = Boolean(document);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
   const form = useForm<DocumentItemInput>({
     resolver: zodResolver(documentItemSchema),
@@ -75,14 +87,16 @@ export function DocumentFormDialog({ document, trigger }: DocumentFormDialogProp
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
+      {trigger !== undefined ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="size-4" />
             Add document
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      ) : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit document" : "Add document"}</DialogTitle>

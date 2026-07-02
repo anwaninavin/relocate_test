@@ -34,18 +34,13 @@ export function NotesView({ initialNotes }: { initialNotes: NoteDTO[] }) {
 
   return (
     <div>
-      <PageHeader
-        title="Notes"
-        description="Quick things worth remembering"
-        action={<NoteFormDialog />}
-      />
+      <PageHeader title="Notes" description="Quick things worth remembering" />
 
       {notes.length === 0 ? (
         <EmptyState
           icon={StickyNote}
           title="No notes yet"
-          description="Jot down Wi-Fi passwords, roommate numbers, or anything else you don't want to forget."
-          action={<NoteFormDialog />}
+          description="Tap the + button below to jot down Wi-Fi passwords, roommate numbers, or anything else you don't want to forget."
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

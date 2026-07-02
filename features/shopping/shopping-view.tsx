@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
-import { CHECKLIST_CATEGORIES } from "@/types";
+import { DEFAULT_CHECKLIST_CATEGORIES } from "@/types";
 import type { ProductDTO } from "@/features/shopping/product-dto";
 
 const STORE_LABELS: Record<keyof ProductDTO["buyLinks"], string> = {
@@ -51,7 +51,7 @@ export function ShoppingView({ products }: { products: ProductDTO[] }) {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All categories</SelectItem>
-              {CHECKLIST_CATEGORIES.map((c) => (
+              {DEFAULT_CHECKLIST_CATEGORIES.map((c) => (
                 <SelectItem key={c} value={c}>
                   {c}
                 </SelectItem>

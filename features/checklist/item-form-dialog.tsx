@@ -34,24 +34,45 @@ import {
 } from "@/components/ui/select";
 import { checklistItemSchema, type ChecklistItemInput } from "@/lib/validations/checklist";
 import { createChecklistItemAction, updateChecklistItemAction } from "@/actions/checklist";
+import { CategorySelect } from "@/features/checklist/category-select";
 import { CHECKLIST_PRIORITIES, STORE_OPTIONS, type ChecklistCategory } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
 const NONE_STORE = "none";
 
 interface ItemFormDialogProps {
-  category: ChecklistCategory;
+  /** The user's full category list, for the category picker. */
+  categories: string[];
+  /** Preselected category (e.g. creating from within a specific category's panel). Defaults to the first category when omitted. */
+  category?: ChecklistCategory;
   item?: ChecklistItemDTO;
   trigger?: React.ReactNode;
+  /** When provided, open/close is driven by a parent (e.g. the FAB) instead of internal state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ItemFormDialog({ category, item, trigger }: ItemFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function ItemFormDialog({
+  categories,
+  category,
+  item,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: ItemFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const [categoryList, setCategoryList] = useState(categories);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = Boolean(item);
 
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
+
+  const defaultCategory = item?.category ?? category ?? categories[0] ?? "";
+
   const defaultValues: ChecklistItemInput = {
-    category,
+    category: defaultCategory,
     item: item?.item ?? "",
     description: item?.description ?? "",
     imageUrl: item?.imageUrl ?? "",
@@ -80,10 +101,9 @@ export function ItemFormDialog({ category, item, trigger }: ItemFormDialogProps)
 
   async function onSubmit(values: ChecklistItemInput) {
     setIsSubmitting(true);
-    const payload = { ...values, category };
     const result = isEdit
-      ? await updateChecklistItemAction({ id: item!.id, ...payload })
-      : await createChecklistItemAction(payload);
+      ? await updateChecklistItemAction({ id: item!.id, ...values })
+      : await createChecklistItemAction(values);
     setIsSubmitting(false);
 
     if (!result.success) {
@@ -97,14 +117,16 @@ export function ItemFormDialog({ category, item, trigger }: ItemFormDialogProps)
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
+      {trigger !== undefined ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="size-4" />
             Add item
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      ) : null}
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit item" : "New item"}</DialogTitle>
@@ -120,6 +142,23 @@ export function ItemFormDialog({ category, item, trigger }: ItemFormDialogProps)
                   <FormControl>
                     <Input placeholder="e.g. Bedsheet set" {...field} />
                   </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Category</FormLabel>
+                  <CategorySelect
+                    categories={categoryList}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onCategoryCreated={(c) => setCategoryList((prev) => [...prev, c])}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

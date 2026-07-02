@@ -6,7 +6,7 @@ import { toPlain } from "@/lib/serialize";
 import { ChecklistOverview } from "@/features/checklist/checklist-overview";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
-export const metadata: Metadata = { title: "Packing Checklist — Hostel Essentials" };
+export const metadata: Metadata = { title: "Packing Checklist — Pack with Me" };
 
 export default async function ChecklistPage() {
   const session = await auth();

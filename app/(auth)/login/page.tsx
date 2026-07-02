@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { LoginForm } from "@/features/auth/login-form";
 
 export const metadata: Metadata = {
-  title: "Log in — Hostel Essentials",
+  title: "Log in — Pack with Me",
 };
 
 export default function LoginPage() {

@@ -3,7 +3,7 @@ import type { Types } from "mongoose";
 
 import { connectDB } from "@/lib/db";
 import { Product, type ProductDocument } from "@/models/Product";
-import type { ChecklistCategory } from "@/types";
+import type { ProductCategory } from "@/types";
 import type { ProductInput, ProductUpdateInput } from "@/lib/validations/admin";
 
 interface PopulatedAlternative {
@@ -22,7 +22,7 @@ export type ProductLeanWithAlternatives = Omit<
   premiumAlternative: PopulatedAlternative | null;
 };
 
-export async function listProducts(category?: ChecklistCategory) {
+export async function listProducts(category?: ProductCategory) {
   await connectDB();
   const filter = category ? { category } : {};
   return Product.find(filter)

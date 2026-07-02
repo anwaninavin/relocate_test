@@ -115,18 +115,13 @@ export function WishlistView({ initialItems }: { initialItems: WishlistItemDTO[]
 
   return (
     <div>
-      <PageHeader
-        title="Wishlist"
-        description="Things you'd love to get your hands on"
-        action={<WishlistFormDialog />}
-      />
+      <PageHeader title="Wishlist" description="Things you'd love to get your hands on" />
 
       {items.length === 0 ? (
         <EmptyState
           icon={Heart}
           title="Your wishlist is empty"
-          description="Add gadgets, gear, or anything else you're hoping to buy."
-          action={<WishlistFormDialog />}
+          description="Tap the + button below to add gadgets, gear, or anything else you're hoping to buy."
         />
       ) : (
         <div className="flex flex-col gap-8">

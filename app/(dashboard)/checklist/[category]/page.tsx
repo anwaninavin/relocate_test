@@ -3,8 +3,8 @@ import type { Metadata } from "next";
 
 import { auth } from "@/lib/auth";
 import { listItemsByCategory } from "@/services/checklistService";
+import { listCategories } from "@/services/categoryService";
 import { toPlain } from "@/lib/serialize";
-import { CHECKLIST_CATEGORIES, type ChecklistCategory } from "@/types";
 import { CategoryView } from "@/features/checklist/category-view";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
@@ -14,11 +14,7 @@ export async function generateMetadata({
   params: Promise<{ category: string }>;
 }): Promise<Metadata> {
   const { category } = await params;
-  return { title: `${decodeURIComponent(category)} — Hostel Essentials` };
-}
-
-function isChecklistCategory(value: string): value is ChecklistCategory {
-  return (CHECKLIST_CATEGORIES as readonly string[]).includes(value);
+  return { title: `${decodeURIComponent(category)} — Pack with Me` };
 }
 
 export default async function ChecklistCategoryPage({
@@ -29,11 +25,13 @@ export default async function ChecklistCategoryPage({
   const { category: rawCategory } = await params;
   const category = decodeURIComponent(rawCategory);
 
-  if (!isChecklistCategory(category)) {
+  const session = await auth();
+  const categories = await listCategories(session!.user.id);
+
+  if (!categories.some((c) => c.name === category)) {
     notFound();
   }
 
-  const session = await auth();
   const items = await listItemsByCategory(session!.user.id, category);
 
   const initialItems: ChecklistItemDTO[] = toPlain(items).map((i) => ({
@@ -54,5 +52,11 @@ export default async function ChecklistCategoryPage({
     importance: i.importance ?? "",
   }));
 
-  return <CategoryView category={category} initialItems={initialItems} />;
+  return (
+    <CategoryView
+      category={category}
+      allCategories={categories.map((c) => c.name)}
+      initialItems={initialItems}
+    />
+  );
 }

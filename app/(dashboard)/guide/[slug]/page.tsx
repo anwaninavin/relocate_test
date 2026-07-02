@@ -13,7 +13,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const article = await getGuideArticleBySlug(slug);
-  return { title: article ? `${article.title} — Hostel Essentials` : "Guide — Hostel Essentials" };
+  return { title: article ? `${article.title} — Pack with Me` : "Guide — Pack with Me" };
 }
 
 export default async function GuideArticlePage({ params }: PageProps) {

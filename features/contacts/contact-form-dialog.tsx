@@ -31,12 +31,24 @@ import type { EmergencyContactDTO } from "@/features/contacts/contact-dto";
 interface ContactFormDialogProps {
   contact?: EmergencyContactDTO;
   trigger?: React.ReactNode;
+  /** When provided, open/close is driven by a parent (e.g. the FAB) instead of internal state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function ContactFormDialog({ contact, trigger }: ContactFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function ContactFormDialog({
+  contact,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: ContactFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = Boolean(contact);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
   const form = useForm<EmergencyContactInput>({
     resolver: zodResolver(emergencyContactSchema),
@@ -75,14 +87,16 @@ export function ContactFormDialog({ contact, trigger }: ContactFormDialogProps) 
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
+      {trigger !== undefined ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="size-4" />
             Add contact
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      ) : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit contact" : "Add contact"}</DialogTitle>

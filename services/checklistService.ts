@@ -2,16 +2,20 @@ import "server-only";
 
 import { connectDB } from "@/lib/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
-import { CHECKLIST_CATEGORIES, type ChecklistCategory, type ChecklistPriority } from "@/types";
+import type { ChecklistCategory, ChecklistPriority } from "@/types";
 import type { ChecklistItemInput, ChecklistItemUpdateInput } from "@/lib/validations/checklist";
 import { DEFAULT_CHECKLIST_TEMPLATE } from "@/lib/default-checklist-template";
 import { areNearDuplicateNames } from "@/lib/text-similarity";
+import { listCategories } from "@/services/categoryService";
 
 export async function getCategorySummaries(userId: string) {
   await connectDB();
-  const items = await ChecklistItem.find({ userId }).select("category completed").lean();
+  const [categories, items] = await Promise.all([
+    listCategories(userId),
+    ChecklistItem.find({ userId }).select("category completed").lean(),
+  ]);
 
-  return CHECKLIST_CATEGORIES.map((category) => {
+  return categories.map(({ name: category }) => {
     const inCategory = items.filter((i) => i.category === category);
     const completed = inCategory.filter((i) => i.completed).length;
     return {
@@ -39,9 +43,12 @@ export async function listItemsByCategory(userId: string, category: ChecklistCat
 /** All items for a user, grouped by category — for the expandable accordion overview. */
 export async function getAllItemsByCategory(userId: string) {
   await connectDB();
-  const items = await ChecklistItem.find({ userId }).sort({ createdAt: -1 }).lean();
+  const [categories, items] = await Promise.all([
+    listCategories(userId),
+    ChecklistItem.find({ userId }).sort({ createdAt: -1 }).lean(),
+  ]);
 
-  return CHECKLIST_CATEGORIES.map((category) => ({
+  return categories.map(({ name: category }) => ({
     category,
     items: items.filter((i) => i.category === category),
   }));
@@ -140,8 +147,9 @@ export async function mergeDuplicateItems(userId: string) {
   const items = await ChecklistItem.find({ userId }).sort({ createdAt: 1 }).lean();
   const idsToDelete: string[] = [];
   const idsToComplete: string[] = [];
+  const categoriesInUse = new Set(items.map((i) => i.category));
 
-  for (const category of CHECKLIST_CATEGORIES) {
+  for (const category of categoriesInUse) {
     const inCategory = items.filter((i) => i.category === category);
     const grouped: (typeof inCategory)[number][][] = [];
 

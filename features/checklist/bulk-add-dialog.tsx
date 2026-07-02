@@ -23,11 +23,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { bulkCreateChecklistItemsAction } from "@/actions/checklist";
-import { CHECKLIST_CATEGORIES, CHECKLIST_PRIORITIES, type ChecklistCategory, type ChecklistPriority } from "@/types";
+import { CategorySelect } from "@/features/checklist/category-select";
+import { CHECKLIST_PRIORITIES, type ChecklistPriority } from "@/types";
 
-export function BulkAddDialog() {
+export function BulkAddDialog({ categories }: { categories: string[] }) {
   const [open, setOpen] = useState(false);
-  const [category, setCategory] = useState<ChecklistCategory>(CHECKLIST_CATEGORIES[0]);
+  const [categoryList, setCategoryList] = useState(categories);
+  const [category, setCategory] = useState(categories[0] ?? "");
   const [priority, setPriority] = useState<ChecklistPriority>("medium");
   const [namesText, setNamesText] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +43,10 @@ export function BulkAddDialog() {
 
     if (names.length === 0) {
       toast.error("Add at least one item name");
+      return;
+    }
+    if (!category) {
+      toast.error("Pick a category");
       return;
     }
 
@@ -81,18 +87,12 @@ export function BulkAddDialog() {
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <Label>Category</Label>
-              <Select value={category} onValueChange={(v) => setCategory(v as ChecklistCategory)}>
-                <SelectTrigger className="w-full">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CHECKLIST_CATEGORIES.map((c) => (
-                    <SelectItem key={c} value={c}>
-                      {c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <CategorySelect
+                categories={categoryList}
+                value={category}
+                onChange={setCategory}
+                onCategoryCreated={(c) => setCategoryList((prev) => [...prev, c])}
+              />
             </div>
             <div className="flex flex-col gap-2">
               <Label>Priority</Label>

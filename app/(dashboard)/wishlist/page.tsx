@@ -6,7 +6,7 @@ import { toPlain } from "@/lib/serialize";
 import { WishlistView } from "@/features/wishlist/wishlist-view";
 import type { WishlistItemDTO } from "@/features/wishlist/wishlist-dto";
 
-export const metadata: Metadata = { title: "Wishlist — Hostel Essentials" };
+export const metadata: Metadata = { title: "Wishlist — Pack with Me" };
 
 export default async function WishlistPage() {
   const session = await auth();

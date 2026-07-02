@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -36,7 +35,7 @@ import {
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
-import { CHECKLIST_CATEGORY_ICONS } from "@/lib/checklist-icons";
+import { getCategoryIcon } from "@/lib/checklist-icons";
 import {
   bulkChecklistAction,
   deleteChecklistItemAction,
@@ -52,11 +51,17 @@ type PriorityFilter = "all" | ChecklistPriority;
 type StatusFilter = "all" | "completed" | "incomplete";
 type SortOption = "name" | "price" | "priority";
 
-const PRIORITY_BADGE_VARIANT = {
-  low: "outline",
-  medium: "warning",
-  high: "destructive",
-} as const;
+const PRIORITY_LETTER: Record<ChecklistPriority, string> = {
+  low: "L",
+  medium: "M",
+  high: "H",
+};
+
+const PRIORITY_CHIP_CLASS: Record<ChecklistPriority, string> = {
+  low: "bg-muted text-muted-foreground",
+  medium: "bg-warning/15 text-warning",
+  high: "bg-destructive/15 text-destructive",
+};
 
 const PRIORITY_WEIGHT: Record<ChecklistPriority, number> = {
   high: 0,
@@ -66,6 +71,7 @@ const PRIORITY_WEIGHT: Record<ChecklistPriority, number> = {
 
 export function CategoryView({
   category,
+  allCategories,
   initialItems,
   embedded = false,
   hideToolbar = false,
@@ -74,6 +80,8 @@ export function CategoryView({
   onToggleSelected,
 }: {
   category: ChecklistCategory;
+  /** The user's full category list, passed through to the edit dialog's category picker. */
+  allCategories: string[];
   initialItems: ChecklistItemDTO[];
   /** When true, renders without the page-level title/back-link, for use inside an accordion panel. */
   embedded?: boolean;
@@ -105,7 +113,7 @@ export function CategoryView({
           prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
         );
 
-  const Icon = CHECKLIST_CATEGORY_ICONS[category];
+  const Icon = getCategoryIcon(category);
 
   const visibleItems = useMemo(() => {
     let list = items;
@@ -209,7 +217,6 @@ export function CategoryView({
         <ListChecks className="size-4" />
         {selectMode ? "Cancel" : "Select"}
       </Button>
-      <ItemFormDialog category={category} />
     </div>
   );
 
@@ -239,8 +246,7 @@ export function CategoryView({
         <EmptyState
           icon={Icon}
           title="No items yet"
-          description={`Add the things you need to pack for ${category.toLowerCase()}.`}
-          action={<ItemFormDialog category={category} />}
+          description={`Tap the + button below to add the things you need for ${category.toLowerCase()}.`}
         />
       ) : (
         <>
@@ -305,99 +311,103 @@ export function CategoryView({
               description="Try adjusting your search or filters."
             />
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="border-border/60 bg-card divide-border/60 flex flex-col divide-y overflow-hidden rounded-2xl border shadow-sm">
               {visibleItems.map((item, i) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.02 }}
+                  className="hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5"
                 >
-                  <Card className="flex-row items-center gap-3 p-4">
-                    {selectMode ? (
-                      <Checkbox
-                        checked={selectedIds.includes(item.id)}
-                        onCheckedChange={() => toggleSelected(item.id)}
+                  {selectMode ? (
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={() => toggleSelected(item.id)}
+                    />
+                  ) : (
+                    <Checkbox
+                      checked={item.completed}
+                      onCheckedChange={() => toggleCompleted(item)}
+                    />
+                  )}
+
+                  <span
+                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${PRIORITY_CHIP_CLASS[item.priority]}`}
+                    title={`${item.priority} priority`}
+                  >
+                    {PRIORITY_LETTER[item.priority]}
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setDetailItem(item)}
+                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p
+                        className={
+                          item.completed
+                            ? "text-muted-foreground truncate line-through"
+                            : "truncate font-medium"
+                        }
+                      >
+                        {item.item}
+                      </p>
+                      {item.price != null && (
+                        <p className="text-muted-foreground text-xs">₹{item.price}</p>
+                      )}
+                    </div>
+                  </button>
+
+                  {!selectMode && (
+                    <div className="flex shrink-0 items-center gap-1">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" className="size-8" aria-label="Edit item">
+                            <Pencil className="size-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem onClick={() => setRenameItem(item)}>
+                            <Pencil className="size-4" />
+                            Edit name
+                          </DropdownMenuItem>
+                          <ItemFormDialog
+                            categories={allCategories}
+                            category={category}
+                            item={item}
+                            trigger={
+                              <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                                <ListChecks className="size-4" />
+                                Edit complete details
+                              </DropdownMenuItem>
+                            }
+                          />
+                          <DropdownMenuItem onClick={() => handleDuplicate(item.id)}>
+                            <Copy className="size-4" />
+                            Duplicate
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+
+                      <ConfirmDialog
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-destructive hover:text-destructive size-8"
+                            aria-label="Delete item"
+                          >
+                            <Trash2 className="size-4" />
+                          </Button>
+                        }
+                        title="Delete this item?"
+                        description="This can't be undone."
+                        onConfirm={() => handleDelete(item.id)}
                       />
-                    ) : (
-                      <Checkbox
-                        checked={item.completed}
-                        onCheckedChange={() => toggleCompleted(item)}
-                      />
-                    )}
-
-                    <button
-                      type="button"
-                      onClick={() => setDetailItem(item)}
-                      className="flex min-w-0 flex-1 items-center gap-3 text-left"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p
-                          className={
-                            item.completed
-                              ? "text-muted-foreground truncate line-through"
-                              : "truncate font-medium"
-                          }
-                        >
-                          {item.item}
-                        </p>
-                        {item.price != null && (
-                          <p className="text-muted-foreground text-xs">₹{item.price}</p>
-                        )}
-                      </div>
-                      <Badge variant={PRIORITY_BADGE_VARIANT[item.priority]}>
-                        {item.priority}
-                      </Badge>
-                    </button>
-
-                    {!selectMode && (
-                      <div className="flex shrink-0 items-center gap-1">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="size-8" aria-label="Edit item">
-                              <Pencil className="size-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => setRenameItem(item)}>
-                              <Pencil className="size-4" />
-                              Edit name
-                            </DropdownMenuItem>
-                            <ItemFormDialog
-                              category={category}
-                              item={item}
-                              trigger={
-                                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                                  <ListChecks className="size-4" />
-                                  Edit complete details
-                                </DropdownMenuItem>
-                              }
-                            />
-                            <DropdownMenuItem onClick={() => handleDuplicate(item.id)}>
-                              <Copy className="size-4" />
-                              Duplicate
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-
-                        <ConfirmDialog
-                          trigger={
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="text-destructive hover:text-destructive size-8"
-                              aria-label="Delete item"
-                            >
-                              <Trash2 className="size-4" />
-                            </Button>
-                          }
-                          title="Delete this item?"
-                          description="This can't be undone."
-                          onConfirm={() => handleDelete(item.id)}
-                        />
-                      </div>
-                    )}
-                  </Card>
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -418,7 +428,7 @@ export function CategoryView({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed inset-x-4 bottom-20 z-40 lg:inset-x-auto lg:right-8 lg:bottom-8 lg:left-auto"
+          className="fixed inset-x-4 bottom-36 z-40 lg:inset-x-auto lg:right-8 lg:bottom-28 lg:left-auto"
         >
           <Card className="flex-row flex-wrap items-center gap-3 p-4 shadow-xl">
             <span className="text-sm font-medium">{selectedIds.length} selected</span>

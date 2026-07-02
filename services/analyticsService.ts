@@ -6,7 +6,6 @@ import { ChecklistItem } from "@/models/ChecklistItem";
 import { countProducts } from "@/services/productService";
 import { countGuideArticles } from "@/services/guideService";
 import { countActiveUsers } from "@/services/userService";
-import { CHECKLIST_CATEGORIES } from "@/types";
 
 export async function getAdminAnalytics() {
   await connectDB();
@@ -31,11 +30,10 @@ export async function getAdminAnalytics() {
       countGuideArticles(),
     ]);
 
-  const categoryMap = new Map(categoryRows.map((row) => [row._id, row]));
-  const categoryBreakdown = CHECKLIST_CATEGORIES.map((category) => ({
-    category,
-    total: categoryMap.get(category)?.total ?? 0,
-    completed: categoryMap.get(category)?.completed ?? 0,
+  const categoryBreakdown = categoryRows.map((row) => ({
+    category: row._id,
+    total: row.total,
+    completed: row.completed,
   }));
 
   return {

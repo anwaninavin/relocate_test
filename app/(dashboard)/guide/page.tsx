@@ -5,7 +5,7 @@ import { toPlain } from "@/lib/serialize";
 import { GuideView } from "@/features/guide/guide-view";
 import type { GuideArticleSummaryDTO } from "@/features/guide/guide-dto";
 
-export const metadata: Metadata = { title: "Hostel Guide — Hostel Essentials" };
+export const metadata: Metadata = { title: "Hostel Guide — Pack with Me" };
 
 export default async function GuidePage() {
   const articles = await listGuideArticles();

@@ -1,11 +1,11 @@
 import { z } from "zod";
 
-import { CHECKLIST_CATEGORIES, GUIDE_CATEGORIES } from "@/types";
+import { DEFAULT_CHECKLIST_CATEGORIES, GUIDE_CATEGORIES } from "@/types";
 
 export const productSchema = z.object({
   name: z.string().trim().min(1).max(120),
   imageUrl: z.string().trim().url().optional().or(z.literal("")),
-  category: z.enum(CHECKLIST_CATEGORIES),
+  category: z.enum(DEFAULT_CHECKLIST_CATEGORIES),
   store: z.string().trim().min(1).max(80),
   price: z.coerce.number().min(0),
   discountPercent: z.coerce.number().min(0).max(100),

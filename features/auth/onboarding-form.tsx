@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/form";
 import { onboardingSchema, type OnboardingInput } from "@/lib/validations/auth";
 import { completeOnboardingAction } from "@/actions/profile";
+import { HOME_ROUTE } from "@/lib/nav-items";
 
 export function OnboardingForm() {
   const router = useRouter();
@@ -43,8 +44,8 @@ export function OnboardingForm() {
     }
 
     await update({ needsOnboarding: false });
-    toast.success("Welcome to Hostel Essentials!");
-    router.push("/dashboard");
+    toast.success("Welcome to Pack with Me!");
+    router.push(HOME_ROUTE);
     router.refresh();
   }
 
@@ -131,7 +132,7 @@ export function OnboardingForm() {
           </div>
           <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-            Enter Hostel Essentials
+            Enter Pack with Me
           </Button>
         </form>
       </Form>

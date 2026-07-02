@@ -14,22 +14,25 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
+import { BrandName } from "@/components/shared/brand-name";
+import { OverflowMenu } from "@/components/shared/overflow-menu";
 import { GlobalSearch } from "@/features/search/global-search";
 
 interface NavbarProps {
   name: string | null;
   mobile: string;
   avatar: string | null;
+  isAdmin: boolean;
 }
 
-export function Navbar({ name, mobile, avatar }: NavbarProps) {
+export function Navbar({ name, mobile, avatar, isAdmin }: NavbarProps) {
   const initials = (name ?? mobile.slice(-2)).slice(0, 2).toUpperCase();
 
   return (
     <header className="glass sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 lg:px-8">
       <div className="flex items-center gap-2 lg:hidden">
         <Image src="/logo.png" alt="" width={24} height={24} />
-        <span className="font-display font-bold">Hostel Essentials</span>
+        <BrandName />
       </div>
       <div className="hidden flex-1 lg:block">
         <GlobalSearch />
@@ -37,6 +40,9 @@ export function Navbar({ name, mobile, avatar }: NavbarProps) {
       <div className="flex items-center gap-2">
         <div className="lg:hidden">
           <GlobalSearch />
+        </div>
+        <div className="lg:hidden">
+          <OverflowMenu isAdmin={isAdmin} />
         </div>
         <ThemeToggle />
         <DropdownMenu>

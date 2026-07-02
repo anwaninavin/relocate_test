@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     if (result.success) {
       await sendTextMessage(
         senderMobile,
-        "You're logged in to Hostel Essentials ✅\nHead back to the app to continue.",
+        "You're logged in to Pack with Me ✅\nHead back to the app to continue.",
       );
     } else if (result.reason === "expired") {
       await sendTextMessage(

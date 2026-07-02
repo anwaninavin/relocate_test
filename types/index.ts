@@ -13,7 +13,13 @@ export interface UserDTO {
   createdAt: string;
 }
 
-export const CHECKLIST_CATEGORIES = [
+/**
+ * The starter set of checklist categories seeded for every new user (and reused, unchanged,
+ * as the fixed category list for shopping Products/admin). Checklist categories themselves are
+ * dynamic and per-user from here on — see models/Category.ts / services/categoryService.ts —
+ * so a checklist item's `category` is just a free-form string, not this union.
+ */
+export const DEFAULT_CHECKLIST_CATEGORIES = [
   "Documents",
   "Clothes",
   "Footwear",
@@ -29,7 +35,11 @@ export const CHECKLIST_CATEGORIES = [
   "Miscellaneous",
 ] as const;
 
-export type ChecklistCategory = (typeof CHECKLIST_CATEGORIES)[number];
+/** Fixed category union still used by shopping Products (admin-managed, not per-user). */
+export type ProductCategory = (typeof DEFAULT_CHECKLIST_CATEGORIES)[number];
+
+/** Dynamic, user-managed — see services/categoryService.ts. */
+export type ChecklistCategory = string;
 
 export const CHECKLIST_PRIORITIES = ["low", "medium", "high"] as const;
 export type ChecklistPriority = (typeof CHECKLIST_PRIORITIES)[number];

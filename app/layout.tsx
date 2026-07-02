@@ -21,15 +21,15 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Hostel Essentials",
+  title: "Pack with Me",
   description:
     "Your all-in-one hostel survival kit — checklist, budget, notes, documents, and more for first-time hostel students.",
-  applicationName: "Hostel Essentials",
+  applicationName: "Pack with Me",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Hostel Essentials",
+    title: "Pack with Me",
   },
   icons: {
     apple: "/icons/apple-touch-icon.png",
@@ -40,8 +40,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f0f2f5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b141a" },
+    { media: "(prefers-color-scheme: light)", color: "#f5f3fa" },
+    { media: "(prefers-color-scheme: dark)", color: "#17141f" },
   ],
 };
 

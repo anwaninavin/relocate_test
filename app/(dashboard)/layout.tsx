@@ -3,6 +3,7 @@ import { getUserById } from "@/services/userService";
 import { Sidebar } from "@/components/shared/sidebar";
 import { Navbar } from "@/components/shared/navbar";
 import { BottomNav } from "@/components/shared/bottom-nav";
+import { FabMenu } from "@/components/shared/fab-menu";
 
 export default async function DashboardLayout({
   children,
@@ -21,10 +22,12 @@ export default async function DashboardLayout({
           name={user?.name ?? null}
           mobile={user?.mobile ?? session?.user.mobile ?? ""}
           avatar={user?.avatar ?? null}
+          isAdmin={isAdmin}
         />
         <main className="flex-1 px-4 pt-4 pb-24 lg:px-8 lg:pb-8">{children}</main>
       </div>
-      <BottomNav isAdmin={isAdmin} />
+      <BottomNav />
+      <FabMenu />
     </div>
   );
 }

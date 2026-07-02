@@ -1,9 +1,11 @@
 import { z } from "zod";
 
-import { CHECKLIST_CATEGORIES, CHECKLIST_PRIORITIES, STORE_OPTIONS } from "@/types";
+import { CHECKLIST_PRIORITIES, STORE_OPTIONS } from "@/types";
+
+const checklistCategoryField = z.string().trim().min(1, "Category is required").max(60);
 
 export const checklistItemSchema = z.object({
-  category: z.enum(CHECKLIST_CATEGORIES),
+  category: checklistCategoryField,
   item: z.string().trim().min(1, "Item name is required").max(120),
   description: z.string().trim().max(500).optional().or(z.literal("")),
   imageUrl: z.string().trim().url().optional().or(z.literal("")),
@@ -29,7 +31,7 @@ export const bulkActionSchema = z.object({
 });
 
 export const bulkCreateItemsSchema = z.object({
-  category: z.enum(CHECKLIST_CATEGORIES),
+  category: checklistCategoryField,
   priority: z.enum(CHECKLIST_PRIORITIES),
   names: z.array(z.string().trim().min(1).max(120)).min(1),
 });

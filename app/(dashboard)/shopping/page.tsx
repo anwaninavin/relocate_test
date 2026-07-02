@@ -5,7 +5,7 @@ import { toPlain } from "@/lib/serialize";
 import { ShoppingView } from "@/features/shopping/shopping-view";
 import type { ProductDTO } from "@/features/shopping/product-dto";
 
-export const metadata: Metadata = { title: "Shopping — Hostel Essentials" };
+export const metadata: Metadata = { title: "Shopping — Pack with Me" };
 
 export default async function ShoppingPage() {
   const products = await listProducts();

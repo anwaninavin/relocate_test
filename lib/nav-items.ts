@@ -14,6 +14,8 @@ import {
   ShieldCheck,
 } from "lucide-react";
 
+export { HOME_ROUTE } from "@/lib/routes";
+
 export interface NavItem {
   href: string;
   label: string;
@@ -45,9 +47,15 @@ export const ADMIN_NAV_ITEM: NavItem = {
   icon: ShieldCheck,
 };
 
+/** Bottom tab bar: Guide, Checklist, [FAB in the middle], Notes, Shopping. */
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  PRIMARY_NAV_ITEMS[0],
-  PRIMARY_NAV_ITEMS[1],
-  PRIMARY_NAV_ITEMS[2],
-  PRIMARY_NAV_ITEMS[8],
+  PRIMARY_NAV_ITEMS.find((i) => i.href === "/guide")!,
+  PRIMARY_NAV_ITEMS.find((i) => i.href === "/checklist")!,
+  PRIMARY_NAV_ITEMS.find((i) => i.href === "/notes")!,
+  PRIMARY_NAV_ITEMS.find((i) => i.href === "/shopping")!,
 ];
+
+/** Everything not already reachable from the bottom tab bar — surfaced in the top-right overflow menu. */
+export const OVERFLOW_NAV_ITEMS: NavItem[] = PRIMARY_NAV_ITEMS.filter(
+  (item) => !BOTTOM_NAV_ITEMS.some((bottomItem) => bottomItem.href === item.href),
+);

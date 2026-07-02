@@ -20,7 +20,7 @@ import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SuccessLottie } from "@/components/shared/success-lottie";
 import { ExpenseMiniChart } from "@/features/dashboard/expense-mini-chart";
-import { CHECKLIST_CATEGORY_ICONS } from "@/lib/checklist-icons";
+import { getCategoryIcon } from "@/lib/checklist-icons";
 import type { ChecklistPriority } from "@/types";
 import type { DashboardDataDTO } from "@/features/dashboard/dashboard-dto";
 
@@ -127,7 +127,7 @@ export function DashboardView({
               />
             ) : (
               upcomingTasks.map((task) => {
-                const Icon = CHECKLIST_CATEGORY_ICONS[task.category];
+                const Icon = getCategoryIcon(task.category);
                 return (
                   <Link
                     key={task.id}
@@ -156,7 +156,7 @@ export function DashboardView({
             {categorySummaries
               .filter((c) => c.total > 0)
               .map((c) => {
-                const Icon = CHECKLIST_CATEGORY_ICONS[c.category];
+                const Icon = getCategoryIcon(c.category);
                 const pct = c.total === 0 ? 0 : Math.round((c.completed / c.total) * 100);
                 return (
                   <Link

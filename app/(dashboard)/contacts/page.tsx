@@ -6,7 +6,7 @@ import { toPlain } from "@/lib/serialize";
 import { ContactsView } from "@/features/contacts/contacts-view";
 import type { EmergencyContactDTO } from "@/features/contacts/contact-dto";
 
-export const metadata: Metadata = { title: "Emergency Contacts — Hostel Essentials" };
+export const metadata: Metadata = { title: "Emergency Contacts — Pack with Me" };
 
 export default async function ContactsPage() {
   const session = await auth();

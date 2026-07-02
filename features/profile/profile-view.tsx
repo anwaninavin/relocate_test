@@ -272,7 +272,7 @@ export function ProfileView({ profile }: { profile: ProfileDTO }) {
                 <div>
                   <p className="text-sm font-medium">Notifications</p>
                   <p className="text-muted-foreground text-sm">
-                    Get reminders and updates from Hostel Essentials
+                    Get reminders and updates from Pack with Me
                   </p>
                 </div>
               </div>

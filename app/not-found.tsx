@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Compass } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { HOME_ROUTE } from "@/lib/nav-items";
 
 export default function NotFound() {
   return (
@@ -14,7 +15,7 @@ export default function NotFound() {
         The page you&apos;re looking for doesn&apos;t exist or may have moved.
       </p>
       <Button asChild size="lg">
-        <Link href="/dashboard">Back to dashboard</Link>
+        <Link href={HOME_ROUTE}>Back home</Link>
       </Button>
     </div>
   );

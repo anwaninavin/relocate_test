@@ -6,7 +6,7 @@ import { toPlain } from "@/lib/serialize";
 import { BudgetView } from "@/features/budget/budget-view";
 import type { BudgetEntryDTO } from "@/features/budget/budget-dto";
 
-export const metadata: Metadata = { title: "Budget & Expenses — Hostel Essentials" };
+export const metadata: Metadata = { title: "Budget & Expenses — Pack with Me" };
 
 export default async function BudgetPage() {
   const session = await auth();

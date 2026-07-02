@@ -31,12 +31,24 @@ import type { WishlistItemDTO } from "@/features/wishlist/wishlist-dto";
 interface WishlistFormDialogProps {
   item?: WishlistItemDTO;
   trigger?: React.ReactNode;
+  /** When provided, open/close is driven by a parent (e.g. the FAB) instead of internal state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function WishlistFormDialog({ item, trigger }: WishlistFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function WishlistFormDialog({
+  item,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: WishlistFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = Boolean(item);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
   const form = useForm<WishlistItemInput>({
     resolver: zodResolver(wishlistItemSchema) as Resolver<WishlistItemInput>,
@@ -77,14 +89,16 @@ export function WishlistFormDialog({ item, trigger }: WishlistFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
+      {trigger !== undefined ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="size-4" />
             Add item
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      ) : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit item" : "Add item"}</DialogTitle>

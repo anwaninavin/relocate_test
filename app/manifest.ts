@@ -2,14 +2,14 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Hostel Essentials",
-    short_name: "Hostel Essentials",
+    name: "Pack with Me",
+    short_name: "Pack with Me",
     description:
       "Your all-in-one hostel survival kit — checklist, budget, notes, documents, and more for first-time hostel students.",
-    start_url: "/dashboard",
+    start_url: "/guide",
     display: "standalone",
-    background_color: "#f0f2f5",
-    theme_color: "#008069",
+    background_color: "#f5f3fa",
+    theme_color: "#8b7cf6",
     orientation: "portrait",
     icons: [
       {

@@ -4,9 +4,9 @@ import { Users, UserCheck, ListChecks, TrendingUp, ShoppingBag, BookOpen } from 
 import { getAdminAnalytics } from "@/services/analyticsService";
 import { StatCard } from "@/components/shared/stat-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CHECKLIST_CATEGORY_ICONS } from "@/lib/checklist-icons";
+import { getCategoryIcon } from "@/lib/checklist-icons";
 
-export const metadata: Metadata = { title: "Admin Analytics — Hostel Essentials" };
+export const metadata: Metadata = { title: "Admin Analytics — Pack with Me" };
 
 export default async function AdminAnalyticsPage() {
   const analytics = await getAdminAnalytics();
@@ -60,7 +60,7 @@ export default async function AdminAnalyticsPage() {
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
           {analytics.categoryBreakdown.map((row) => {
-            const Icon = CHECKLIST_CATEGORY_ICONS[row.category];
+            const Icon = getCategoryIcon(row.category);
             const pct = row.total === 0 ? 0 : Math.round((row.completed / row.total) * 100);
             return (
               <div key={row.category} className="flex items-center gap-3 rounded-xl px-2 py-2">

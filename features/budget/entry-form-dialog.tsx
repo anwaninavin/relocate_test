@@ -47,12 +47,24 @@ function toDateInputValue(date: Date): string {
 interface EntryFormDialogProps {
   entry?: BudgetEntryDTO;
   trigger?: React.ReactNode;
+  /** When provided, open/close is driven by a parent (e.g. the FAB) instead of internal state. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function EntryFormDialog({ entry, trigger }: EntryFormDialogProps) {
-  const [open, setOpen] = useState(false);
+export function EntryFormDialog({
+  entry,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+}: EntryFormDialogProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = Boolean(entry);
+
+  const isControlled = controlledOpen !== undefined;
+  const open = isControlled ? controlledOpen : internalOpen;
+  const setOpen = isControlled ? (onOpenChange ?? (() => {})) : setInternalOpen;
 
   function buildDefaults(): BudgetEntryInput {
     return {
@@ -94,14 +106,16 @@ export function EntryFormDialog({ entry, trigger }: EntryFormDialogProps) {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger ?? (
+      {trigger !== undefined ? (
+        <DialogTrigger asChild>{trigger}</DialogTrigger>
+      ) : !isControlled ? (
+        <DialogTrigger asChild>
           <Button size="sm">
             <Plus className="size-4" />
             Add entry
           </Button>
-        )}
-      </DialogTrigger>
+        </DialogTrigger>
+      ) : null}
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit entry" : "New entry"}</DialogTitle>

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Check,
+  CheckCheck,
   ClipboardCheck,
   Copy,
   ListChecks,
@@ -19,7 +20,6 @@ import { toast } from "sonner";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   Accordion,
   AccordionContent,
@@ -28,13 +28,14 @@ import {
 } from "@/components/ui/accordion";
 import { PageHeader } from "@/components/shared/page-header";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
-import { CHECKLIST_CATEGORY_ICONS } from "@/lib/checklist-icons";
+import { getCategoryIcon } from "@/lib/checklist-icons";
 import {
   bulkChecklistAction,
   loadStarterChecklistAction,
   mergeDuplicateChecklistItemsAction,
 } from "@/actions/checklist";
 import { BulkAddDialog } from "@/features/checklist/bulk-add-dialog";
+import { CategoryManagerDialog } from "@/features/checklist/category-manager-dialog";
 import { CategoryView } from "@/features/checklist/category-view";
 import type { ChecklistCategory } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
@@ -169,7 +170,8 @@ export function ChecklistOverview({
       />
 
       <div className="mb-6 flex flex-wrap items-center gap-2">
-        <BulkAddDialog />
+        <BulkAddDialog categories={groups.map((g) => g.category)} />
+        <CategoryManagerDialog />
         <Button
           variant={bulkEditMode ? "secondary" : "outline"}
           size="sm"
@@ -199,52 +201,55 @@ export function ChecklistOverview({
         <Progress value={overallPercent} className="relative" />
       </Card>
 
-      <Accordion type="multiple" className="flex flex-col gap-3">
+      <Accordion
+        type="multiple"
+        className="border-border/60 bg-card divide-border/60 flex flex-col divide-y overflow-hidden rounded-2xl border shadow-sm"
+      >
         {groups.map(({ category, items }) => {
-          const Icon = CHECKLIST_CATEGORY_ICONS[category];
+          const Icon = getCategoryIcon(category);
           const completed = items.filter((i) => i.completed).length;
-          const percent = items.length > 0 ? Math.round((completed / items.length) * 100) : 0;
+          const remaining = items.length - completed;
+          const allDone = items.length > 0 && remaining === 0;
 
           return (
-            <div
-              key={category}
-              className="border-border/60 bg-card overflow-hidden rounded-2xl border px-2 shadow-sm"
-            >
-              <AccordionItem value={category} className="border-none">
-                <AccordionTrigger className="px-3 py-3 hover:no-underline">
-                  <div className="flex flex-1 items-center gap-3">
-                    <div className="bg-primary/10 flex size-11 shrink-0 items-center justify-center rounded-xl">
-                      <Icon className="text-primary size-5" />
-                    </div>
-                    <div className="min-w-0 flex-1 text-left">
-                      <p className="font-display truncate font-semibold">{category}</p>
-                      <div className="mt-1 flex items-center gap-2">
-                        <Progress value={percent} className="h-1.5 max-w-[140px]" />
-                        <span className="text-muted-foreground shrink-0 text-xs">
-                          {completed}/{items.length}
-                        </span>
-                      </div>
-                    </div>
-                    {items.length === 0 && (
-                      <Badge variant="outline" className="shrink-0">
-                        empty
-                      </Badge>
-                    )}
+            <AccordionItem key={category} value={category} className="border-none">
+              <AccordionTrigger className="hover:bg-muted/50 px-3 py-2.5 hover:no-underline">
+                <div className="flex flex-1 items-center gap-3">
+                  <div className="bg-primary/10 flex size-11 shrink-0 items-center justify-center rounded-full">
+                    <Icon className="text-primary size-5" />
                   </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-1 pb-2">
-                  <CategoryView
-                    category={category}
-                    initialItems={items}
-                    embedded
-                    hideToolbar
-                    selectMode={bulkEditMode}
-                    selectedIds={validSelectedIds}
-                    onToggleSelected={toggleSelected}
-                  />
-                </AccordionContent>
-              </AccordionItem>
-            </div>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="truncate font-medium">{category}</p>
+                    <p className="text-muted-foreground truncate text-sm">
+                      {items.length === 0
+                        ? "No items yet"
+                        : allDone
+                          ? "All packed"
+                          : `${completed}/${items.length} packed`}
+                    </p>
+                  </div>
+                  {items.length === 0 ? null : allDone ? (
+                    <CheckCheck className="text-primary size-5 shrink-0" />
+                  ) : (
+                    <span className="bg-primary text-primary-foreground flex size-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold">
+                      {remaining}
+                    </span>
+                  )}
+                </div>
+              </AccordionTrigger>
+              <AccordionContent className="px-1 pb-2">
+                <CategoryView
+                  category={category}
+                  allCategories={groups.map((g) => g.category)}
+                  initialItems={items}
+                  embedded
+                  hideToolbar
+                  selectMode={bulkEditMode}
+                  selectedIds={validSelectedIds}
+                  onToggleSelected={toggleSelected}
+                />
+              </AccordionContent>
+            </AccordionItem>
           );
         })}
       </Accordion>
@@ -253,7 +258,7 @@ export function ChecklistOverview({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed inset-x-4 bottom-20 z-40 lg:inset-x-auto lg:right-8 lg:bottom-8 lg:left-auto"
+          className="fixed inset-x-4 bottom-36 z-40 lg:inset-x-auto lg:right-8 lg:bottom-28 lg:left-auto"
         >
           <Card className="flex-row flex-wrap items-center gap-3 p-4 shadow-xl">
             <span className="text-sm font-medium">{validSelectedIds.length} selected</span>

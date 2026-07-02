@@ -7,7 +7,7 @@ import { toPlain } from "@/lib/serialize";
 import { DashboardView } from "@/features/dashboard/dashboard-view";
 import type { DashboardDataDTO } from "@/features/dashboard/dashboard-dto";
 
-export const metadata: Metadata = { title: "Dashboard — Hostel Essentials" };
+export const metadata: Metadata = { title: "Dashboard — Pack with Me" };
 
 export default async function DashboardPage() {
   const session = await auth();
