@@ -6,16 +6,18 @@ import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { QRCodeSVG } from "qrcode.react";
-import { MessageCircle, Phone, ArrowLeft, Loader2, CheckCircle2 } from "lucide-react";
+import { MessageCircle, Phone, ArrowLeft, Loader2, CheckCircle2, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandName } from "@/components/shared/brand-name";
+import { PinLoginForm } from "@/features/auth/pin-login-form";
 import { HOME_ROUTE } from "@/lib/nav-items";
 
 type Step = "mobile" | "waiting" | "verified";
+type Method = "whatsapp" | "code";
 
 interface TicketState {
   token: string;
@@ -27,6 +29,7 @@ const POLL_INTERVAL_MS = 2000;
 
 export function LoginForm() {
   const router = useRouter();
+  const [method, setMethod] = useState<Method>("whatsapp");
   const [step, setStep] = useState<Step>("mobile");
   const [mobile, setMobile] = useState("");
   const [ticket, setTicket] = useState<TicketState | null>(null);
@@ -119,42 +122,72 @@ export function LoginForm() {
           <BrandName />
         </h1>
         <p className="text-muted-foreground text-sm">
-          No passwords. Log in instantly with WhatsApp.
+          {method === "whatsapp"
+            ? "No passwords. Log in instantly with WhatsApp."
+            : "Enter your mobile number and login code."}
         </p>
       </div>
 
       <AnimatePresence mode="wait">
-        {step === "mobile" && (
-          <motion.form
-            key="mobile"
+        {method === "code" ? (
+          <motion.div
+            key="code"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
-            onSubmit={handleMobileSubmit}
             className="flex flex-col gap-4"
           >
-            <div className="grid gap-2">
-              <Label htmlFor="mobile">Mobile number</Label>
-              <div className="relative">
-                <Phone className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-                <Input
-                  id="mobile"
-                  inputMode="numeric"
-                  autoComplete="tel"
-                  placeholder="98765 43210"
-                  className="pl-11"
-                  value={mobile}
-                  onChange={(e) => setMobile(e.target.value)}
-                  required
-                />
+            <PinLoginForm />
+            <button
+              type="button"
+              onClick={() => setMethod("whatsapp")}
+              className="text-muted-foreground hover:text-foreground inline-flex items-center justify-center gap-1 text-sm transition-colors"
+            >
+              <ArrowLeft className="size-3.5" />
+              Use WhatsApp instead
+            </button>
+          </motion.div>
+        ) : (
+          step === "mobile" && (
+            <motion.form
+              key="mobile"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              onSubmit={handleMobileSubmit}
+              className="flex flex-col gap-4"
+            >
+              <div className="grid gap-2">
+                <Label htmlFor="mobile">Mobile number</Label>
+                <div className="relative">
+                  <Phone className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
+                  <Input
+                    id="mobile"
+                    inputMode="numeric"
+                    autoComplete="tel"
+                    placeholder="98765 43210"
+                    className="pl-11"
+                    value={mobile}
+                    onChange={(e) => setMobile(e.target.value)}
+                    required
+                  />
+                </div>
+                {error && <p className="text-destructive text-sm">{error}</p>}
               </div>
-              {error && <p className="text-destructive text-sm">{error}</p>}
-            </div>
-            <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">
-              {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-              Continue with WhatsApp
-            </Button>
-          </motion.form>
+              <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">
+                {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+                Continue with WhatsApp
+              </Button>
+              <button
+                type="button"
+                onClick={() => setMethod("code")}
+                className="text-muted-foreground hover:text-foreground inline-flex items-center justify-center gap-1 text-sm transition-colors"
+              >
+                <KeyRound className="size-3.5" />
+                Have a login code instead?
+              </button>
+            </motion.form>
+          )
         )}
 
         {step === "waiting" && ticket && (

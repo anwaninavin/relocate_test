@@ -1,22 +1,9 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { format } from "date-fns";
 
 import { listUsers } from "@/services/userService";
 import { toPlain } from "@/lib/serialize";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { EmptyState } from "@/components/shared/empty-state";
-import { Users } from "lucide-react";
+import { UsersView } from "@/features/admin/users-view";
+import type { AdminUserDTO } from "@/features/admin/user-dto";
 
 export const metadata: Metadata = { title: "Users — Admin" };
 
@@ -34,72 +21,17 @@ export default async function AdminUsersPage({
   const plain = toPlain(users);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
-  return (
-    <Card className="p-0">
-      {plain.length === 0 ? (
-        <div className="p-6">
-          <EmptyState icon={Users} title="No students yet" description="Users appear here after their first login." />
-        </div>
-      ) : (
-        <>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Mobile</TableHead>
-                <TableHead>College</TableHead>
-                <TableHead>Hostel / Room</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {plain.map((user) => (
-                <TableRow key={user._id}>
-                  <TableCell className="font-medium">{user.name ?? "—"}</TableCell>
-                  <TableCell>+{user.mobile}</TableCell>
-                  <TableCell>{user.college ?? "—"}</TableCell>
-                  <TableCell>
-                    {user.hostel ?? "—"} {user.roomNumber ? `/ ${user.roomNumber}` : ""}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={user.role === "admin" ? "accent" : "outline"}>{user.role}</Badge>
-                  </TableCell>
-                  <TableCell>{format(new Date(user.createdAt), "d MMM yyyy")}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+  const dtoUsers: AdminUserDTO[] = plain.map((user) => ({
+    id: user._id,
+    name: user.name ?? null,
+    mobile: user.mobile,
+    college: user.college ?? null,
+    hostel: user.hostel ?? null,
+    roomNumber: user.roomNumber ?? null,
+    role: user.role,
+    hasPinSet: Boolean(user.loginPinHash),
+    createdAt: user.createdAt,
+  }));
 
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-border/60 px-4 py-3">
-              <p className="text-muted-foreground text-sm">
-                Page {page} of {totalPages}
-              </p>
-              <div className="flex gap-2">
-                {page <= 1 ? (
-                  <Button variant="outline" size="sm" disabled>
-                    Previous
-                  </Button>
-                ) : (
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/users?page=${page - 1}`}>Previous</Link>
-                  </Button>
-                )}
-                {page >= totalPages ? (
-                  <Button variant="outline" size="sm" disabled>
-                    Next
-                  </Button>
-                ) : (
-                  <Button asChild variant="outline" size="sm">
-                    <Link href={`/admin/users?page=${page + 1}`}>Next</Link>
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
-        </>
-      )}
-    </Card>
-  );
+  return <UsersView users={dtoUsers} page={page} totalPages={totalPages} />;
 }

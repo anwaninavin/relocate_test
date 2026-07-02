@@ -10,7 +10,6 @@ import {
   setNotificationPreference,
   updateProfile,
 } from "@/services/userService";
-import { seedDefaultChecklistIfEmpty } from "@/services/checklistService";
 
 export type ActionResult = { success: true } | { success: false; error: string };
 
@@ -26,7 +25,6 @@ export async function completeOnboardingAction(
   }
 
   await completeOnboarding(session.user.id, parsed.data);
-  await seedDefaultChecklistIfEmpty(session.user.id);
   revalidatePath("/", "layout");
   return { success: true };
 }

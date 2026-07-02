@@ -12,6 +12,8 @@ const UserSchema = new Schema(
     theme: { type: String, enum: ["light", "dark", "system"], default: "system" },
     notificationsEnabled: { type: Boolean, default: true },
     optedOutOfBroadcast: { type: Boolean, default: false },
+    /** bcrypt hash of an admin-issued 7-digit login code. Never store or return the plain code. */
+    loginPinHash: { type: String, default: null },
   },
   { timestamps: true },
 );

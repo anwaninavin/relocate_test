@@ -6,6 +6,7 @@ import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { consumeLoginTicket } from "@/lib/login-ticket";
 import { getOrCreateDevTestUser, verifyDevLoginSecret } from "@/lib/dev-login";
+import { authenticateWithPin, RateLimitedError } from "@/lib/pin-login";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -68,6 +69,41 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           };
         } catch (error) {
           console.error("[auth] authorize threw:", error);
+          throw error;
+        }
+      },
+    }),
+    Credentials({
+      id: "mobile-pin",
+      name: "Mobile + code",
+      credentials: {
+        mobile: { label: "Mobile", type: "text" },
+        pin: { label: "Code", type: "text" },
+      },
+      async authorize(credentials) {
+        const mobile = credentials?.mobile;
+        const pin = credentials?.pin;
+        if (!mobile || typeof mobile !== "string" || !pin || typeof pin !== "string") {
+          return null;
+        }
+
+        try {
+          const user = await authenticateWithPin(mobile, pin);
+          if (!user) {
+            return null;
+          }
+
+          return {
+            id: user._id.toString(),
+            mobile: user.mobile,
+            name: user.name ?? null,
+            role: user.role,
+            needsOnboarding: !user.name,
+          };
+        } catch (error) {
+          if (!(error instanceof RateLimitedError)) {
+            console.error("[auth] mobile-pin authorize threw:", error);
+          }
           throw error;
         }
       },

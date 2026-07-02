@@ -3,9 +3,11 @@ import "server-only";
 import { connectDB } from "@/lib/db";
 import { User } from "@/models/User";
 import { ChecklistItem } from "@/models/ChecklistItem";
+import { generatePin, hashPin } from "@/lib/pin";
 import type { OnboardingInput } from "@/lib/validations/auth";
 import type { ProfileUpdateInput } from "@/lib/validations/profile";
 import type { BroadcastInput } from "@/lib/validations/admin";
+import type { UserRole } from "@/types";
 
 export async function getUserByMobile(mobile: string) {
   await connectDB();
@@ -64,6 +66,58 @@ export async function countActiveUsers(sinceDays: number) {
   await connectDB();
   const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
   return User.countDocuments({ updatedAt: { $gte: since } });
+}
+
+/** Admin-provisioned account: creates the user with a fresh PIN and returns the plaintext
+ * code once — it is never stored or retrievable again, only regenerated. */
+export async function createUserByAdmin(mobile: string) {
+  await connectDB();
+
+  const existing = await User.findOne({ mobile }).lean();
+  if (existing) {
+    return { success: false as const, error: "A user with this mobile number already exists" };
+  }
+
+  const pin = generatePin();
+  const loginPinHash = await hashPin(pin);
+
+  const user = await User.create({ mobile, role: "student", loginPinHash });
+  return { success: true as const, user, pin };
+}
+
+export async function regeneratePin(userId: string) {
+  await connectDB();
+
+  const pin = generatePin();
+  const loginPinHash = await hashPin(pin);
+
+  const user = await User.findByIdAndUpdate(userId, { loginPinHash }, { returnDocument: "after" }).lean();
+  if (!user) {
+    return { success: false as const, error: "User not found" };
+  }
+
+  return { success: true as const, pin };
+}
+
+export async function adminUpdateUser(
+  userId: string,
+  input: { mobile?: string; role?: UserRole },
+) {
+  await connectDB();
+
+  if (input.mobile) {
+    const clash = await User.findOne({ mobile: input.mobile, _id: { $ne: userId } }).lean();
+    if (clash) {
+      return { success: false as const, error: "A user with this mobile number already exists" };
+    }
+  }
+
+  await User.findByIdAndUpdate(userId, {
+    ...(input.mobile ? { mobile: input.mobile } : {}),
+    ...(input.role ? { role: input.role } : {}),
+  });
+
+  return { success: true as const };
 }
 
 export async function listBroadcastRecipients(audience: BroadcastInput["audience"]) {

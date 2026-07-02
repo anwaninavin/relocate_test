@@ -9,6 +9,9 @@ import {
   guideArticleSchema,
   guideArticleUpdateSchema,
   broadcastSchema,
+  createUserByAdminSchema,
+  updateUserByAdminSchema,
+  regeneratePinSchema,
 } from "@/lib/validations/admin";
 import {
   createProduct,
@@ -20,7 +23,12 @@ import {
   deleteGuideArticle,
   updateGuideArticle,
 } from "@/services/guideService";
-import { listBroadcastRecipients } from "@/services/userService";
+import {
+  adminUpdateUser,
+  createUserByAdmin,
+  listBroadcastRecipients,
+  regeneratePin,
+} from "@/services/userService";
 import { recordBroadcast } from "@/services/broadcastService";
 import { sendTextMessage } from "@/lib/whatsapp";
 import type { ActionResult } from "@/actions/profile";
@@ -142,4 +150,69 @@ export async function sendBroadcastAction(
   revalidatePath("/admin/broadcast");
 
   return { success: true, sentCount, failedCount };
+}
+
+export type CreateUserResult =
+  | { success: true; mobile: string; pin: string }
+  | { success: false; error: string };
+
+export type RegeneratePinResult =
+  | { success: true; pin: string }
+  | { success: false; error: string };
+
+export async function createUserByAdminAction(input: unknown): Promise<CreateUserResult> {
+  const session = await requireAdmin();
+  if (!session) return { success: false, error: "Not authorized" };
+
+  const parsed = createUserByAdminSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const result = await createUserByAdmin(parsed.data.mobile);
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+
+  revalidatePath("/admin/users");
+  return { success: true, mobile: result.user.mobile, pin: result.pin };
+}
+
+export async function updateUserByAdminAction(input: unknown): Promise<ActionResult> {
+  const session = await requireAdmin();
+  if (!session) return { success: false, error: "Not authorized" };
+
+  const parsed = updateUserByAdminSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const result = await adminUpdateUser(parsed.data.id, {
+    mobile: parsed.data.mobile,
+    role: parsed.data.role,
+  });
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+
+  revalidatePath("/admin/users");
+  return { success: true };
+}
+
+export async function regeneratePinAction(input: unknown): Promise<RegeneratePinResult> {
+  const session = await requireAdmin();
+  if (!session) return { success: false, error: "Not authorized" };
+
+  const parsed = regeneratePinSchema.safeParse(input);
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+
+  const result = await regeneratePin(parsed.data.id);
+  if (!result.success) {
+    return { success: false, error: result.error };
+  }
+
+  revalidatePath("/admin/users");
+  return { success: true, pin: result.pin };
 }

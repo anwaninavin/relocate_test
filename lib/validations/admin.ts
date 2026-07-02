@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { DEFAULT_CHECKLIST_CATEGORIES, GUIDE_CATEGORIES } from "@/types";
+import { mobileSchema } from "@/lib/validations/auth";
 
 export const productSchema = z.object({
   name: z.string().trim().min(1).max(120),
@@ -52,8 +53,24 @@ export const broadcastSchema = z.object({
   audience: z.enum(["all", "incomplete-checklist"]),
 });
 
+export const createUserByAdminSchema = z.object({
+  mobile: mobileSchema,
+});
+
+export const updateUserByAdminSchema = z.object({
+  id: z.string().min(1),
+  mobile: mobileSchema,
+  role: z.enum(["student", "admin"]),
+});
+
+export const regeneratePinSchema = z.object({
+  id: z.string().min(1),
+});
+
 export type ProductInput = z.infer<typeof productSchema>;
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
 export type GuideArticleInput = z.infer<typeof guideArticleSchema>;
 export type GuideArticleUpdateInput = z.infer<typeof guideArticleUpdateSchema>;
 export type BroadcastInput = z.infer<typeof broadcastSchema>;
+export type CreateUserByAdminInput = z.infer<typeof createUserByAdminSchema>;
+export type UpdateUserByAdminInput = z.infer<typeof updateUserByAdminSchema>;

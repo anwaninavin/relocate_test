@@ -6,11 +6,19 @@ import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { Loader2, User, School, Building2, DoorOpen } from "lucide-react";
+import { Loader2, User, School, Building2, DoorOpen, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -21,12 +29,15 @@ import {
 } from "@/components/ui/form";
 import { onboardingSchema, type OnboardingInput } from "@/lib/validations/auth";
 import { completeOnboardingAction } from "@/actions/profile";
+import { loadStarterChecklistAction } from "@/actions/checklist";
 import { HOME_ROUTE } from "@/lib/nav-items";
 
 export function OnboardingForm() {
   const router = useRouter();
   const { update } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showChecklistPrompt, setShowChecklistPrompt] = useState(false);
+  const [isLoadingStarter, setIsLoadingStarter] = useState(false);
 
   const form = useForm<OnboardingInput>({
     resolver: zodResolver(onboardingSchema),
@@ -45,8 +56,25 @@ export function OnboardingForm() {
 
     await update({ needsOnboarding: false });
     toast.success("Welcome to Pack with Me!");
+    setShowChecklistPrompt(true);
+  }
+
+  function finishOnboarding() {
     router.push(HOME_ROUTE);
     router.refresh();
+  }
+
+  async function handleLoadStarterChecklist() {
+    setIsLoadingStarter(true);
+    const result = await loadStarterChecklistAction();
+    setIsLoadingStarter(false);
+
+    if (!result.success) {
+      toast.error(result.error);
+      return;
+    }
+
+    finishOnboarding();
   }
 
   return (
@@ -136,6 +164,30 @@ export function OnboardingForm() {
           </Button>
         </form>
       </Form>
+
+      <Dialog open={showChecklistPrompt} onOpenChange={(open) => !open && finishOnboarding()}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ListChecks className="text-primary size-5" />
+              Load your starter checklist?
+            </DialogTitle>
+            <DialogDescription>
+              We can pre-fill your checklist with commonly needed hostel packing items. You can
+              edit or remove anything later.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={finishOnboarding} disabled={isLoadingStarter}>
+              Skip
+            </Button>
+            <Button onClick={handleLoadStarterChecklist} disabled={isLoadingStarter}>
+              {isLoadingStarter && <Loader2 className="size-4 animate-spin" />}
+              Yes, add items
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </motion.div>
   );
 }
