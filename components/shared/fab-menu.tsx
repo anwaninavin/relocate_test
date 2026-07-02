@@ -65,60 +65,77 @@ export function FabMenu() {
     setActiveDialog(key);
   }
 
+  const speedDialPopup = (
+    <AnimatePresence>
+      {speedDialOpen && (
+        <motion.div
+          initial={{ opacity: 0, y: 12, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 12, scale: 0.95 }}
+          transition={{ duration: 0.15 }}
+          className="glass absolute bottom-14 left-1/2 flex w-56 -translate-x-1/2 flex-col gap-1 rounded-2xl p-2 shadow-xl lg:bottom-16 lg:left-auto lg:right-0 lg:translate-x-0"
+        >
+          {SPEED_DIAL_ITEMS.map((item, i) => {
+            const Icon = item.icon;
+            const isLoading = loadingKey === item.key;
+            return (
+              <motion.button
+                key={item.key}
+                type="button"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.03 }}
+                onClick={() => handleSelect(item.key)}
+                disabled={isLoading}
+                className="hover:bg-muted flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors disabled:opacity-60"
+              >
+                <span className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full">
+                  {isLoading ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <Icon className="size-4" />
+                  )}
+                </span>
+                {item.label}
+              </motion.button>
+            );
+          })}
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+
+  const toggleButton = (size: "sm" | "lg") => (
+    <button
+      type="button"
+      aria-label={speedDialOpen ? "Close quick add" : "Quick add"}
+      onClick={() => setSpeedDialOpen((v) => !v)}
+      className={cn(
+        "gradient-brand flex items-center justify-center rounded-full text-white shadow-lg shadow-primary/30 transition-transform active:scale-95",
+        size === "sm" ? "size-12 -translate-y-2" : "size-14",
+      )}
+    >
+      <motion.span animate={{ rotate: speedDialOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
+        <Plus className={size === "sm" ? "size-5" : "size-6"} />
+      </motion.span>
+    </button>
+  );
+
   return (
     <>
-      <div className="fixed inset-x-0 bottom-20 z-40 flex justify-center lg:inset-x-auto lg:right-8 lg:bottom-8 lg:justify-end">
+      {/* Mobile: embedded in the center of the bottom tab bar. */}
+      <div className="fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-center lg:hidden">
         <div className="relative">
-          <AnimatePresence>
-            {speedDialOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 12, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 12, scale: 0.95 }}
-                transition={{ duration: 0.15 }}
-                className="glass absolute bottom-16 left-1/2 flex w-56 -translate-x-1/2 flex-col gap-1 rounded-2xl p-2 shadow-xl lg:bottom-16 lg:left-auto lg:right-0 lg:translate-x-0"
-              >
-                {SPEED_DIAL_ITEMS.map((item, i) => {
-                  const Icon = item.icon;
-                  const isLoading = loadingKey === item.key;
-                  return (
-                    <motion.button
-                      key={item.key}
-                      type="button"
-                      initial={{ opacity: 0, x: 8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.03 }}
-                      onClick={() => handleSelect(item.key)}
-                      disabled={isLoading}
-                      className="hover:bg-muted flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors disabled:opacity-60"
-                    >
-                      <span className="bg-primary/10 text-primary flex size-8 shrink-0 items-center justify-center rounded-full">
-                        {isLoading ? (
-                          <Loader2 className="size-4 animate-spin" />
-                        ) : (
-                          <Icon className="size-4" />
-                        )}
-                      </span>
-                      {item.label}
-                    </motion.button>
-                  );
-                })}
-              </motion.div>
-            )}
-          </AnimatePresence>
+          {speedDialPopup}
+          {toggleButton("sm")}
+        </div>
+      </div>
 
-          <button
-            type="button"
-            aria-label={speedDialOpen ? "Close quick add" : "Quick add"}
-            onClick={() => setSpeedDialOpen((v) => !v)}
-            className={cn(
-              "gradient-brand flex size-14 items-center justify-center rounded-full text-white shadow-lg shadow-primary/30 transition-transform active:scale-95",
-            )}
-          >
-            <motion.span animate={{ rotate: speedDialOpen ? 45 : 0 }} transition={{ duration: 0.2 }}>
-              <Plus className="size-6" />
-            </motion.span>
-          </button>
+      {/* Desktop: floating bottom-right (the sidebar has no center-nav slot). */}
+      <div className="fixed right-8 bottom-8 z-40 hidden lg:block">
+        <div className="relative">
+          {speedDialPopup}
+          {toggleButton("lg")}
         </div>
       </div>
 

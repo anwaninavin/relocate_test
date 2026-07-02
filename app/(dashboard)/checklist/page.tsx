@@ -8,7 +8,12 @@ import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
 export const metadata: Metadata = { title: "Packing Checklist — Pack with Me" };
 
-export default async function ChecklistPage() {
+export default async function ChecklistPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ bulkEdit?: string }>;
+}) {
+  const { bulkEdit } = await searchParams;
   const session = await auth();
   const [grouped, overall] = await Promise.all([
     getAllItemsByCategory(session!.user.id),
@@ -40,5 +45,5 @@ export default async function ChecklistPage() {
     ),
   }));
 
-  return <ChecklistOverview groups={groups} overall={overall} />;
+  return <ChecklistOverview groups={groups} overall={overall} initialBulkEdit={bulkEdit === "1"} />;
 }

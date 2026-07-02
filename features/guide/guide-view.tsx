@@ -6,7 +6,6 @@ import { BookOpen, Luggage, ArrowRight } from "lucide-react";
 
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/shared/empty-state";
-import { PageHeader } from "@/components/shared/page-header";
 import { getGuideIcon } from "@/lib/guide-icons";
 import { GUIDE_CATEGORIES } from "@/types";
 import type { GuideArticleSummaryDTO } from "@/features/guide/guide-dto";
@@ -19,11 +18,6 @@ export function GuideView({ articles }: { articles: GuideArticleSummaryDTO[] }) 
 
   return (
     <div>
-      <PageHeader
-        title="Hostel Survival Guide"
-        description="Everything a first-timer needs to know before move-in day"
-      />
-
       <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
         <Link href="/guide/survival-guide">
           <Card className="gradient-brand flex-row items-center justify-between gap-4 border-none p-6 text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5">

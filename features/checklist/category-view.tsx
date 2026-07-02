@@ -428,7 +428,7 @@ export function CategoryView({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="fixed inset-x-4 bottom-36 z-40 lg:inset-x-auto lg:right-8 lg:bottom-28 lg:left-auto"
+          className="fixed inset-x-4 bottom-20 z-40 lg:inset-x-auto lg:right-8 lg:bottom-28 lg:left-auto"
         >
           <Card className="flex-row flex-wrap items-center gap-3 p-4 shadow-xl">
             <span className="text-sm font-medium">{selectedIds.length} selected</span>

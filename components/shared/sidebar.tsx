@@ -5,13 +5,24 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
-import { ADMIN_NAV_ITEM, HOME_ROUTE, PRIMARY_NAV_ITEMS, PROFILE_NAV_ITEM } from "@/lib/nav-items";
+import {
+  ADMIN_NAV_ITEM,
+  HOME_ROUTE,
+  PRIMARY_NAV_ITEMS,
+  PROFILE_NAV_ITEM,
+  SETTINGS_NAV_ITEM,
+} from "@/lib/nav-items";
 import { BrandName } from "@/components/shared/brand-name";
 
 export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
   const pathname = usePathname();
 
-  const items = [...PRIMARY_NAV_ITEMS, PROFILE_NAV_ITEM, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
+  const items = [
+    ...PRIMARY_NAV_ITEMS,
+    PROFILE_NAV_ITEM,
+    SETTINGS_NAV_ITEM,
+    ...(isAdmin ? [ADMIN_NAV_ITEM] : []),
+  ];
 
   return (
     <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r px-4 py-6 lg:flex">

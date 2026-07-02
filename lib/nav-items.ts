@@ -12,6 +12,7 @@ import {
   Search,
   UserRound,
   ShieldCheck,
+  Settings,
 } from "lucide-react";
 
 export { HOME_ROUTE } from "@/lib/routes";
@@ -45,6 +46,12 @@ export const ADMIN_NAV_ITEM: NavItem = {
   href: "/admin",
   label: "Admin",
   icon: ShieldCheck,
+};
+
+export const SETTINGS_NAV_ITEM: NavItem = {
+  href: "/settings",
+  label: "Settings",
+  icon: Settings,
 };
 
 /** Bottom tab bar: Guide, Checklist, [FAB in the middle], Notes, Shopping. */

@@ -29,10 +29,10 @@ export function BottomNav() {
   }
 
   return (
-    <nav className="glass fixed inset-x-0 bottom-0 z-40 flex items-center justify-around px-2 py-2 lg:hidden">
+    <nav className="glass fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-6 px-2 py-2 sm:gap-10 lg:hidden">
       {left.map(renderItem)}
-      {/* Spacer for the raised center FAB, rendered separately by the dashboard layout. */}
-      <div className="w-14 shrink-0" aria-hidden="true" />
+      {/* Slot for the FAB, rendered separately (as a fixed overlay) by the dashboard layout. */}
+      <div className="w-12 shrink-0" aria-hidden="true" />
       {right.map(renderItem)}
     </nav>
   );
