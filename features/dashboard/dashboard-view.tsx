@@ -4,7 +4,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import {
-  Wallet,
   ListTodo,
   Heart,
   Sparkles,
@@ -15,7 +14,7 @@ import {
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ProgressRing } from "@/components/shared/progress-ring";
+import { SuitcaseFill, PiggyBankFill } from "@/components/shared/liquid-fill-icons";
 import { StatCard } from "@/components/shared/stat-card";
 import { EmptyState } from "@/components/shared/empty-state";
 import { SuccessLottie } from "@/components/shared/success-lottie";
@@ -63,50 +62,60 @@ export function DashboardView({
         </p>
       </motion.div>
 
-      <div className="grid gap-4 lg:grid-cols-4">
-        <Card className="items-center justify-center gap-2 p-6 lg:col-span-1">
-          <div className="relative">
-            <ProgressRing value={completionPercent} label="Packed" />
-            {completionPercent >= 100 && (
-              <div className="pointer-events-none absolute -top-3 -right-3">
-                <SuccessLottie size={48} />
-              </div>
-            )}
-          </div>
-          <p className="text-muted-foreground mt-2 text-center text-sm">
-            {overallProgress.total === 0
-              ? "Add items to your checklist to get started"
-              : `${overallProgress.completed} of ${overallProgress.total} items packed`}
-            {completionPercent >= 100 && overallProgress.total > 0 && " — all packed! 🎉"}
-          </p>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="from-primary/10 items-center justify-center gap-1 bg-gradient-to-br via-card to-card p-6">
+            <div className="relative">
+              <SuitcaseFill value={completionPercent} />
+              {completionPercent >= 100 && (
+                <div className="pointer-events-none absolute -top-3 -right-3">
+                  <SuccessLottie size={48} />
+                </div>
+              )}
+            </div>
+            <p className="font-display mt-1 text-2xl font-bold">{Math.round(completionPercent)}%</p>
+            <p className="text-muted-foreground text-center text-sm">
+              {overallProgress.total === 0
+                ? "Add items to your checklist to get started"
+                : `${overallProgress.completed} of ${overallProgress.total} packed`}
+              {completionPercent >= 100 && overallProgress.total > 0 && " — all packed! 🎉"}
+            </p>
+          </Card>
+        </motion.div>
 
-        <div className="grid gap-4 sm:grid-cols-3 lg:col-span-3">
-          <StatCard
-            icon={<Wallet className="size-5" />}
-            label="Budget used"
-            value={`${Math.round(budgetUsedPercent)}%`}
-            hint={`₹${budgetSummary.spent.toLocaleString("en-IN")} of ₹${budgetSummary.planned.toLocaleString("en-IN")}`}
-            tone={budgetSummary.remaining < 0 ? "destructive" : "success"}
-            delay={0.05}
-          />
-          <StatCard
-            icon={<ListTodo className="size-5" />}
-            label="Items remaining"
-            value={String(itemsRemaining)}
-            hint="Still to pack or buy"
-            tone="primary"
-            delay={0.1}
-          />
-          <StatCard
-            icon={<Heart className="size-5" />}
-            label="Wishlist"
-            value={String(wishlistCount)}
-            hint="Items you're eyeing"
-            tone="accent"
-            delay={0.15}
-          />
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+        >
+          <Card className="from-secondary/10 items-center justify-center gap-1 bg-gradient-to-br via-card to-card p-6">
+            <PiggyBankFill value={budgetUsedPercent} />
+            <p className="font-display mt-1 text-2xl font-bold">{Math.round(budgetUsedPercent)}%</p>
+            <p className="text-muted-foreground text-center text-sm">
+              ₹{budgetSummary.spent.toLocaleString("en-IN")} of ₹{budgetSummary.planned.toLocaleString("en-IN")} spent
+            </p>
+          </Card>
+        </motion.div>
+
+        <StatCard
+          icon={<ListTodo className="size-5" />}
+          label="Items remaining"
+          value={String(itemsRemaining)}
+          hint="Still to pack or buy"
+          tone="primary"
+          delay={0.1}
+        />
+        <StatCard
+          icon={<Heart className="size-5" />}
+          label="Wishlist"
+          value={String(wishlistCount)}
+          hint="Items you're eyeing"
+          tone="accent"
+          delay={0.15}
+        />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
