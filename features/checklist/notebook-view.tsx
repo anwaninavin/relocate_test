@@ -32,22 +32,32 @@ function pickSticker(seed: number) {
   return PAGE_STICKERS[i];
 }
 
-/** A single metal binder ring: a beveled conic-gradient torus with a punched-out center
- * (filled with the page backdrop color, so it reads as an actual hole rather than a flat dot). */
-function MetalRing({ className }: { className?: string }) {
+/** A dark punched hole drilled through the paper — sits just inside the page's top margin,
+ * peeking through the gap of the wire loop threaded above it. */
+function PunchHole({ className }: { className?: string }) {
   return (
     <span
       aria-hidden
-      className={cn("relative block shrink-0 rounded-full", className)}
+      className={cn("block shrink-0 rounded-full bg-[#2b2620]", className)}
+      style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.35)" }}
+    />
+  );
+}
+
+/** A single loop of a dark wire spiral coil — an open, elongated ring (not a filled disc) so
+ * the page pattern shows through its center, matching a real notebook's coil binding. */
+function CoilRing({ className }: { className?: string }) {
+  return (
+    <span
+      aria-hidden
+      className={cn("block shrink-0 rounded-[50%]", className)}
       style={{
+        border: "2.5px solid #232226",
         background:
-          "conic-gradient(from 210deg, #fafafa, #8f8f96 22%, #4b4b52 48%, #c9c9ce 72%, #fafafa)",
-        boxShadow:
-          "0 2px 3px rgba(58,46,42,0.4), inset 0 1px 1px rgba(255,255,255,0.7), inset 0 -1px 1.5px rgba(0,0,0,0.4)",
+          "linear-gradient(155deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 32%, rgba(255,255,255,0.18) 62%, rgba(255,255,255,0) 100%)",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
       }}
-    >
-      <span className="bg-background absolute rounded-full" style={{ inset: "27%" }} />
-    </span>
+    />
   );
 }
 
@@ -194,10 +204,16 @@ export function NotebookView({
             }}
           />
         ))}
-        {/* metal binder rings along the top edge, threaded through punched holes */}
-        <div className="pointer-events-none absolute -top-3.5 right-8 left-8 z-20 flex justify-between sm:-top-4">
-          {Array.from({ length: 18 }).map((_, i) => (
-            <MetalRing key={i} className="size-6 sm:size-7" />
+        {/* holes punched through the paper's top margin */}
+        <div className="pointer-events-none absolute top-2 right-9 left-9 z-20 flex justify-between sm:top-2.5">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <PunchHole key={i} className="size-2 sm:size-2.5" />
+          ))}
+        </div>
+        {/* dark wire spiral coil, threaded through the holes and straddling the page edge */}
+        <div className="pointer-events-none absolute -top-3 right-9 left-9 z-30 flex justify-between sm:-top-3.5">
+          {Array.from({ length: 16 }).map((_, i) => (
+            <CoilRing key={i} className="h-5 w-3 sm:h-6 sm:w-3.5" />
           ))}
         </div>
 
