@@ -55,7 +55,16 @@ export function MoodboardView() {
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 py-24 text-center">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_25%_20%,#ffd6e8_0%,transparent_45%),radial-gradient(circle_at_75%_15%,#cfeaff_0%,transparent_45%),radial-gradient(circle_at_50%_85%,#e3d9ff_0%,transparent_50%)]" />
 
-        <StickerField emojis={["📷", "🎀", "🧿", "🍒", "🎧"]} seed={1} />
+        <StickerField
+          stickers={[
+            { slug: "camera", alt: "camera sticker" },
+            { slug: "bow", alt: "bow sticker" },
+            { slug: "evil-eye", alt: "evil eye sticker" },
+            { slug: "cherries", alt: "cherries sticker" },
+            { slug: "headphones", alt: "headphones sticker" },
+          ]}
+          seed={1}
+        />
 
         <Pasted rotate={-3} className="tape max-w-lg bg-white/90 px-8 py-10 shadow-[6px_10px_24px_rgba(58,46,42,0.18)] lg:max-w-2xl lg:px-12 lg:py-14">
           <p className="text-sm font-semibold tracking-[0.3em] text-[#c96b9a] uppercase lg:text-base">
@@ -84,7 +93,15 @@ export function MoodboardView() {
       {/* 2. MENTAL PREP */}
       <section id="mental-prep" className="relative px-5 py-24">
         <SectionTitle emoji="💭">Mental Prep</SectionTitle>
-        <StickerField emojis={["😅", "🩷", "🌸"]} seed={2} />
+        <StickerField
+          stickers={[
+            { slug: "okay-not-okay", alt: "it's okay to not be okay sticker" },
+            { slug: "trust-the-process", alt: "trust the process sticker" },
+            { slug: "good-things-coming", alt: "good things are coming sticker" },
+            { slug: "note-to-self", alt: "note to self, you're doing your best sticker" },
+          ]}
+          seed={2}
+        />
         <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
           <StickyNote color="yellow" rotate={-6} delay={0}>
             <NoteHeadline>First week = chaos.</NoteHeadline>
@@ -104,15 +121,14 @@ export function MoodboardView() {
           </StickyNote>
         </div>
 
-        <Pasted
-          rotate={-1.5}
-          delay={0.25}
-          className="mx-auto mt-10 flex max-w-xs items-center gap-3 rounded-full border-[3px] border-white bg-[#ffd9e2] px-6 py-3 shadow-[3px_5px_14px_rgba(58,46,42,0.18)]"
-        >
-          <span className="text-2xl">🩹</span>
-          <span className="text-lg font-bold text-[#8a3d54] sm:text-xl" style={{ fontFamily: "var(--font-caveat-mood)" }}>
-            everything will be okay
-          </span>
+        <Pasted rotate={-1.5} delay={0.25} className="relative mx-auto mt-10 h-20 w-56 sm:h-24 sm:w-64">
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative sticker, variable aspect ratio */}
+          <img
+            src="/stickers/bandaid-everything-okay.png"
+            alt="Everything will be okay sticker"
+            className="h-full w-full object-contain drop-shadow-[2px_6px_10px_rgba(58,46,42,0.3)]"
+            draggable={false}
+          />
         </Pasted>
       </section>
 
@@ -121,7 +137,13 @@ export function MoodboardView() {
         <SectionTitle emoji="🛏️">Room Setup</SectionTitle>
         <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
           <Polaroid emoji="🔌" caption="bed near plug ✔" rotate={-5} delay={0} />
-          <Polaroid emoji="🧵" caption="extension board ✔" rotate={3} delay={0.1} className="sm:mt-8" />
+          <Polaroid
+            stickerSlug="extension-board"
+            caption="extension board ✔"
+            rotate={3}
+            delay={0.1}
+            className="sm:mt-8"
+          />
           <Polaroid emoji="🗂️" caption="bedside organizer ✔" rotate={-2} delay={0.2} />
         </div>
         <div className="relative mx-auto mt-6 max-w-md text-center">
@@ -149,7 +171,14 @@ export function MoodboardView() {
             <p className="mt-1 text-base font-semibold sm:text-lg lg:text-xl">power bank is life</p>
           </StickyNote>
         </div>
-        <StickerField emojis={["🎧", "🚨", "⚡"]} seed={3} />
+        <StickerField
+          stickers={[
+            { slug: "charging-myself", alt: "charging myself sticker" },
+            { slug: "extension-board", alt: "extension board sticker" },
+            { slug: "headphones", alt: "headphones sticker" },
+          ]}
+          seed={3}
+        />
         <p className="mt-10 text-center text-2xl font-bold text-[#b5651d] sm:text-3xl lg:text-4xl">
           <Highlight color="#baffc9">don&apos;t leave gadgets unattended</Highlight> — ever.
         </p>
@@ -184,8 +213,14 @@ export function MoodboardView() {
       <section className="relative px-5 py-24">
         <SectionTitle emoji="🍜">Food Survival</SectionTitle>
         <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
-          <Polaroid emoji="🍜" caption="instant noodles" rotate={4} delay={0} />
-          <Polaroid emoji="🍿" caption="snack stash" rotate={-6} delay={0.1} className="sm:mt-10" />
+          <Polaroid stickerSlug="midnight-maggi" caption="instant noodles" rotate={4} delay={0} />
+          <Polaroid
+            stickerSlug="cookies"
+            caption="snack stash"
+            rotate={-6}
+            delay={0.1}
+            className="sm:mt-10"
+          />
           <Polaroid emoji="🍫" caption="don't skip meals" rotate={2} delay={0.2} />
         </div>
         <p
@@ -199,7 +234,13 @@ export function MoodboardView() {
       {/* 7. ROOMMATE VIBES */}
       <section className="relative px-5 py-24">
         <SectionTitle emoji="👯">Roommate Vibes</SectionTitle>
-        <StickerField emojis={["🐈‍⬛", "🎀"]} seed={4} />
+        <StickerField
+          stickers={[
+            { slug: "cat-headphones-bubblegum", alt: "cat with headphones sticker" },
+            { slug: "bow-2", alt: "bow sticker" },
+          ]}
+          seed={4}
+        />
         <div className="mx-auto flex max-w-3xl flex-col items-start gap-5">
           <Pasted
             rotate={-2}
@@ -251,7 +292,15 @@ export function MoodboardView() {
       {/* 9. FINAL — EMOTIONAL CLOSURE */}
       <section className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden px-5 py-24 text-center">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,#d9c8ff_0%,#b8ddff_45%,#ffc2dd_100%)]" />
-        <StickerField emojis={["💗", "🐰", "🌸", "🧿"]} seed={5} />
+        <StickerField
+          stickers={[
+            { slug: "you-matter", alt: "you matter sticker" },
+            { slug: "bunny-tulips", alt: "bunny with tulips sticker" },
+            { slug: "tulips-bouquet", alt: "tulips bouquet sticker" },
+            { slug: "evil-eye", alt: "evil eye sticker" },
+          ]}
+          seed={5}
+        />
         <ScribbleCircle className="top-1/2 left-1/2 h-24 w-40 -translate-x-1/2 -translate-y-1/2 opacity-40" />
 
         <motion.div

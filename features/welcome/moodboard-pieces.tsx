@@ -84,12 +84,14 @@ export function Polaroid({
   delay = 0,
   caption,
   emoji,
+  stickerSlug,
   className,
 }: {
   rotate?: number;
   delay?: number;
   caption: string;
-  emoji: string;
+  emoji?: string;
+  stickerSlug?: string;
   className?: string;
 }) {
   return (
@@ -101,8 +103,18 @@ export function Polaroid({
         className,
       )}
     >
-      <div className="flex aspect-square items-center justify-center rounded-sm bg-gradient-to-br from-[#fdf6ee] to-[#f3e6d5] text-6xl lg:text-7xl">
-        {emoji}
+      <div className="flex aspect-square items-center justify-center rounded-sm bg-gradient-to-br from-[#fdf6ee] to-[#f3e6d5] p-6 text-6xl lg:text-7xl">
+        {stickerSlug ? (
+          // eslint-disable-next-line @next/next/no-img-element -- decorative sticker, variable aspect ratio
+          <img
+            src={`/stickers/${stickerSlug}.png`}
+            alt={caption}
+            className="h-full w-full object-contain drop-shadow-[1px_4px_8px_rgba(58,46,42,0.25)]"
+            draggable={false}
+          />
+        ) : (
+          emoji
+        )}
       </div>
       <p className="mt-3 text-center text-xl text-[#3a2e2a] font-[family-name:var(--font-caveat-mood)] lg:text-2xl">
         {caption}
@@ -145,6 +157,41 @@ export function Sticker({
   );
 }
 
+/** An illustrated die-cut sticker image (already has its own white border baked in from the
+ * source sheet, so no extra circular backing — just drop shadow + bob). */
+export function ImageSticker({
+  src,
+  alt,
+  className,
+  bobDelay = 0,
+  bobRotate = 0,
+  style,
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  bobDelay?: number;
+  bobRotate?: number;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <span
+      className={cn(
+        "animate-bob pointer-events-none absolute block select-none drop-shadow-[2px_6px_10px_rgba(58,46,42,0.35)]",
+        className,
+      )}
+      style={{
+        animationDelay: `${bobDelay}s`,
+        ["--bob-rotate" as string]: `${bobRotate}deg`,
+        ...style,
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element -- decorative, variable aspect ratio, no next/image sizing needed */}
+      <img src={src} alt={alt} className="h-full w-full object-contain" draggable={false} />
+    </span>
+  );
+}
+
 function seededRandom(seed: number) {
   let value = seed;
   return () => {
@@ -154,10 +201,10 @@ function seededRandom(seed: number) {
 }
 
 interface ScatterSpec {
-  emoji: string;
+  src: string;
   top: number;
   left: number;
-  size: string;
+  sizePx: number;
   bobDelay: number;
   bobRotate: number;
 }
@@ -172,18 +219,18 @@ const CORNER_POCKETS: [number, number, number, number][] = [
 ];
 
 /**
- * Scatters a set of emoji stickers at pseudo-random positions in the section's four corner
+ * Scatters a set of sticker images at pseudo-random positions in the section's four corner
  * pockets (never the centered content column), each with its own size/rotation/bob timing —
  * reshuffled (seeded by section index) on every mount so the board doesn't look identical on
  * repeat visits. Renders nothing until mounted to avoid an SSR/client markup mismatch, since
  * positions are only computed in the browser.
  */
 export function StickerField({
-  emojis,
+  stickers,
   seed,
   pockets = CORNER_POCKETS,
 }: {
-  emojis: string[];
+  stickers: { slug: string; alt: string }[];
   seed: number;
   pockets?: [number, number, number, number][];
 }) {
@@ -191,19 +238,19 @@ export function StickerField({
 
   useEffect(() => {
     const rand = seededRandom(seed * 7919 + Date.now());
-    const sizes = ["text-3xl", "text-4xl", "text-5xl"];
+    const sizesPx = [76, 96, 116];
     const order = pockets
       .map((pocket, i) => ({ pocket, sort: rand(), i }))
       .sort((a, b) => a.sort - b.sort);
 
     setSpecs(
-      emojis.map((emoji, i) => {
+      stickers.map(({ slug }, i) => {
         const [topMin, topMax, leftMin, leftMax] = order[i % order.length].pocket;
         return {
-          emoji,
+          src: `/stickers/${slug}.png`,
           top: topMin + rand() * (topMax - topMin),
           left: leftMin + rand() * (leftMax - leftMin),
-          size: sizes[Math.floor(rand() * sizes.length)],
+          sizePx: sizesPx[Math.floor(rand() * sizesPx.length)],
           bobDelay: rand() * 2,
           bobRotate: rand() * 14 - 7,
         };
@@ -217,15 +264,14 @@ export function StickerField({
   return (
     <>
       {specs.map((s, i) => (
-        <Sticker
+        <ImageSticker
           key={i}
-          className={s.size}
+          src={s.src}
+          alt={stickers[i].alt}
           bobDelay={s.bobDelay}
           bobRotate={s.bobRotate}
-          style={{ top: `${s.top}%`, left: `${s.left}%` }}
-        >
-          {s.emoji}
-        </Sticker>
+          style={{ top: `${s.top}%`, left: `${s.left}%`, width: s.sizePx, height: s.sizePx }}
+        />
       ))}
     </>
   );
