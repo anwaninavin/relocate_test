@@ -12,7 +12,7 @@ import {
   ScribbleCircle,
   StickerField,
   StickyNote,
-} from "@/features/welcome/moodboard-pieces";
+} from "@/components/shared/scrapbook-pieces";
 
 const caveat = Caveat({
   subsets: ["latin"],

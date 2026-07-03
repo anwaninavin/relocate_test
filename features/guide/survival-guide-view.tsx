@@ -4,29 +4,22 @@ import { useState } from "react";
 import Link from "next/link";
 import { Caveat } from "next/font/google";
 import { motion } from "framer-motion";
-import {
-  Luggage,
-  Smile,
-  HeartCrack,
-  DoorOpen,
-  Plug,
-  ShowerHead,
-  Shirt,
-  UtensilsCrossed,
-  Users,
-  ShieldAlert,
-  Clock,
-  MessageCircleHeart,
-  Wallet,
-  Sparkles,
-  ArrowRight,
-  ArrowDown,
-  AlertTriangle,
-  CheckCircle2,
-  type LucideIcon,
-} from "lucide-react";
 
-const caveat = Caveat({ subsets: ["latin"], weight: ["600", "700"] });
+import {
+  Highlight,
+  Pasted,
+  Polaroid,
+  ScribbleArrow,
+  ScribbleCircle,
+  StickerField,
+  StickyNote,
+} from "@/components/shared/scrapbook-pieces";
+
+const caveat = Caveat({
+  subsets: ["latin"],
+  weight: ["600", "700"],
+  variable: "--font-caveat-guide",
+});
 
 const NAV_SECTIONS = [
   { id: "mental-prep", label: "Mental Prep" },
@@ -44,104 +37,47 @@ const NAV_SECTIONS = [
   { id: "essentials", label: "Essentials" },
 ];
 
-function GridBackdrop() {
+function SectionTitle({ emoji, children }: { emoji: string; children: React.ReactNode }) {
   return (
-    <div
-      aria-hidden
-      className="pointer-events-none absolute inset-0 -z-10 [background-image:linear-gradient(to_right,#00000009_1px,transparent_1px),linear-gradient(to_bottom,#00000009_1px,transparent_1px)] [background-size:28px_28px]"
-    />
+    <motion.h2
+      initial={{ opacity: 0, y: 14 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-80px" }}
+      className="mb-10 text-center text-4xl font-bold text-[#3a2e2a] sm:text-5xl lg:text-6xl"
+      style={{ fontFamily: "var(--font-caveat-guide)" }}
+    >
+      {children} <span className="not-italic">{emoji}</span>
+    </motion.h2>
   );
 }
 
-function Section({
+function NoteHeadline({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="text-xl leading-snug font-bold text-[#3a2e2a] sm:text-2xl lg:text-[1.75rem]"
+      style={{ fontFamily: "var(--font-caveat-guide)" }}
+    >
+      {children}
+    </p>
+  );
+}
+
+function GuideSection({
   id,
-  eyebrow,
+  emoji,
   title,
   children,
 }: {
   id: string;
-  eyebrow: string;
+  emoji: string;
   title: string;
   children: React.ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-28 border-b border-border/70 px-5 py-16 sm:px-8 lg:px-12">
-      <div className="mx-auto max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: "-80px" }}
-          transition={{ duration: 0.5 }}
-        >
-          <p className="mb-1 text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
-            {eyebrow}
-          </p>
-          <h2 className="mb-8 text-2xl font-bold text-foreground sm:text-3xl">{title}</h2>
-          {children}
-        </motion.div>
-      </div>
-    </section>
-  );
-}
-
-function TipCard({
-  icon: Icon,
-  title,
-  description,
-  delay = 0,
-}: {
-  icon: LucideIcon;
-  title: string;
-  description: string;
-  delay?: number;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.4, delay }}
-      whileHover={{ y: -3 }}
-      className="rounded-2xl border border-border bg-card/80 p-5 shadow-sm shadow-black/5 transition-shadow hover:shadow-md"
-    >
-      <div className="mb-3 flex size-9 items-center justify-center rounded-xl bg-muted text-foreground">
-        <Icon className="size-4.5" />
-      </div>
-      <p className="font-semibold text-foreground">{title}</p>
-      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>
-    </motion.div>
-  );
-}
-
-function HighlightBox({
-  tone = "warning",
-  children,
-}: {
-  tone?: "warning" | "success";
-  children: React.ReactNode;
-}) {
-  const isWarning = tone === "warning";
-  const Icon = isWarning ? AlertTriangle : CheckCircle2;
-  return (
-    <div
-      className={`mt-6 flex items-start gap-3 rounded-2xl border px-5 py-4 text-sm ${
-        isWarning
-          ? "border-warning/30 bg-warning/10 text-warning"
-          : "border-success/30 bg-success/10 text-success"
-      }`}
-    >
-      <Icon className="mt-0.5 size-4.5 shrink-0" />
-      <p className="font-medium">{children}</p>
-    </div>
-  );
-}
-
-function ChecklistLine({ children }: { children: React.ReactNode }) {
-  return (
-    <li className="flex items-center gap-3 rounded-xl border border-border bg-card/80 px-4 py-3 text-sm text-foreground">
-      <CheckCircle2 className="size-4 shrink-0 text-muted-foreground" />
+    <section id={id} className="relative scroll-mt-32 px-5 py-24">
+      <SectionTitle emoji={emoji}>{title}</SectionTitle>
       {children}
-    </li>
+    </section>
   );
 }
 
@@ -149,47 +85,54 @@ export function SurvivalGuideView() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
   return (
-    <div className="relative -m-4 bg-background text-foreground lg:-m-8">
+    <div
+      className={`${caveat.variable} relative -m-4 overflow-x-hidden bg-[#fdf6ee] text-[#3a2e2a] lg:-m-8`}
+    >
+      <div className="grain-overlay pointer-events-none fixed inset-0 z-0" />
+
       {/* HERO */}
-      <section className="relative overflow-hidden px-5 pt-16 pb-20 text-center sm:px-8 sm:pt-24 sm:pb-28">
-        <GridBackdrop />
-        <div className="pointer-events-none absolute top-10 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/15 blur-3xl" />
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-5 py-20 text-center sm:py-28">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_25%_20%,#ffd6e8_0%,transparent_45%),radial-gradient(circle_at_75%_15%,#cfeaff_0%,transparent_45%),radial-gradient(circle_at_50%_85%,#e3d9ff_0%,transparent_50%)]" />
 
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mx-auto flex max-w-2xl flex-col items-center gap-5"
+        <StickerField
+          stickers={[
+            { slug: "camera", alt: "camera sticker" },
+            { slug: "bow", alt: "bow sticker" },
+            { slug: "evil-eye", alt: "evil eye sticker" },
+            { slug: "cherries", alt: "cherries sticker" },
+          ]}
+          seed={10}
+        />
+
+        <Pasted
+          rotate={-2}
+          className="tape max-w-lg bg-white/90 px-8 py-10 shadow-[6px_10px_24px_rgba(58,46,42,0.18)] lg:max-w-2xl lg:px-12 lg:py-14"
         >
-          <div className="flex items-center gap-2 rounded-full border border-border bg-card/70 px-4 py-1.5 text-xs font-medium text-muted-foreground">
-            <Luggage className="size-3.5" />
-            First-time hostel students, this one&apos;s for you
-          </div>
-
-          <h1 className="text-4xl leading-[1.1] font-bold text-foreground sm:text-6xl">
-            Hostel{" "}
-            <span className={`${caveat.className} text-primary`} style={{ fontWeight: 700 }}>
-              Survival
-            </span>{" "}
+          <p className="text-sm font-semibold tracking-[0.3em] text-[#c96b9a] uppercase lg:text-base">
+            a survival guide for
+          </p>
+          <h1
+            className="mt-2 text-5xl leading-[1.05] font-bold text-[#3a2e2a] sm:text-7xl lg:text-8xl"
+            style={{ fontFamily: "var(--font-caveat-guide)" }}
+          >
+            Hostel Survival
+            <br />
             Guide
           </h1>
-
-          <p className="max-w-md text-base text-muted-foreground sm:text-lg">
-            Everything no one tells you before move-in day.
+          <p className="mt-4 text-base text-[#6b5c50] sm:text-lg lg:text-xl">
+            Everything no one tells you before move-in day 💌
           </p>
-
           <a
             href="#mental-prep"
-            className="gradient-brand group mt-2 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5"
+            className="mt-6 inline-block rotate-[-1deg] rounded-full bg-[#3a2e2a] px-7 py-3 text-sm font-bold text-white shadow-[3px_4px_0_rgba(0,0,0,0.15)] transition-transform hover:-translate-y-0.5 hover:rotate-0 lg:px-9 lg:py-4 lg:text-base"
           >
-            Start Preparing
-            <ArrowDown className="size-4 transition-transform group-hover:translate-y-0.5" />
+            Start Preparing →
           </a>
-        </motion.div>
+        </Pasted>
       </section>
 
       {/* STICKY SECTION NAV */}
-      <nav className="sticky top-0 z-20 border-y border-border bg-background/90 backdrop-blur-md">
+      <nav className="sticky top-0 z-20 border-y border-[#e9ddc9] bg-[#fdf6ee]/90 backdrop-blur-md">
         <div className="scrollbar-none flex gap-1.5 overflow-x-auto px-5 py-3 sm:justify-center sm:px-8">
           {NAV_SECTIONS.map((s) => (
             <a
@@ -198,8 +141,8 @@ export function SurvivalGuideView() {
               onClick={() => setActiveSection(s.id)}
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
                 activeSection === s.id
-                  ? "gradient-brand border-primary text-white"
-                  : "border-border bg-card/70 text-muted-foreground hover:border-primary/50"
+                  ? "border-[#3a2e2a] bg-[#3a2e2a] text-white"
+                  : "border-[#e9ddc9] bg-white/70 text-[#6b5c50] hover:border-[#3a2e2a]/40"
               }`}
             >
               {s.label}
@@ -209,13 +152,13 @@ export function SurvivalGuideView() {
       </nav>
 
       {/* INTRO */}
-      <section className="border-b border-border/70 px-5 py-14 text-center sm:px-8">
+      <section className="border-b border-[#e9ddc9] px-5 py-14 text-center">
         <motion.p
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mx-auto max-w-2xl text-lg leading-relaxed text-muted-foreground"
+          className="mx-auto max-w-2xl text-lg leading-relaxed text-[#5a4a3e] sm:text-xl"
         >
           Moving to hostel for the first time is exciting <em>and</em> a little overwhelming —
           new room, new people, zero idea where anything is. This guide won&apos;t make it
@@ -225,197 +168,436 @@ export function SurvivalGuideView() {
       </section>
 
       {/* MENTAL PREP */}
-      <Section id="mental-prep" eyebrow="Before anything else" title="Get your head right 🧠">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard
-            icon={Smile}
-            title="The first week feels awkward"
-            description="That's completely normal. Everyone's faking confidence on day one — you're not behind."
-          />
-          <TipCard
-            icon={HeartCrack}
-            title="Homesickness hits randomly"
-            description="Usually around day 4-5, out of nowhere. It passes faster than it feels like it will."
-            delay={0.05}
-          />
-          <TipCard
-            icon={DoorOpen}
-            title="Don't isolate yourself"
-            description="Keep your door open (literally) the first week. The awkward hallway hi's become your first friendships."
-            delay={0.1}
-          />
+      <GuideSection id="mental-prep" emoji="💭" title="Get your head right">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <StickyNote color="yellow" rotate={-6} delay={0}>
+            <NoteHeadline>The first week feels awkward</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              That&apos;s completely normal. Everyone&apos;s faking confidence on day one —
+              you&apos;re not behind.
+            </p>
+          </StickyNote>
+          <StickyNote color="pink" rotate={4} delay={0.1} className="sm:mt-10">
+            <NoteHeadline>Homesickness hits randomly</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Usually around day 4-5, out of nowhere. It passes faster than it feels like it will.
+            </p>
+          </StickyNote>
+          <StickyNote color="blue" rotate={-3} delay={0.2}>
+            <NoteHeadline>Don&apos;t isolate yourself</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Keep your door open (literally) the first week — the awkward hallway hi&apos;s
+              become your first friendships 🚪
+            </p>
+          </StickyNote>
         </div>
-      </Section>
+
+        <Pasted rotate={-1.5} delay={0.25} className="relative mx-auto mt-10 h-20 w-56 sm:h-24 sm:w-64">
+          {/* eslint-disable-next-line @next/next/no-img-element -- decorative sticker, variable aspect ratio */}
+          <img
+            src="/stickers/bandaid-everything-okay.png"
+            alt="Everything will be okay sticker"
+            className="h-full w-full object-contain drop-shadow-[2px_6px_10px_rgba(58,46,42,0.3)]"
+            draggable={false}
+          />
+        </Pasted>
+      </GuideSection>
 
       {/* ROOM SETUP */}
-      <Section id="room-setup" eyebrow="Day one move-in" title="Room setup strategy 🛏️">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TipCard icon={Plug} title="Bed near a plug point" description="You will regret it every single night if you don't. Claim it early." />
-          <TipCard icon={ShowerHead} title="Avoid washroom-side beds" description="Foot traffic, noise, and smell at 2am. Trust the seniors on this one." delay={0.05} />
-          <TipCard icon={Sparkles} title="Use an extension board" description="One socket is never enough once phone, laptop, and lamp all need charging." delay={0.1} />
-          <TipCard icon={Luggage} title="Keep a bedside organizer" description="Glasses, charger, water — everything within arm's reach for 3am emergencies." delay={0.15} />
+      <GuideSection id="room-setup" emoji="🛏️" title="Room setup strategy">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <Polaroid emoji="🔌" caption="bed near plug ✔" rotate={-5} delay={0} />
+          <Polaroid
+            stickerSlug="extension-board"
+            caption="extension board ✔"
+            rotate={3}
+            delay={0.1}
+            className="sm:mt-8"
+          />
+          <Polaroid emoji="🗂️" caption="bedside organizer ✔" rotate={-2} delay={0.2} />
         </div>
-      </Section>
+        <div className="relative mx-auto mt-6 max-w-md text-center">
+          <ScribbleArrow className="-top-6 left-1/2 -translate-x-1/2 rotate-90" />
+          <p className="text-lg text-[#5a4a3e] sm:text-xl lg:text-2xl">
+            trust me on the <Highlight color="#cfeaff">plug point</Highlight> one
+          </p>
+        </div>
+      </GuideSection>
 
-      {/* ELECTRICITY & GADGETS */}
-      <Section id="electronics" eyebrow="Power struggles" title="Electricity & gadget hacks 🔌">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TipCard icon={Plug} title="Charging competition is real" description="Limited sockets, multiple roommates. Charge overnight, not right before you need to leave." />
-          <TipCard icon={Sparkles} title="Label your chargers" description="A strip of tape with your name saves so many 'wait, is this mine?' conversations." delay={0.05} />
-          <TipCard icon={Wallet} title="Keep a power bank ready" description="Hostel power cuts happen when you least expect them — usually mid-assignment." delay={0.1} />
-          <TipCard icon={Plug} title="Use a proper multi-plug" description="Not a cheap one. A short circuit is not how you want to meet the warden." delay={0.15} />
+      {/* ELECTRONICS */}
+      <GuideSection id="electronics" emoji="🔌" title="Power & gadget hacks">
+        <div className="relative mx-auto grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-3 lg:max-w-4xl lg:gap-8">
+          <StickyNote color="yellow" rotate={7} delay={0} className="max-w-none">
+            <p className="text-2xl lg:text-3xl">⚡</p>
+            <p className="mt-1 text-base font-semibold sm:text-lg lg:text-xl">charging war is real</p>
+          </StickyNote>
+          <StickyNote color="blue" rotate={-8} delay={0.1} className="max-w-none sm:mt-12">
+            <p className="text-2xl lg:text-3xl">🔌</p>
+            <p className="mt-1 text-base font-semibold sm:text-lg lg:text-xl">label your chargers</p>
+          </StickyNote>
+          <StickyNote color="pink" rotate={4} delay={0.2} className="max-w-none">
+            <p className="text-2xl lg:text-3xl">🔋</p>
+            <p className="mt-1 text-base font-semibold sm:text-lg lg:text-xl">power bank is life</p>
+          </StickyNote>
         </div>
-        <HighlightBox tone="warning">
-          Don&apos;t leave gadgets unattended in common areas, even &quot;just for a second.&quot;
-        </HighlightBox>
-      </Section>
+        <StickerField
+          stickers={[
+            { slug: "charging-myself", alt: "charging myself sticker" },
+            { slug: "extension-board", alt: "extension board sticker" },
+          ]}
+          seed={11}
+        />
+        <p className="mt-10 text-center text-2xl font-bold text-[#b5651d] sm:text-3xl lg:text-4xl">
+          <Highlight color="#baffc9">don&apos;t leave gadgets unattended</Highlight> — ever.
+        </p>
+      </GuideSection>
 
       {/* BATHROOM */}
-      <Section id="bathroom" eyebrow="The daily battle" title="Bathroom survival 🚿">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard icon={Clock} title="Avoid peak hours" description="7-8:30am is chaos. Shower at 6:30am or after 9am and thank yourself later." />
-          <TipCard icon={ShowerHead} title="Carry slippers, bucket, mug" description="Shared bathrooms are not barefoot-friendly. Non-negotiable essentials." delay={0.05} />
-          <TipCard icon={Luggage} title="Use a portable toiletry caddy" description="Grab-and-go beats juggling five bottles down the hallway every morning." delay={0.1} />
+      <GuideSection id="bathroom" emoji="🚿" title="Bathroom survival">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <StickyNote color="blue" rotate={-4} delay={0}>
+            <p className="text-2xl lg:text-3xl">⏰</p>
+            <p className="mt-1 text-base font-semibold sm:text-lg lg:text-xl">avoid peak hours</p>
+            <p
+              className="mt-2 -rotate-3 text-lg text-[#b5453a] sm:text-xl"
+              style={{ fontFamily: "var(--font-caveat-guide)" }}
+            >
+              NOPE HOURS: 7-8:30am
+            </p>
+          </StickyNote>
+          <StickyNote color="lavender" rotate={5} delay={0.1} className="sm:mt-8">
+            <p className="text-2xl lg:text-3xl">🪣</p>
+            <p className="mt-1 text-base font-semibold sm:text-lg lg:text-xl">
+              carry slippers + bucket
+            </p>
+          </StickyNote>
+          <StickyNote color="pink" rotate={-2} delay={0.2}>
+            <p className="text-2xl lg:text-3xl">🧴</p>
+            <p className="mt-1 text-base font-semibold sm:text-lg lg:text-xl">
+              portable toiletry kit
+            </p>
+          </StickyNote>
         </div>
-      </Section>
+      </GuideSection>
 
-      {/* CLOTHING & LAUNDRY */}
-      <Section id="laundry" eyebrow="Don't let it pile up" title="Clothing & laundry 👕">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard icon={Shirt} title="Plan a laundry system" description="Pick fixed days. 'Whenever I run out of clothes' always turns into a crisis." />
-          <TipCard icon={Shirt} title="Don't pile up clothes" description="The chair-pile is a trap. Worn-but-wearable and actually-dirty need separate spots." delay={0.05} />
-          <TipCard icon={Sparkles} title="Keep quick outfits ready" description="One grab-and-go outfit for the mornings you wake up 10 minutes late." delay={0.1} />
+      {/* LAUNDRY */}
+      <GuideSection id="laundry" emoji="👕" title="Clothing & laundry">
+        <StickerField
+          stickers={[
+            { slug: "laundry-again", alt: "laundry again sticker" },
+            { slug: "laundry-day", alt: "laundry day sticker" },
+          ]}
+          seed={12}
+        />
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <StickyNote color="yellow" rotate={-5} delay={0}>
+            <NoteHeadline>Plan a laundry system</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Pick fixed days. &quot;Whenever I run out of clothes&quot; always turns into a
+              crisis.
+            </p>
+          </StickyNote>
+          <StickyNote color="lavender" rotate={4} delay={0.1} className="sm:mt-10">
+            <NoteHeadline>Don&apos;t pile up clothes</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              The chair-pile is a trap. Worn-but-wearable and actually-dirty need separate spots.
+            </p>
+          </StickyNote>
+          <StickyNote color="pink" rotate={-3} delay={0.2}>
+            <NoteHeadline>Keep quick outfits ready</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              One grab-and-go outfit for the mornings you wake up 10 minutes late.
+            </p>
+          </StickyNote>
         </div>
-      </Section>
+      </GuideSection>
 
       {/* FOOD */}
-      <Section id="food" eyebrow="Fuel matters" title="Food survival 🍜">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <TipCard icon={UtensilsCrossed} title="Mess food is inconsistent" description="Some days it's great, some days it's questionable. Plan around it, don't fight it." />
-          <TipCard icon={Luggage} title="Keep instant food + snacks" description="Noodles, biscuits, something sweet — for the nights mess is a no." delay={0.05} />
-          <TipCard icon={Clock} title="Don't skip meals" description="Skipping to 'save time' catches up with you by week two. It's not worth it." delay={0.1} />
+      <GuideSection id="food" emoji="🍜" title="Food survival">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <Polaroid stickerSlug="midnight-maggi" caption="instant noodles" rotate={4} delay={0} />
+          <Polaroid
+            stickerSlug="cookies"
+            caption="snack stash"
+            rotate={-6}
+            delay={0.1}
+            className="sm:mt-10"
+          />
+          <Polaroid emoji="🍫" caption="don't skip meals" rotate={2} delay={0.2} />
         </div>
-        <HighlightBox tone="success">
-          Energy = mood. Eating properly fixes more bad days than you&apos;d expect.
-        </HighlightBox>
-      </Section>
+        <StickerField
+          stickers={[
+            { slug: "maggi-therapy", alt: "maggi therapy sticker" },
+            { slug: "mess-food-survival-food", alt: "mess food survival food sticker" },
+          ]}
+          seed={13}
+        />
+        <p
+          className="mx-auto mt-8 max-w-xs rotate-1 text-center text-2xl text-[#3a2e2a] sm:text-3xl lg:max-w-sm lg:text-4xl"
+          style={{ fontFamily: "var(--font-caveat-guide)" }}
+        >
+          <Highlight color="#fff3b0">energy = mood.</Highlight> eat properly, bestie.
+        </p>
+      </GuideSection>
 
-      {/* ROOMMATE DYNAMICS */}
-      <Section id="roommates" eyebrow="Living with strangers" title="Roommate dynamics 🤝">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard icon={Users} title="Respect > friendship" description="You don't need to be best friends. You do need to be considerate roommates." />
-          <TipCard icon={DoorOpen} title="Set boundaries early" description="Sleep times, guests, sharing stuff — decide together on day one, not after a fight." delay={0.05} />
-          <TipCard icon={MessageCircleHeart} title="Communicate clearly" description="A direct, kind conversation beats weeks of passive-aggressive silence." delay={0.1} />
+      {/* ROOMMATES */}
+      <GuideSection id="roommates" emoji="👯" title="Roommate dynamics">
+        <StickerField
+          stickers={[
+            { slug: "cat-headphones-bubblegum", alt: "cat with headphones sticker" },
+            { slug: "bow-2", alt: "bow sticker" },
+          ]}
+          seed={14}
+        />
+        <div className="mx-auto flex max-w-3xl flex-col items-start gap-5">
+          <Pasted
+            rotate={-2}
+            className="max-w-sm rounded-3xl rounded-bl-md bg-[#cfeaff] px-5 py-4 text-lg font-semibold text-[#22415a] shadow-[3px_5px_12px_rgba(58,46,42,0.15)] sm:text-xl lg:max-w-md lg:text-2xl"
+          >
+            respect &gt; friendship, always 🤝
+          </Pasted>
+          <Pasted
+            rotate={3}
+            delay={0.1}
+            className="max-w-sm self-end rounded-3xl rounded-br-md bg-[#ffd6e8] px-5 py-4 text-right text-lg font-semibold text-[#7a2249] shadow-[3px_5px_12px_rgba(58,46,42,0.15)] sm:text-xl lg:max-w-md lg:text-2xl"
+          >
+            set boundaries early 🚪
+          </Pasted>
+          <Pasted
+            rotate={-1}
+            delay={0.2}
+            className="max-w-sm rounded-3xl rounded-bl-md bg-[#e3d9ff] px-5 py-4 text-lg font-semibold text-[#3a2966] shadow-[3px_5px_12px_rgba(58,46,42,0.15)] sm:text-xl lg:max-w-md lg:text-2xl"
+          >
+            communicate clearly, not passive-aggressively 💬
+          </Pasted>
         </div>
-      </Section>
+      </GuideSection>
 
       {/* HYGIENE */}
-      <Section id="hygiene" eyebrow="Weekly reset" title="Hygiene checklist 🧺">
-        <ul className="grid gap-3 sm:grid-cols-3">
-          <ChecklistLine>Change bedsheets</ChecklistLine>
-          <ChecklistLine>Clean your space</ChecklistLine>
-          <ChecklistLine>Organize your desk</ChecklistLine>
-        </ul>
-      </Section>
-
-      {/* SAFETY */}
-      <Section id="safety" eyebrow="Non-negotiable" title="Safety first 🔒">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard icon={ShieldAlert} title="Lock your belongings" description="Even around people you trust. It protects the friendship, not just your stuff." />
-          <TipCard icon={MessageCircleHeart} title="Don't overshare" description="New friends are great — your schedule, valuables, and family details can wait." delay={0.05} />
-          <TipCard icon={Users} title="Keep emergency contacts handy" description="Warden, parents, a trusted senior — saved and easy to reach, not buried in chats." delay={0.1} />
-        </div>
-        <Link
-          href="/contacts"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground underline underline-offset-4 hover:text-primary"
-        >
-          Add your emergency contacts in the app
-          <ArrowRight className="size-3.5" />
-        </Link>
-      </Section>
-
-      {/* ROUTINE */}
-      <Section id="routine" eyebrow="Keep it simple" title="A minimal daily routine ⏰">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard icon={Clock} title="Fixed wake-up time" description="Even on off days. It's the one habit that keeps everything else on track." />
-          <TipCard icon={Sparkles} title="One study/work block" description="Doesn't need to be long — just protected, distraction-free time." delay={0.05} />
-          <TipCard icon={Smile} title="Actual chill time" description="Not scrolling-in-bed chill. Something that genuinely resets you." delay={0.1} />
-        </div>
-      </Section>
-
-      {/* SOCIAL LIFE */}
-      <Section id="social" eyebrow="Quality over quantity" title="Social life 🎉">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard icon={Users} title="Find 2-3 real people" description="Not a big group — just a few people you can actually be yourself around." />
-          <TipCard icon={ShieldAlert} title="Avoid toxic groups" description="If a group makes you anxious more than happy, it's not your people." delay={0.05} />
-          <TipCard icon={MessageCircleHeart} title="Don't force friendships" description="Some people click in week one, others in month three. Both are fine." delay={0.1} />
-        </div>
-      </Section>
-
-      {/* MONEY MANAGEMENT */}
-      <Section id="money" eyebrow="Stay in control" title="Money management 💸">
-        <div className="grid gap-4 sm:grid-cols-3">
-          <TipCard icon={Wallet} title="Track your weekly spend" description="Even a rough estimate beats finding out you're broke on day 20." />
-          <TipCard icon={Sparkles} title="Avoid overspending early" description="The first two weeks of 'exploring' add up fast. Pace yourself." delay={0.05} />
-          <TipCard icon={ShieldAlert} title="Keep emergency cash aside" description="Separate from your everyday spending money. Don't touch it unless it's real." delay={0.1} />
-        </div>
-        <Link
-          href="/budget"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground underline underline-offset-4 hover:text-primary"
-        >
-          Track your spending in the Budget tab
-          <ArrowRight className="size-3.5" />
-        </Link>
-      </Section>
-
-      {/* UNDERRATED ESSENTIALS */}
-      <Section id="essentials" eyebrow="Nobody warns you" title="Underrated essentials 🧵">
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-5">
-          {["Sewing kit", "Medicine kit", "Locks", "Cloth clips", "Mirror"].map((item, i) => (
-            <motion.div
+      <GuideSection id="hygiene" emoji="🧺" title="Weekly reset">
+        <StickerField
+          stickers={[
+            { slug: "small-steps-every-day", alt: "small steps every day sticker" },
+            { slug: "potted-plant", alt: "potted plant sticker" },
+          ]}
+          seed={15}
+        />
+        <div className="mx-auto flex max-w-3xl flex-wrap justify-center gap-6">
+          {["Change bedsheets", "Clean your space", "Organize your desk"].map((item, i) => (
+            <Pasted
               key={item}
-              initial={{ opacity: 0, scale: 0.95 }}
-              whileInView={{ opacity: 1, scale: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-border bg-card/80 px-3 py-6 text-center text-sm font-medium text-foreground shadow-sm"
+              rotate={i % 2 === 0 ? -3 : 3}
+              delay={i * 0.08}
+              className="flex items-center gap-2 rounded-full border-[3px] border-white bg-[#fff3b0] px-6 py-3 text-lg font-semibold text-[#5a4a3e] shadow-[3px_5px_12px_rgba(58,46,42,0.15)]"
             >
-              {item}
-            </motion.div>
+              ✔ {item}
+            </Pasted>
           ))}
         </div>
-        <Link
-          href="/checklist"
-          className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-foreground underline underline-offset-4 hover:text-primary"
-        >
-          These are already in your packing checklist
-          <ArrowRight className="size-3.5" />
-        </Link>
-      </Section>
+      </GuideSection>
+
+      {/* SAFETY */}
+      <GuideSection id="safety" emoji="🔒" title="Safety first">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <StickyNote color="lavender" rotate={-5} delay={0}>
+            <NoteHeadline>Lock your belongings</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Even around people you trust. It protects the friendship, not just your stuff.
+            </p>
+          </StickyNote>
+          <StickyNote color="pink" rotate={4} delay={0.1} className="sm:mt-10">
+            <NoteHeadline>Don&apos;t overshare</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              New friends are great — your schedule, valuables, and family details can wait.
+            </p>
+          </StickyNote>
+          <StickyNote color="blue" rotate={-3} delay={0.2}>
+            <NoteHeadline>Keep emergency contacts handy</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Warden, parents, a trusted senior — saved and easy to reach, not buried in chats.
+            </p>
+          </StickyNote>
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/contacts"
+            className="inline-flex items-center gap-1.5 text-base font-semibold text-[#3a2e2a] underline underline-offset-4 hover:text-[#8a5a6b]"
+          >
+            Add your emergency contacts in the app →
+          </Link>
+        </div>
+      </GuideSection>
+
+      {/* ROUTINE */}
+      <GuideSection id="routine" emoji="⏰" title="A minimal daily routine">
+        <StickerField
+          stickers={[
+            { slug: "alarm-clock", alt: "alarm clock sticker" },
+            { slug: "sleep-is-overrated", alt: "sleep is overrated sticker" },
+            { slug: "sleepy-moon", alt: "sleepy moon sticker" },
+          ]}
+          seed={16}
+        />
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <StickyNote color="yellow" rotate={-4} delay={0}>
+            <NoteHeadline>Fixed wake-up time</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Even on off days. It&apos;s the one habit that keeps everything else on track.
+            </p>
+          </StickyNote>
+          <StickyNote color="blue" rotate={5} delay={0.1} className="sm:mt-8">
+            <NoteHeadline>One study/work block</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Doesn&apos;t need to be long — just protected, distraction-free time.
+            </p>
+          </StickyNote>
+          <StickyNote color="pink" rotate={-2} delay={0.2}>
+            <NoteHeadline>Actual chill time</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Not scrolling-in-bed chill. Something that genuinely resets you.
+            </p>
+          </StickyNote>
+        </div>
+      </GuideSection>
+
+      {/* SOCIAL LIFE */}
+      <GuideSection id="social" emoji="🎉" title="Social life">
+        <StickerField
+          stickers={[
+            { slug: "cow-boba", alt: "cow with boba sticker" },
+            { slug: "choose-happy", alt: "choose happy sticker" },
+            { slug: "room-518-legends", alt: "room 518 legends sticker" },
+          ]}
+          seed={17}
+        />
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <StickyNote color="pink" rotate={-4} delay={0}>
+            <NoteHeadline>Find 2-3 real people</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Not a big group — just a few people you can actually be yourself around.
+            </p>
+          </StickyNote>
+          <StickyNote color="lavender" rotate={5} delay={0.1} className="sm:mt-10">
+            <NoteHeadline>Avoid toxic groups</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              If a group makes you anxious more than happy, it&apos;s not your people.
+            </p>
+          </StickyNote>
+          <StickyNote color="blue" rotate={-3} delay={0.2}>
+            <NoteHeadline>Don&apos;t force friendships</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Some people click in week one, others in month three. Both are fine.
+            </p>
+          </StickyNote>
+        </div>
+      </GuideSection>
+
+      {/* MONEY MANAGEMENT */}
+      <GuideSection id="money" emoji="💸" title="Money management">
+        <StickerField
+          stickers={[
+            { slug: "budget-zero-stories-hero", alt: "budget zero stories hero sticker" },
+            { slug: "paise-khatam-emotion-khatam", alt: "paise khatam emotion khatam sticker" },
+          ]}
+          seed={18}
+        />
+        <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
+          <StickyNote color="yellow" rotate={-5} delay={0}>
+            <NoteHeadline>Track your weekly spend</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Even a rough estimate beats finding out you&apos;re broke on day 20.
+            </p>
+          </StickyNote>
+          <StickyNote color="blue" rotate={4} delay={0.1} className="sm:mt-8">
+            <NoteHeadline>Avoid overspending early</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              The first two weeks of &quot;exploring&quot; add up fast. Pace yourself.
+            </p>
+          </StickyNote>
+          <StickyNote color="pink" rotate={-3} delay={0.2}>
+            <NoteHeadline>Keep emergency cash aside</NoteHeadline>
+            <p className="mt-1 text-base text-[#5a4a3e] sm:text-lg">
+              Separate from your everyday spending money. Don&apos;t touch it unless it&apos;s
+              real.
+            </p>
+          </StickyNote>
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/budget"
+            className="inline-flex items-center gap-1.5 text-base font-semibold text-[#3a2e2a] underline underline-offset-4 hover:text-[#8a5a6b]"
+          >
+            Track your spending in the Budget tab →
+          </Link>
+        </div>
+      </GuideSection>
+
+      {/* UNDERRATED ESSENTIALS */}
+      <GuideSection id="essentials" emoji="🎒" title="Underrated essentials">
+        <div className="mx-auto grid max-w-3xl grid-cols-2 gap-6 sm:grid-cols-5 lg:max-w-4xl lg:gap-8">
+          {[
+            ["🧵", "sewing kit"],
+            ["💊", "medicine kit"],
+            ["🔒", "locks"],
+            ["🪞", "mirror"],
+            ["🧷", "cloth clips"],
+          ].map(([emoji, label], i) => (
+            <Pasted
+              key={label}
+              rotate={i % 2 === 0 ? -4 : 5}
+              delay={i * 0.05}
+              className="torn-edge bg-white px-3 py-6 text-center shadow-[3px_5px_12px_rgba(58,46,42,0.15)] lg:py-8"
+            >
+              <p className="text-3xl lg:text-4xl">{emoji}</p>
+              <p className="mt-2 text-sm font-semibold text-[#3a2e2a] sm:text-base lg:text-lg">
+                {label}
+              </p>
+            </Pasted>
+          ))}
+        </div>
+        <div className="mt-8 text-center">
+          <Link
+            href="/checklist"
+            className="inline-flex items-center gap-1.5 text-base font-semibold text-[#3a2e2a] underline underline-offset-4 hover:text-[#8a5a6b]"
+          >
+            These are already in your packing checklist →
+          </Link>
+        </div>
+      </GuideSection>
 
       {/* FINAL / EMOTIONAL CLOSE */}
-      <section className="relative overflow-hidden px-5 py-20 text-center sm:px-8 sm:py-28">
-        <GridBackdrop />
+      <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-5 py-24 text-center">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,#d9c8ff_0%,#b8ddff_45%,#ffc2dd_100%)]" />
+        <StickerField
+          stickers={[
+            { slug: "you-matter", alt: "you matter sticker" },
+            { slug: "bunny-tulips", alt: "bunny with tulips sticker" },
+            { slug: "tulips-bouquet", alt: "tulips bouquet sticker" },
+            { slug: "hostel-life-best-life", alt: "hostel life best life sticker" },
+          ]}
+          seed={19}
+        />
+        <ScribbleCircle className="top-1/2 left-1/2 h-24 w-40 -translate-x-1/2 -translate-y-1/2 opacity-40" />
+
         <motion.div
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
-          className="mx-auto flex max-w-xl flex-col items-center gap-6"
+          className="relative mx-auto max-w-xl lg:max-w-2xl"
         >
-          <p className={`${caveat.className} text-3xl text-primary sm:text-4xl`}>
-            One last thing
-          </p>
-          <p className="text-xl leading-relaxed font-medium text-foreground sm:text-2xl">
-            Hostel life isn&apos;t about comfort. It&apos;s about growth, independence, and
-            stories you&apos;ll never forget.
+          <p
+            className="text-3xl leading-tight text-[#3a2e2a] sm:text-4xl lg:text-5xl"
+            style={{ fontFamily: "var(--font-caveat-guide)" }}
+          >
+            &ldquo;Hostel life isn&apos;t about comfort. It&apos;s about growth, independence, and
+            stories you&apos;ll never forget.&rdquo;
           </p>
           <Link
             href="/checklist"
-            className="gradient-brand group mt-2 inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary/20 transition-transform hover:-translate-y-0.5"
+            className="mt-8 inline-block rotate-1 rounded-full bg-[#3a2e2a] px-8 py-3.5 text-sm font-bold text-white shadow-[4px_5px_0_rgba(0,0,0,0.15)] transition-transform hover:-translate-y-0.5 hover:rotate-0 lg:px-10 lg:py-4 lg:text-base"
           >
-            Start Your Hostel Journey
-            <ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" />
+            Start Your Hostel Journey →
           </Link>
         </motion.div>
       </section>
