@@ -126,7 +126,10 @@ export function FabMenu() {
       {/* Mobile: embedded in the center of the bottom tab bar.
           pointer-events-none on this full-width wrapper is required — otherwise its
           invisible hit-testing area covers the whole bar and blocks the nav links under it. */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex h-16 items-center justify-center lg:hidden">
+      <div
+        className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex items-center justify-center lg:hidden"
+        style={{ height: "calc(4rem + env(safe-area-inset-bottom))" }}
+      >
         <div className="pointer-events-auto relative">
           {speedDialPopup}
           {toggleButton("sm")}

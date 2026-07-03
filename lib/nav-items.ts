@@ -54,10 +54,10 @@ export const SETTINGS_NAV_ITEM: NavItem = {
   icon: Settings,
 };
 
-/** Bottom tab bar: Guide, Checklist, [FAB in the middle], Notes, Shopping. */
+/** Bottom tab bar: Checklist, Documents, [FAB in the middle], Notes, Shopping. */
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  PRIMARY_NAV_ITEMS.find((i) => i.href === "/guide/survival-guide")!,
   PRIMARY_NAV_ITEMS.find((i) => i.href === "/checklist")!,
+  PRIMARY_NAV_ITEMS.find((i) => i.href === "/documents")!,
   PRIMARY_NAV_ITEMS.find((i) => i.href === "/notes")!,
   PRIMARY_NAV_ITEMS.find((i) => i.href === "/shopping")!,
 ];

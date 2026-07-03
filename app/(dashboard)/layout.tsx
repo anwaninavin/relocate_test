@@ -13,7 +13,7 @@ export default async function DashboardLayout({
   const isAdmin = session?.user.role === "admin";
 
   return (
-    <div className="bg-background relative flex min-h-screen overflow-x-clip">
+    <div className="bg-background relative flex min-h-dvh overflow-x-clip">
       <Sidebar isAdmin={isAdmin} />
       <div className="flex min-w-0 flex-1 flex-col">
         <Navbar isAdmin={isAdmin} />

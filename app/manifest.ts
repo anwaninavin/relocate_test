@@ -6,10 +6,10 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Pack with Me",
     description:
       "Your all-in-one hostel survival kit — checklist, budget, notes, documents, and more for first-time hostel students.",
-    start_url: "/guide",
+    start_url: "/checklist",
     display: "standalone",
-    background_color: "#f5f3fa",
-    theme_color: "#8b7cf6",
+    background_color: "#fdf6ee",
+    theme_color: "#c96b9a",
     orientation: "portrait",
     icons: [
       {
