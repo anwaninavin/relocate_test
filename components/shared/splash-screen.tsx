@@ -7,31 +7,30 @@ import { motion, AnimatePresence, type Easing } from "framer-motion";
 const script = Alex_Brush({ subsets: ["latin"], weight: "400" });
 
 const EASE: Easing = [0.65, 0, 0.35, 1];
-const LETTER_STAGGER = 0.1;
-const LETTER_DURATION = 0.45;
+const WORD_DURATION = 0.7;
+const WORD_GAP = 0.3;
 const HOLD_MS = 500;
 const FADE_MS = 400;
 
-const LINES: { text: string; startDelay: number }[] = [
-  { text: "Pack", startDelay: 0 },
-  { text: "with", startDelay: 0.75 },
-  { text: "Me", startDelay: 1.5 },
-];
+const LINES = ["Pack", "with", "Me"];
 
-const REVEAL_MS = Math.round(
-  (LINES.at(-1)!.startDelay + (LINES.at(-1)!.text.length - 1) * LETTER_STAGGER + LETTER_DURATION) *
-    1000,
-);
+const REVEAL_MS = Math.round((LINES.length * (WORD_DURATION + WORD_GAP)) * 1000);
 
-function Letter({ char, delay }: { char: string; delay: number }) {
+/**
+ * Reveals an entire word in one continuous left-to-right wipe (a single clip-path sweep
+ * across the whole word), rather than clipping each letter independently — script fonts
+ * connect letters with overlapping strokes, so clipping per-letter cuts those connections
+ * and makes the word look sliced. One sweep per word reads as one continuous pen stroke.
+ */
+function Word({ text, delay }: { text: string; delay: number }) {
   return (
     <motion.span
-      className="inline-block"
+      className="relative z-10 inline-block whitespace-nowrap"
       style={{ clipPath: "inset(-25% 100% -25% -25%)" }}
       animate={{ clipPath: "inset(-25% 0% -25% -25%)" }}
-      transition={{ delay, duration: LETTER_DURATION, ease: EASE }}
+      transition={{ delay, duration: WORD_DURATION, ease: EASE }}
     >
-      {char}
+      {text}
     </motion.span>
   );
 }
@@ -47,7 +46,7 @@ function HeartDoodle({ delay }: { delay: number }) {
       strokeWidth={1.75}
       strokeLinecap="round"
       strokeLinejoin="round"
-      className="ml-1 inline-block align-middle"
+      className="relative z-10 ml-1 inline-block align-middle"
       initial={{ opacity: 0, scale: 0.5 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.35, ease: "easeOut" }}
@@ -61,7 +60,7 @@ function HeartDoodle({ delay }: { delay: number }) {
  * One-time-per-load splash screen shown before the login screen renders.
  * Background is an unmodified, seamlessly-tiled crop of the source design
  * (public/splash/gingham-tile.jpg) — only the "Pack with Me" text is animated,
- * revealed letter-by-letter to approximate a handwritten stroke-in effect.
+ * revealed one whole word at a time to approximate a handwritten stroke-in effect.
  */
 export function SplashScreen() {
   const [visible, setVisible] = useState(true);
@@ -85,16 +84,14 @@ export function SplashScreen() {
           transition={{ duration: FADE_MS / 1000, ease: "easeInOut" }}
         >
           <div
-            className={`${script.className} flex flex-col items-center text-center leading-[0.95]`}
+            className={`${script.className} relative z-10 flex flex-col items-center text-center leading-[0.95]`}
             style={{ color: "#4a3520", fontSize: "clamp(3rem, 13vw, 5.5rem)" }}
           >
-            {LINES.map((line) => (
-              <div key={line.text} className="flex">
-                {line.text.split("").map((ch, ci) => (
-                  <Letter key={ci} char={ch} delay={line.startDelay + ci * LETTER_STAGGER} />
-                ))}
-                {line.text === "Me" && (
-                  <HeartDoodle delay={line.startDelay + line.text.length * LETTER_STAGGER} />
+            {LINES.map((text, i) => (
+              <div key={text} className="flex">
+                <Word text={text} delay={i * (WORD_DURATION + WORD_GAP)} />
+                {text === "Me" && (
+                  <HeartDoodle delay={LINES.length * (WORD_DURATION + WORD_GAP) - WORD_GAP} />
                 )}
               </div>
             ))}

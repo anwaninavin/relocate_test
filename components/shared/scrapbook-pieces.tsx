@@ -176,18 +176,19 @@ export function ImageSticker({
 }) {
   return (
     <span
-      className={cn(
-        "animate-bob pointer-events-none absolute block select-none drop-shadow-[2px_6px_10px_rgba(58,46,42,0.35)]",
-        className,
-      )}
-      style={{
-        animationDelay: `${bobDelay}s`,
-        ["--bob-rotate" as string]: `${bobRotate}deg`,
-        ...style,
-      }}
+      className={cn("pointer-events-none absolute block -translate-x-1/2 -translate-y-1/2 select-none", className)}
+      style={style}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element -- decorative, variable aspect ratio, no next/image sizing needed */}
-      <img src={src} alt={alt} className="h-full w-full object-contain" draggable={false} />
+      <span
+        className="animate-bob block drop-shadow-[2px_6px_10px_rgba(58,46,42,0.35)]"
+        style={{
+          animationDelay: `${bobDelay}s`,
+          ["--bob-rotate" as string]: `${bobRotate}deg`,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element -- decorative, variable aspect ratio, no next/image sizing needed */}
+        <img src={src} alt={alt} className="h-full w-full object-contain" draggable={false} />
+      </span>
     </span>
   );
 }
@@ -204,18 +205,28 @@ interface ScatterSpec {
   src: string;
   top: number;
   left: number;
-  sizePx: number;
+  size: string;
   bobDelay: number;
   bobRotate: number;
 }
 
 /** Four edge pockets — keeps stickers off the centered content column while still feeling
- * scattered. Each is [topRange, leftRange] as percentages of the section box. */
+ * scattered. Each is [topRange, leftRange] as percentages of the section box. Kept a few
+ * points inside the true edges so a sticker's own radius never pushes it past the viewport
+ * on narrow screens (positions are center-anchored, see ImageSticker). */
 const CORNER_POCKETS: [number, number, number, number][] = [
-  [4, 20, 2, 20], // top-left
-  [4, 20, 80, 96], // top-right
-  [76, 94, 2, 20], // bottom-left
-  [76, 94, 80, 96], // bottom-right
+  [5, 20, 4, 20], // top-left
+  [5, 20, 80, 94], // top-right
+  [76, 92, 4, 20], // bottom-left
+  [76, 92, 80, 94], // bottom-right
+];
+
+/** Viewport-relative sizes (clamped) instead of fixed px, so stickers shrink proportionally
+ * on narrow screens rather than overflowing past the edge of their corner pocket. */
+const STICKER_SIZES = [
+  "clamp(52px, 15vw, 76px)",
+  "clamp(64px, 18vw, 96px)",
+  "clamp(76px, 21vw, 116px)",
 ];
 
 /**
@@ -238,7 +249,6 @@ export function StickerField({
 
   useEffect(() => {
     const rand = seededRandom(seed * 7919 + Date.now());
-    const sizesPx = [76, 96, 116];
     const order = pockets
       .map((pocket, i) => ({ pocket, sort: rand(), i }))
       .sort((a, b) => a.sort - b.sort);
@@ -250,7 +260,7 @@ export function StickerField({
           src: `/stickers/${slug}.png`,
           top: topMin + rand() * (topMax - topMin),
           left: leftMin + rand() * (leftMax - leftMin),
-          sizePx: sizesPx[Math.floor(rand() * sizesPx.length)],
+          size: STICKER_SIZES[Math.floor(rand() * STICKER_SIZES.length)],
           bobDelay: rand() * 2,
           bobRotate: rand() * 14 - 7,
         };
@@ -270,7 +280,7 @@ export function StickerField({
           alt={stickers[i].alt}
           bobDelay={s.bobDelay}
           bobRotate={s.bobRotate}
-          style={{ top: `${s.top}%`, left: `${s.left}%`, width: s.sizePx, height: s.sizePx }}
+          style={{ top: `${s.top}%`, left: `${s.left}%`, width: s.size, height: s.size }}
         />
       ))}
     </>
@@ -292,10 +302,17 @@ export function ScribbleArrow({ className }: { className?: string }) {
   );
 }
 
-export function ScribbleCircle({ className }: { className?: string }) {
+export function ScribbleCircle({
+  className,
+  preserveAspectRatio,
+}: {
+  className?: string;
+  preserveAspectRatio?: string;
+}) {
   return (
     <svg
       viewBox="0 0 120 60"
+      preserveAspectRatio={preserveAspectRatio}
       className={cn("pointer-events-none absolute text-[#e0568c]", className)}
       fill="none"
       stroke="currentColor"

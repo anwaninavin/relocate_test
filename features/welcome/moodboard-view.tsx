@@ -68,7 +68,7 @@ export function MoodboardView() {
 
         <Pasted rotate={-3} className="tape max-w-lg bg-white/90 px-8 py-10 shadow-[6px_10px_24px_rgba(58,46,42,0.18)] lg:max-w-2xl lg:px-12 lg:py-14">
           <p className="text-sm font-semibold tracking-[0.3em] text-[#c96b9a] uppercase lg:text-base">
-            a moodboard for
+            a survival guide for
           </p>
           <h1
             className="mt-2 text-5xl leading-[1.05] font-bold text-[#3a2e2a] sm:text-7xl lg:text-8xl"
@@ -76,7 +76,7 @@ export function MoodboardView() {
           >
             Hostel Survival
             <br />
-            Moodboard
+            Guide
           </h1>
           <p className="mt-4 text-base text-[#6b5c50] sm:text-lg lg:text-xl">
             Everything you need before move-in day 💌
@@ -301,8 +301,6 @@ export function MoodboardView() {
           ]}
           seed={5}
         />
-        <ScribbleCircle className="top-1/2 left-1/2 h-24 w-40 -translate-x-1/2 -translate-y-1/2 opacity-40" />
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -315,7 +313,15 @@ export function MoodboardView() {
             style={{ fontFamily: "var(--font-caveat-mood)" }}
           >
             &ldquo;Hostel life isn&apos;t comfort. It&apos;s chaos, independence, and memories
-            you&apos;ll never forget.&rdquo;
+            you&apos;ll never{" "}
+            <span className="relative inline-block px-1">
+              <ScribbleCircle
+                preserveAspectRatio="none"
+                className="inset-0 h-full w-full scale-125 opacity-40"
+              />
+              <span className="relative">forget</span>
+            </span>
+            .&rdquo;
           </p>
         </motion.div>
       </section>

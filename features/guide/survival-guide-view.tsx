@@ -577,8 +577,6 @@ export function SurvivalGuideView() {
           ]}
           seed={19}
         />
-        <ScribbleCircle className="top-1/2 left-1/2 h-24 w-40 -translate-x-1/2 -translate-y-1/2 opacity-40" />
-
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -591,7 +589,15 @@ export function SurvivalGuideView() {
             style={{ fontFamily: "var(--font-caveat-guide)" }}
           >
             &ldquo;Hostel life isn&apos;t about comfort. It&apos;s about growth, independence, and
-            stories you&apos;ll never forget.&rdquo;
+            stories you&apos;ll never{" "}
+            <span className="relative inline-block px-1">
+              <ScribbleCircle
+                preserveAspectRatio="none"
+                className="inset-0 h-full w-full scale-125 opacity-40"
+              />
+              <span className="relative">forget</span>
+            </span>
+            .&rdquo;
           </p>
           <Link
             href="/checklist"
