@@ -67,7 +67,7 @@ export function StickyNote({
       rotate={rotate}
       delay={delay}
       className={cn(
-        "w-full max-w-[240px] p-5 text-[#3a2e2a] shadow-[3px_5px_14px_rgba(58,46,42,0.15)]",
+        "w-full max-w-[240px] p-5 text-[#3a2e2a] shadow-[3px_5px_14px_rgba(58,46,42,0.15)] lg:max-w-[280px] lg:p-6",
         NOTE_COLORS[color],
         tape && "tape",
         className,
@@ -96,20 +96,22 @@ export function Polaroid({
       rotate={rotate}
       delay={delay}
       className={cn(
-        "w-full max-w-[200px] border border-black/5 bg-white p-3 pb-5 shadow-[4px_6px_16px_rgba(58,46,42,0.18)]",
+        "w-full max-w-[200px] border border-black/5 bg-white p-3 pb-5 shadow-[4px_6px_16px_rgba(58,46,42,0.18)] lg:max-w-[240px] lg:p-4 lg:pb-6",
         className,
       )}
     >
-      <div className="flex aspect-square items-center justify-center rounded-sm bg-gradient-to-br from-[#fdf6ee] to-[#f3e6d5] text-6xl">
+      <div className="flex aspect-square items-center justify-center rounded-sm bg-gradient-to-br from-[#fdf6ee] to-[#f3e6d5] text-6xl lg:text-7xl">
         {emoji}
       </div>
-      <p className="mt-3 text-center text-xl text-[#3a2e2a] font-[family-name:var(--font-caveat-mood)]">
+      <p className="mt-3 text-center text-xl text-[#3a2e2a] font-[family-name:var(--font-caveat-mood)] lg:text-2xl">
         {caption}
       </p>
     </Pasted>
   );
 }
 
+/** A die-cut style sticker: emoji centered on a white, rounded, drop-shadowed backing —
+ * echoing the thick white borders on illustrated sticker sheets. */
 export function Sticker({
   children,
   className,
@@ -122,8 +124,11 @@ export function Sticker({
   return (
     <span
       aria-hidden
-      className={cn("animate-bob pointer-events-none absolute select-none", className)}
-      style={{ animationDelay: `${bobDelay}s` }}
+      className={cn(
+        "animate-bob pointer-events-none absolute flex aspect-square select-none items-center justify-center rounded-full border-[3px] border-white bg-white leading-none shadow-[2px_5px_12px_rgba(58,46,42,0.28)]",
+        className,
+      )}
+      style={{ animationDelay: `${bobDelay}s`, padding: "0.3em" }}
     >
       {children}
     </span>
