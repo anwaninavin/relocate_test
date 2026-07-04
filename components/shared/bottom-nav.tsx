@@ -18,19 +18,19 @@ export function BottomNav() {
         key={item.href}
         href={item.href}
         className={cn(
-          "flex flex-col items-center gap-1 rounded-xl px-3 py-1.5 text-[11px] font-medium transition-colors",
+          "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-medium transition-colors",
           active ? "text-primary" : "text-muted-foreground",
         )}
       >
-        <Icon className={cn("size-5", active && "scale-110")} />
-        {item.label}
+        <Icon className={cn("size-5 shrink-0", active && "scale-110")} />
+        <span className="w-full truncate text-center">{item.label}</span>
       </Link>
     );
   }
 
   return (
     <nav
-      className="glass fixed inset-x-0 bottom-0 z-40 flex items-center justify-center gap-6 px-2 pt-2 sm:gap-10 lg:hidden"
+      className="glass fixed inset-x-0 bottom-0 z-40 flex items-stretch justify-between px-1 pt-2 lg:hidden"
       style={{ paddingBottom: "calc(env(safe-area-inset-bottom) + 0.5rem)" }}
     >
       {left.map(renderItem)}
