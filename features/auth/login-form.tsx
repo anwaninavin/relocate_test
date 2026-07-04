@@ -43,13 +43,24 @@ export function LoginForm() {
   const [reqId, setReqId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const hasWidgetConfig = Boolean(MSG91_WIDGET_ID && MSG91_TOKEN_AUTH);
   const [widgetStatus, setWidgetStatus] = useState<WidgetStatus>(
-    MSG91_WIDGET_ID && MSG91_TOKEN_AUTH ? "loading" : "error",
+    hasWidgetConfig ? "loading" : "error",
+  );
+  const [widgetErrorReason, setWidgetErrorReason] = useState<string | null>(
+    hasWidgetConfig
+      ? null
+      : "OTP widget isn't configured (missing widget ID/token auth in this deployment).",
   );
   const widgetInitCalled = useRef(false);
 
+  function failWidget(reason: string) {
+    setWidgetStatus("error");
+    setWidgetErrorReason(reason);
+  }
+
   useEffect(() => {
-    if (!MSG91_WIDGET_ID || !MSG91_TOKEN_AUTH) return;
+    if (!hasWidgetConfig) return;
 
     let cancelled = false;
     let pollTimer: ReturnType<typeof setInterval> | null = null;
@@ -69,7 +80,11 @@ export function LoginForm() {
 
       timeoutTimer = setTimeout(() => {
         if (pollTimer) clearInterval(pollTimer);
-        if (!cancelled && !window.sendOtp) setWidgetStatus("error");
+        if (!cancelled && !window.sendOtp) {
+          failWidget(
+            "OTP widget script loaded but never became ready (double-check the Widget ID / Token Auth in MSG91).",
+          );
+        }
       }, WIDGET_READY_TIMEOUT_MS);
     }
 
@@ -80,6 +95,11 @@ export function LoginForm() {
         widgetId: MSG91_WIDGET_ID,
         tokenAuth: MSG91_TOKEN_AUTH,
         exposeMethods: true,
+        failure: (err) => {
+          if (!cancelled) {
+            failWidget(`MSG91 widget error: ${err?.message || "unknown error"}`);
+          }
+        },
       });
       waitForMethods();
     }
@@ -112,7 +132,7 @@ export function LoginForm() {
         if (!cancelled && urlIndex < MSG91_SCRIPT_URLS.length) {
           loadNext();
         } else if (!cancelled) {
-          setWidgetStatus("error");
+          failWidget("Could not load the OTP script from MSG91 (network blocked, or an ad/script blocker).");
         }
       };
       document.head.appendChild(script);
@@ -125,7 +145,7 @@ export function LoginForm() {
       if (pollTimer) clearInterval(pollTimer);
       if (timeoutTimer) clearTimeout(timeoutTimer);
     };
-  }, []);
+  }, [hasWidgetConfig]);
 
   async function handleMobileSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -140,7 +160,8 @@ export function LoginForm() {
     if (widgetStatus !== "ready" || !window.sendOtp) {
       setError(
         widgetStatus === "error"
-          ? "OTP service is unavailable right now. Please check your connection and reload, or use a login code instead."
+          ? (widgetErrorReason ?? "OTP service is unavailable right now.") +
+              " You can use a login code instead."
           : "OTP service is still loading. Please wait a moment and try again.",
       );
       return;
