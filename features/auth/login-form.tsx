@@ -29,6 +29,11 @@ const MSG91_SCRIPT_URLS = [
   "https://verify.phone91.com/otp-provider.js",
 ];
 
+type WidgetStatus = "loading" | "ready" | "error";
+
+const WIDGET_READY_TIMEOUT_MS = 12000;
+const WIDGET_POLL_INTERVAL_MS = 250;
+
 export function LoginForm() {
   const router = useRouter();
   const [method, setMethod] = useState<Method>("otp");
@@ -38,25 +43,61 @@ export function LoginForm() {
   const [reqId, setReqId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const widgetReady = useRef(false);
+  const [widgetStatus, setWidgetStatus] = useState<WidgetStatus>(
+    MSG91_WIDGET_ID && MSG91_TOKEN_AUTH ? "loading" : "error",
+  );
+  const widgetInitCalled = useRef(false);
 
   useEffect(() => {
+    if (!MSG91_WIDGET_ID || !MSG91_TOKEN_AUTH) return;
+
+    let cancelled = false;
+    let pollTimer: ReturnType<typeof setInterval> | null = null;
+    let timeoutTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function waitForMethods() {
+      // initSendOTP() fetches the widget's own config from MSG91 before exposing
+      // sendOtp/verifyOtp on window, so they aren't available synchronously — poll
+      // for them with a hard timeout rather than assuming they're ready right away.
+      pollTimer = setInterval(() => {
+        if (window.sendOtp) {
+          if (pollTimer) clearInterval(pollTimer);
+          if (timeoutTimer) clearTimeout(timeoutTimer);
+          if (!cancelled) setWidgetStatus("ready");
+        }
+      }, WIDGET_POLL_INTERVAL_MS);
+
+      timeoutTimer = setTimeout(() => {
+        if (pollTimer) clearInterval(pollTimer);
+        if (!cancelled && !window.sendOtp) setWidgetStatus("error");
+      }, WIDGET_READY_TIMEOUT_MS);
+    }
+
     function initWidget() {
-      if (widgetReady.current || !window.initSendOTP) return;
+      if (widgetInitCalled.current || !window.initSendOTP) return;
+      widgetInitCalled.current = true;
       window.initSendOTP({
         widgetId: MSG91_WIDGET_ID,
         tokenAuth: MSG91_TOKEN_AUTH,
         exposeMethods: true,
       });
-      widgetReady.current = true;
+      waitForMethods();
+    }
+
+    if (window.sendOtp) {
+      setWidgetStatus("ready");
+      return;
     }
 
     if (window.initSendOTP) {
       initWidget();
-      return;
+      return () => {
+        cancelled = true;
+        if (pollTimer) clearInterval(pollTimer);
+        if (timeoutTimer) clearTimeout(timeoutTimer);
+      };
     }
 
-    let cancelled = false;
     let urlIndex = 0;
 
     function loadNext() {
@@ -68,7 +109,11 @@ export function LoginForm() {
       };
       script.onerror = () => {
         urlIndex += 1;
-        if (!cancelled && urlIndex < MSG91_SCRIPT_URLS.length) loadNext();
+        if (!cancelled && urlIndex < MSG91_SCRIPT_URLS.length) {
+          loadNext();
+        } else if (!cancelled) {
+          setWidgetStatus("error");
+        }
       };
       document.head.appendChild(script);
     }
@@ -77,6 +122,8 @@ export function LoginForm() {
 
     return () => {
       cancelled = true;
+      if (pollTimer) clearInterval(pollTimer);
+      if (timeoutTimer) clearTimeout(timeoutTimer);
     };
   }, []);
 
@@ -90,8 +137,12 @@ export function LoginForm() {
       return;
     }
 
-    if (!window.sendOtp) {
-      setError("OTP service isn't ready yet. Please try again in a moment.");
+    if (widgetStatus !== "ready" || !window.sendOtp) {
+      setError(
+        widgetStatus === "error"
+          ? "OTP service is unavailable right now. Please check your connection and reload, or use a login code instead."
+          : "OTP service is still loading. Please wait a moment and try again.",
+      );
       return;
     }
 
@@ -226,8 +277,19 @@ export function LoginForm() {
                   />
                 </div>
                 {error && <p className="text-destructive text-sm">{error}</p>}
+                {!error && widgetStatus === "loading" && (
+                  <p className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                    <Loader2 className="size-3 animate-spin" />
+                    Preparing OTP service…
+                  </p>
+                )}
               </div>
-              <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isSubmitting || widgetStatus === "loading"}
+                className="mt-2"
+              >
                 {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
                 Send OTP
               </Button>
