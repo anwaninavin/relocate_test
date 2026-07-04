@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
-import { QRCodeSVG } from "qrcode.react";
-import { MessageCircle, Phone, ArrowLeft, Loader2, CheckCircle2, KeyRound } from "lucide-react";
+import Script from "next/script";
+import { Phone, ArrowLeft, Loader2, CheckCircle2, KeyRound, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,115 +15,138 @@ import { Label } from "@/components/ui/label";
 import { BrandName } from "@/components/shared/brand-name";
 import { PinLoginForm } from "@/features/auth/pin-login-form";
 import { HOME_ROUTE } from "@/lib/nav-items";
+import { normalizeMobile } from "@/lib/phone";
 
-type Step = "mobile" | "waiting" | "verified";
-type Method = "whatsapp" | "code";
+type Step = "mobile" | "otp" | "verified";
+type Method = "otp" | "code";
 
-interface TicketState {
-  token: string;
-  deepLink: string;
-  expiresAt: string;
-}
-
-const POLL_INTERVAL_MS = 2000;
+const MSG91_WIDGET_ID = process.env.NEXT_PUBLIC_MSG91_WIDGET_ID ?? "";
+const MSG91_TOKEN_AUTH = process.env.NEXT_PUBLIC_MSG91_TOKEN_AUTH ?? "";
 
 export function LoginForm() {
   const router = useRouter();
-  const [method, setMethod] = useState<Method>("whatsapp");
+  const [method, setMethod] = useState<Method>("otp");
   const [step, setStep] = useState<Step>("mobile");
   const [mobile, setMobile] = useState("");
-  const [ticket, setTicket] = useState<TicketState | null>(null);
+  const [otp, setOtp] = useState("");
+  const [reqId, setReqId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const widgetReady = useRef(false);
 
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
+  function initWidget() {
+    if (widgetReady.current || !window.initSendOTP) return;
+    window.initSendOTP({
+      widgetId: MSG91_WIDGET_ID,
+      tokenAuth: MSG91_TOKEN_AUTH,
+      exposeMethods: true,
+    });
+    widgetReady.current = true;
+  }
 
   async function handleMobileSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setIsSubmitting(true);
 
-    try {
-      const res = await fetch("/api/auth/login-ticket", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "Something went wrong");
-        return;
-      }
-
-      setTicket(data);
-      setStep("waiting");
-      startPolling(data.token);
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
-      setIsSubmitting(false);
+    const normalized = normalizeMobile(mobile);
+    if (!normalized) {
+      setError("Enter a valid 10-digit Indian mobile number");
+      return;
     }
+
+    if (!window.sendOtp) {
+      setError("OTP service isn't ready yet. Please try again in a moment.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    window.sendOtp(
+      normalized,
+      (data) => {
+        setIsSubmitting(false);
+        setReqId(data.message);
+        setStep("otp");
+      },
+      (err) => {
+        setIsSubmitting(false);
+        setError(err?.message || "Could not send OTP. Please try again.");
+      },
+    );
   }
 
-  function startPolling(token: string) {
-    if (pollRef.current) clearInterval(pollRef.current);
+  async function handleOtpSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
 
-    pollRef.current = setInterval(async () => {
-      try {
-        const res = await fetch(`/api/auth/login-ticket/${token}/status`);
-        const data = await res.json();
+    if (!window.verifyOtp) {
+      setError("OTP service isn't ready yet. Please try again in a moment.");
+      return;
+    }
 
-        if (data.status === "verified") {
-          if (pollRef.current) clearInterval(pollRef.current);
-          setStep("verified");
+    setIsSubmitting(true);
+    window.verifyOtp(
+      otp,
+      async (data) => {
+        setStep("verified");
 
-          const signInResult = await signIn("whatsapp-ticket", {
-            token,
-            redirect: false,
-          });
+        const signInResult = await signIn("msg91-otp", {
+          accessToken: data.message,
+          redirect: false,
+        });
 
-          if (signInResult?.error) {
-            toast.error("Could not complete sign-in. Please try again.");
-            setStep("waiting");
-            return;
-          }
+        setIsSubmitting(false);
 
-          router.push(HOME_ROUTE);
-          router.refresh();
-        } else if (data.status === "expired" || data.status === "not_found") {
-          if (pollRef.current) clearInterval(pollRef.current);
-          setError("This login link expired. Please try again.");
-          setStep("mobile");
+        if (signInResult?.error) {
+          toast.error("Could not complete sign-in. Please try again.");
+          setStep("otp");
+          return;
         }
-      } catch {
-        // transient network hiccup — keep polling
-      }
-    }, POLL_INTERVAL_MS);
+
+        router.push(HOME_ROUTE);
+        router.refresh();
+      },
+      (err) => {
+        setIsSubmitting(false);
+        setError(err?.message || "Incorrect code. Please try again.");
+      },
+      reqId ?? undefined,
+    );
+  }
+
+  function handleResend() {
+    if (!window.retryOtp) return;
+    setError(null);
+    window.retryOtp(
+      null,
+      (data) => setReqId(data.message),
+      (err) => setError(err?.message || "Could not resend OTP."),
+      reqId ?? undefined,
+    );
   }
 
   function handleBack() {
-    if (pollRef.current) clearInterval(pollRef.current);
     setStep("mobile");
-    setTicket(null);
+    setOtp("");
+    setReqId(null);
     setError(null);
   }
 
   return (
     <div className="glass relative w-full max-w-md overflow-hidden rounded-3xl p-8 shadow-2xl">
+      <Script
+        src="https://verify.msg91.com/otp-provider.js"
+        strategy="afterInteractive"
+        onReady={initWidget}
+      />
+
       <div className="mb-8 flex flex-col items-center gap-3 text-center">
         <Image src="/logo.png" alt="" width={64} height={64} priority />
         <h1 className="text-2xl">
           <BrandName />
         </h1>
         <p className="text-muted-foreground text-sm">
-          {method === "whatsapp"
-            ? "No passwords. Log in instantly with WhatsApp."
+          {method === "otp"
+            ? "No passwords. Log in instantly with an OTP."
             : "Enter your mobile number and login code."}
         </p>
       </div>
@@ -140,11 +163,11 @@ export function LoginForm() {
             <PinLoginForm />
             <button
               type="button"
-              onClick={() => setMethod("whatsapp")}
+              onClick={() => setMethod("otp")}
               className="text-muted-foreground hover:text-foreground inline-flex items-center justify-center gap-1 text-sm transition-colors"
             >
               <ArrowLeft className="size-3.5" />
-              Use WhatsApp instead
+              Use OTP instead
             </button>
           </motion.div>
         ) : (
@@ -176,7 +199,7 @@ export function LoginForm() {
               </div>
               <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">
                 {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
-                Continue with WhatsApp
+                Send OTP
               </Button>
               <button
                 type="button"
@@ -190,39 +213,54 @@ export function LoginForm() {
           )
         )}
 
-        {step === "waiting" && ticket && (
-          <motion.div
-            key="waiting"
+        {step === "otp" && (
+          <motion.form
+            key="otp"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
+            onSubmit={handleOtpSubmit}
             className="flex flex-col items-center gap-5"
           >
-            <div className="rounded-2xl bg-white p-3 shadow-md">
-              <QRCodeSVG value={ticket.deepLink} size={168} />
-            </div>
+            <ShieldCheck className="text-primary size-10" />
             <p className="text-muted-foreground text-center text-sm">
-              Scan with your phone camera, or tap below on mobile
+              Enter the OTP sent to your mobile number
             </p>
-            <Button asChild size="lg" className="w-full">
-              <a href={ticket.deepLink} target="_blank" rel="noopener noreferrer">
-                <MessageCircle className="size-4" />
-                Open WhatsApp to Continue
-              </a>
-            </Button>
-            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-              <Loader2 className="size-4 animate-spin" />
-              Waiting for confirmation on WhatsApp…
+            <div className="grid w-full gap-2">
+              <Label htmlFor="otp">OTP</Label>
+              <Input
+                id="otp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="••••••"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                required
+              />
+              {error && <p className="text-destructive text-sm">{error}</p>}
             </div>
-            <button
-              type="button"
-              onClick={handleBack}
-              className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm transition-colors"
-            >
-              <ArrowLeft className="size-3.5" />
-              Use a different number
-            </button>
-          </motion.div>
+            <Button type="submit" size="lg" disabled={isSubmitting} className="w-full">
+              {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+              Verify OTP
+            </Button>
+            <div className="flex items-center gap-4 text-sm">
+              <button
+                type="button"
+                onClick={handleResend}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Resend OTP
+              </button>
+              <button
+                type="button"
+                onClick={handleBack}
+                className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 transition-colors"
+              >
+                <ArrowLeft className="size-3.5" />
+                Use a different number
+              </button>
+            </div>
+          </motion.form>
         )}
 
         {step === "verified" && (
