@@ -51,6 +51,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/node": "^22.10.2",
     "@types/qrcode.react": "^1.0.5",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "^9",
