@@ -18,9 +18,13 @@ export function getAuthToken() {
 
 export class ApiError extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  /** Full parsed JSON response body, when available — lets callers read extra fields
+   * beyond `message` (e.g. a 409's `{ moveRequired, itemCount }`). */
+  data?: unknown;
+  constructor(message: string, status: number, data?: unknown) {
     super(message);
     this.status = status;
+    this.data = data;
   }
 }
 
@@ -38,7 +42,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   const data = isJson ? await res.json().catch(() => ({})) : {};
 
   if (!res.ok) {
-    throw new ApiError((data as { error?: string }).error ?? "Request failed", res.status);
+    throw new ApiError((data as { error?: string }).error ?? "Request failed", res.status, data);
   }
 
   return data as T;
