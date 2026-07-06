@@ -57,9 +57,21 @@ export const updateUserByAdminSchema = z.object({
   role: z.enum(["student", "admin"]).optional(),
 });
 
+export const uiLayoutSchema = z.object({
+  widgets: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1),
+        visible: z.boolean(),
+      }),
+    )
+    .min(1),
+});
+
 export type ProductInput = z.infer<typeof productSchema>;
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
 export type GuideArticleInput = z.infer<typeof guideArticleSchema>;
 export type GuideArticleUpdateInput = z.infer<typeof guideArticleUpdateSchema>;
 export type CreateUserByAdminInput = z.infer<typeof createUserByAdminSchema>;
 export type UpdateUserByAdminInput = z.infer<typeof updateUserByAdminSchema>;
+export type UiLayoutInput = z.infer<typeof uiLayoutSchema>;

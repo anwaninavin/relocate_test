@@ -35,11 +35,6 @@ const otpCodeSchema = z
   .trim()
   .regex(/^\d{6}$/, "Enter the 6-digit code");
 
-const newPinSchema = z
-  .string()
-  .trim()
-  .regex(/^\d{7}$/, "Choose a 7-digit login code");
-
 export const otpRequestSchema = z.object({
   mobile: mobileSchema,
 });
@@ -47,13 +42,11 @@ export const otpRequestSchema = z.object({
 export const registerVerifySchema = z.object({
   mobile: mobileSchema,
   code: otpCodeSchema,
-  pin: newPinSchema,
 });
 
 export const resetPasswordSchema = z.object({
   mobile: mobileSchema,
   code: otpCodeSchema,
-  pin: newPinSchema,
 });
 
 export type LoginInput = z.infer<typeof loginSchema>;

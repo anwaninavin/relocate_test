@@ -25,9 +25,9 @@ interface AuthContextValue {
   refreshUser: () => Promise<void>;
   setUser: (user: UserDTO) => void;
   requestRegisterOtp: (mobile: string) => Promise<OtpRequestResult>;
-  registerWithOtp: (mobile: string, code: string, pin: string) => Promise<void>;
+  registerWithOtp: (mobile: string, code: string) => Promise<void>;
   requestResetOtp: (mobile: string) => Promise<OtpRequestResult>;
-  resetWithOtp: (mobile: string, code: string, pin: string) => Promise<void>;
+  resetWithOtp: (mobile: string, code: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -83,10 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return api.post<OtpRequestResult>("/api/auth/register/request-otp", { mobile });
   }, []);
 
-  const registerWithOtp = useCallback(async (mobile: string, code: string, pin: string) => {
+  const registerWithOtp = useCallback(async (mobile: string, code: string) => {
     const { token, user } = await api.post<{ token: string; user: UserDTO }>(
       "/api/auth/register/verify",
-      { mobile, code, pin },
+      { mobile, code },
     );
     setAuthToken(token);
     setUser(user);
@@ -96,10 +96,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return api.post<OtpRequestResult>("/api/auth/forgot-password/request-otp", { mobile });
   }, []);
 
-  const resetWithOtp = useCallback(async (mobile: string, code: string, pin: string) => {
+  const resetWithOtp = useCallback(async (mobile: string, code: string) => {
     const { token, user } = await api.post<{ token: string; user: UserDTO }>(
       "/api/auth/forgot-password/reset",
-      { mobile, code, pin },
+      { mobile, code },
     );
     setAuthToken(token);
     setUser(user);

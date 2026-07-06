@@ -2,14 +2,13 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { KeyRound, Loader2, MessageCircle, Phone } from "lucide-react";
+import { CheckCircle2, Loader2, MessageCircle, Phone } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandName } from "@/components/shared/brand-name";
-import { useAuth } from "@/context/auth-context";
 import { ApiError } from "@/lib/api";
 
 interface OtpRequestResult {
@@ -22,9 +21,8 @@ interface OtpAuthFormProps {
   heading: string;
   subheading: string;
   submitLabel: string;
-  pinLabel: string;
   requestOtp: (mobile: string) => Promise<OtpRequestResult>;
-  submit: (mobile: string, code: string, pin: string) => Promise<void>;
+  submit: (mobile: string, code: string) => Promise<void>;
   footer: { prompt: string; linkLabel: string; linkTo: string };
 }
 
@@ -32,7 +30,6 @@ export function OtpAuthForm({
   heading,
   subheading,
   submitLabel,
-  pinLabel,
   requestOtp,
   submit,
   footer,
@@ -41,8 +38,7 @@ export function OtpAuthForm({
   const [step, setStep] = useState<0 | 1>(0);
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
-  const [pin, setPin] = useState("");
-  const [confirmPin, setConfirmPin] = useState("");
+  const [sendStatus, setSendStatus] = useState<{ ok: boolean; message: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,10 +50,14 @@ export function OtpAuthForm({
       const result = await requestOtp(mobile);
       if (result.devOtp) {
         toast.info(`Dev OTP: ${result.devOtp}`, { description: "WhatsApp send not confirmed" });
+        setSendStatus({ ok: true, message: `Dev mode — your code is ${result.devOtp}` });
       } else if (result.sent) {
-        toast.success("Code sent on WhatsApp");
-      } else if (result.error) {
-        toast.error(result.error);
+        setSendStatus({ ok: true, message: `We've sent a 6-digit code to ${mobile} on WhatsApp.` });
+      } else {
+        setSendStatus({
+          ok: false,
+          message: result.error ?? "Couldn't confirm the WhatsApp send — check your WhatsApp and try again if needed.",
+        });
       }
       setStep(1);
     } catch (err) {
@@ -70,15 +70,9 @@ export function OtpAuthForm({
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-
-    if (pin !== confirmPin) {
-      setError("Login codes don't match");
-      return;
-    }
-
     setIsSubmitting(true);
     try {
-      await submit(mobile, code, pin);
+      await submit(mobile, code);
       navigate("/", { replace: true });
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
@@ -133,6 +127,18 @@ export function OtpAuthForm({
           onSubmit={handleSubmit}
           className="flex flex-col gap-4"
         >
+          {sendStatus && (
+            <div
+              className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-sm ${
+                sendStatus.ok
+                  ? "border-primary/20 bg-primary/5 text-foreground"
+                  : "border-destructive/20 bg-destructive/5 text-destructive"
+              }`}
+            >
+              {sendStatus.ok && <CheckCircle2 className="mt-0.5 size-4 shrink-0" />}
+              <span>{sendStatus.message}</span>
+            </div>
+          )}
           <div className="grid gap-2">
             <Label htmlFor="otp-code">WhatsApp code</Label>
             <Input
@@ -145,41 +151,9 @@ export function OtpAuthForm({
               value={code}
               onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
               required
+              autoFocus
             />
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="new-pin">{pinLabel}</Label>
-            <div className="relative">
-              <KeyRound className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-              <Input
-                id="new-pin"
-                inputMode="numeric"
-                autoComplete="new-password"
-                placeholder="7-digit code"
-                className="pl-11 tracking-widest"
-                maxLength={7}
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                required
-              />
-            </div>
-          </div>
-          <div className="grid gap-2">
-            <Label htmlFor="confirm-pin">Confirm login code</Label>
-            <div className="relative">
-              <KeyRound className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-              <Input
-                id="confirm-pin"
-                inputMode="numeric"
-                autoComplete="new-password"
-                placeholder="7-digit code"
-                className="pl-11 tracking-widest"
-                maxLength={7}
-                value={confirmPin}
-                onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, ""))}
-                required
-              />
-            </div>
+            <p className="text-muted-foreground text-xs">This code is also your login code — keep it safe, you'll use it to log in next time.</p>
             {error && <p className="text-destructive text-sm">{error}</p>}
           </div>
           <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">

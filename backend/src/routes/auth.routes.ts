@@ -80,7 +80,7 @@ authRouter.post("/register/verify", async (req, res) => {
     return;
   }
 
-  const result = await registerUserWithOtp(parsed.data.mobile, parsed.data.pin);
+  const result = await registerUserWithOtp(parsed.data.mobile, parsed.data.code);
   if (!result.success) {
     res.status(400).json({ error: result.error });
     return;
@@ -130,7 +130,7 @@ authRouter.post("/forgot-password/reset", async (req, res) => {
     return;
   }
 
-  const result = await resetPinWithOtp(parsed.data.mobile, parsed.data.pin);
+  const result = await resetPinWithOtp(parsed.data.mobile, parsed.data.code);
   if (!result.success) {
     res.status(400).json({ error: result.error });
     return;

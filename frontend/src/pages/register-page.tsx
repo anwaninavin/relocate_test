@@ -7,9 +7,8 @@ export default function RegisterPage() {
   return (
     <OtpAuthForm
       heading="Send code"
-      subheading="Enter your mobile number to get started."
+      subheading="Enter your mobile number to get started. We'll text you a 6-digit code on WhatsApp — no password to set up."
       submitLabel="Create account"
-      pinLabel="Choose a login code"
       requestOtp={requestRegisterOtp}
       submit={registerWithOtp}
       footer={{ prompt: "Already have an account?", linkLabel: "Log in", linkTo: "/login" }}

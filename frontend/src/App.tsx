@@ -30,6 +30,7 @@ import AdminPage from "@/pages/admin-page";
 import AdminUsersPage from "@/pages/admin-users-page";
 import AdminProductsPage from "@/pages/admin-products-page";
 import AdminGuidePage from "@/pages/admin-guide-page";
+import AdminLayoutPage from "@/pages/admin-layout-page";
 
 function RootRoute() {
   const { user, loading } = useAuth();
@@ -128,6 +129,14 @@ export default function App() {
           element={
             <AdminRoute>
               <AdminGuidePage />
+            </AdminRoute>
+          }
+        />
+        <Route
+          path="/admin/layout"
+          element={
+            <AdminRoute>
+              <AdminLayoutPage />
             </AdminRoute>
           }
         />
