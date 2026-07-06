@@ -1,6 +1,6 @@
 # Pack with Me
 
-Your all-in-one hostel survival kit — checklist, budget, notes, documents, emergency contacts, shopping recommendations, and a hostel survival guide, for students moving into a hostel for the first time. Login is a mobile number + 7-digit code, set either by an admin or by the student themselves via WhatsApp OTP self-registration / forgot-code reset.
+Your all-in-one hostel survival kit — checklist, budget, notes, documents, emergency contacts, shopping recommendations, and a hostel survival guide, for students moving into a hostel for the first time. Login is a mobile number + login code. Students self-register or reset their code via a 6-digit WhatsApp OTP — that verified code becomes their permanent login code, no separate password step. Admins can also provision accounts directly with an admin-issued 7-digit code.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ backend/    Express + TypeScript + Mongoose REST API — deploy to Render
 frontend/   Vite + React + TypeScript SPA — deploy to Vercel
 ```
 
-The frontend talks to the backend entirely over HTTP (CORS), authenticating with a JWT bearer token. There is no shared server runtime between them. Accounts can be admin-provisioned (mobile + admin-issued 7-digit code) or self-registered via WhatsApp OTP; either way, login itself is always mobile number + 7-digit code, never a password or SMS OTP.
+The frontend talks to the backend entirely over HTTP (CORS), authenticating with a JWT bearer token. There is no shared server runtime between them. Accounts can be admin-provisioned (mobile + admin-issued 7-digit code) or self-registered via WhatsApp OTP (the verified 6-digit code becomes the login code); either way, login itself is always mobile number + login code, never a password.
 
 ## WhatsApp OTP setup
 

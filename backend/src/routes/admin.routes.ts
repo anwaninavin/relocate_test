@@ -19,12 +19,14 @@ import {
   deleteGuideArticle,
   updateGuideArticle,
 } from "@/services/guideService";
+import { saveDashboardLayout } from "@/services/uiLayoutService";
 import {
   createUserByAdminSchema,
   guideArticleSchema,
   guideArticleUpdateSchema,
   productSchema,
   productUpdateSchema,
+  uiLayoutSchema,
   updateUserByAdminSchema,
 } from "@/validations/admin";
 
@@ -153,4 +155,14 @@ adminRouter.patch("/guide/:id", async (req, res) => {
 adminRouter.delete("/guide/:id", async (req, res) => {
   await deleteGuideArticle(req.params.id);
   res.json({ success: true });
+});
+
+adminRouter.put("/layout", async (req, res) => {
+  const parsed = uiLayoutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const widgets = await saveDashboardLayout(parsed.data.widgets);
+  res.json({ widgets });
 });

@@ -59,6 +59,7 @@ function withBody(method: string) {
 export const api = {
   get: <T>(path: string) => apiFetch<T>(path),
   post: withBody("POST"),
+  put: withBody("PUT"),
   patch: withBody("PATCH"),
   delete: withBody("DELETE"),
 };

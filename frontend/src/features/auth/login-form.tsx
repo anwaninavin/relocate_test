@@ -82,7 +82,7 @@ export function LoginForm() {
               id="pin-code"
               inputMode="numeric"
               autoComplete="one-time-code"
-              placeholder="7-digit code"
+              placeholder="Your login code"
               className="pl-11 tracking-widest"
               maxLength={7}
               value={pin}

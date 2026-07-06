@@ -8,8 +8,7 @@ export default function ForgotPasswordPage() {
     <OtpAuthForm
       heading="Send code"
       subheading="Enter your registered mobile number to reset your login code."
-      submitLabel="Reset code & log in"
-      pinLabel="New login code"
+      submitLabel="Log in"
       requestOtp={requestResetOtp}
       submit={resetWithOtp}
       footer={{ prompt: "Remembered it?", linkLabel: "Log in", linkTo: "/login" }}

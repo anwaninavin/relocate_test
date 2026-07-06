@@ -5,6 +5,7 @@ import { api, ApiError } from "@/lib/api";
 import { subscribeRefresh } from "@/lib/refresh-bus";
 import { useAuth } from "@/context/auth-context";
 import { DashboardView } from "@/features/dashboard/dashboard-view";
+import { useDashboardLayout } from "@/features/dashboard/use-dashboard-layout";
 import {
   toDashboardDataDTO,
   type DashboardDataDTO,
@@ -14,6 +15,7 @@ import {
 export default function DashboardPage() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardDataDTO | null>(null);
+  const layout = useDashboardLayout();
 
   async function fetchData() {
     try {
@@ -32,5 +34,5 @@ export default function DashboardPage() {
 
   if (!data) return null;
 
-  return <DashboardView data={data} name={user?.name ?? null} />;
+  return <DashboardView data={data} name={user?.name ?? null} layout={layout} />;
 }
