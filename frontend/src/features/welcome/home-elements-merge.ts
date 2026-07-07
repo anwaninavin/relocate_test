@@ -2,15 +2,46 @@ import { DEFAULT_HOME_ELEMENTS } from "@/features/welcome/home-elements-default"
 import { HOME_SECTIONS } from "@/features/welcome/home-sections";
 import type { CanvasElement, ElementOverride, SectionBackgroundOverride } from "@/features/welcome/canvas-types";
 
-/** Merges admin-saved overrides onto the default seed. Elements with no override render
- * exactly as they do today; unknown ids in the override list (e.g. from a stale save) are
- * ignored rather than erroring. */
+const DEFAULT_CUSTOM_LAYOUT = { x: 50, y: 50, scale: 1, rotation: 0, visible: true, zIndex: 0 };
+
+/** Builds a full CanvasElement from an admin-added custom element's override — there's no
+ * default to merge onto, so the override must already carry everything needed. */
+function customElementFromOverride(o: ElementOverride): CanvasElement | null {
+  if (!o.kind) return null;
+  return {
+    id: o.id,
+    section: o.section ?? 0,
+    kind: o.kind,
+    src: o.src,
+    alt: o.alt,
+    emoji: o.emoji,
+    lines: o.lines,
+    ctaLabel: o.ctaLabel,
+    href: o.href,
+    background: o.background,
+    shape: o.shape,
+    textStyle: o.textStyle,
+    textColor: o.textColor,
+    fontSize: o.fontSize,
+    bold: o.bold,
+    isCustom: true,
+    layouts: {
+      mobile: { ...DEFAULT_CUSTOM_LAYOUT, ...(o.layouts?.mobile ?? {}) },
+      desktop: { ...DEFAULT_CUSTOM_LAYOUT, ...(o.layouts?.desktop ?? {}) },
+    },
+  };
+}
+
+/** Merges admin-saved overrides onto the default seed, and appends any admin-added custom
+ * elements (uploaded stickers, blank cards) that aren't part of the built-in defaults at
+ * all. Unrecognized/malformed custom entries are skipped rather than erroring. */
 export function mergeHomeElements(overrides: ElementOverride[] | null | undefined): CanvasElement[] {
   if (!overrides || overrides.length === 0) return DEFAULT_HOME_ELEMENTS;
 
   const byId = new Map(overrides.map((o) => [o.id, o]));
+  const baseIds = new Set(DEFAULT_HOME_ELEMENTS.map((e) => e.id));
 
-  return DEFAULT_HOME_ELEMENTS.map((base) => {
+  const merged = DEFAULT_HOME_ELEMENTS.map((base) => {
     const o = byId.get(base.id);
     if (!o) return base;
     return {
@@ -27,6 +58,13 @@ export function mergeHomeElements(overrides: ElementOverride[] | null | undefine
       },
     };
   });
+
+  const customElements = overrides
+    .filter((o) => !baseIds.has(o.id))
+    .map(customElementFromOverride)
+    .filter((e): e is CanvasElement => e !== null);
+
+  return [...merged, ...customElements];
 }
 
 /** Extracts only the fields that differ from default, to keep saved payloads small
@@ -37,7 +75,29 @@ export function diffHomeElements(edited: CanvasElement[]): ElementOverride[] {
 
   for (const e of edited) {
     const base = baseById.get(e.id);
-    if (!base) continue;
+    if (!base) {
+      // Custom (admin-added) element — no default to diff against, save it in full.
+      overrides.push({
+        id: e.id,
+        section: e.section,
+        kind: e.kind,
+        src: e.src,
+        alt: e.alt,
+        emoji: e.emoji,
+        lines: e.lines,
+        ctaLabel: e.ctaLabel,
+        href: e.href,
+        background: e.background,
+        shape: e.shape,
+        textStyle: e.textStyle,
+        textColor: e.textColor,
+        fontSize: e.fontSize,
+        bold: e.bold,
+        isCustom: true,
+        layouts: { mobile: e.layouts.mobile, desktop: e.layouts.desktop },
+      });
+      continue;
+    }
 
     const override: ElementOverride = { id: e.id };
     let changed = false;

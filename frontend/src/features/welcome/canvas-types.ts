@@ -45,6 +45,10 @@ export interface CanvasElement {
   textColor?: string;
   fontSize?: "sm" | "md" | "lg" | "xl";
   bold?: boolean;
+  /** True for elements an admin added (uploaded sticker or blank card) rather than one of
+   * the built-in defaults — these have no default to fall back to, so they're deleted
+   * outright instead of hidden/reset, and always saved in full rather than as a diff. */
+  isCustom?: boolean;
   layouts: {
     mobile: ElementLayout;
     desktop: ElementLayout;
@@ -64,15 +68,26 @@ export interface HomeSectionDef {
 
 export type Breakpoint = "mobile" | "desktop";
 
-/** What the backend stores per element: only the fields an admin can actually change. */
+/** What the backend stores per element. For built-in elements this is a sparse diff
+ * (only changed fields); for admin-added custom elements it carries every field needed
+ * to fully reconstruct the element, since there's no default to merge onto. */
 export interface ElementOverride {
   id: string;
   section?: number;
+  kind?: "image" | "card";
+  src?: string;
+  alt?: string;
+  emoji?: string;
   lines?: string[];
   ctaLabel?: string;
+  href?: string;
+  background?: CardBackground;
+  shape?: CardShape;
+  textStyle?: "heading" | "body" | "quote";
   textColor?: string;
   fontSize?: "sm" | "md" | "lg" | "xl";
   bold?: boolean;
+  isCustom?: boolean;
   layouts?: {
     mobile?: Partial<ElementLayout>;
     desktop?: Partial<ElementLayout>;

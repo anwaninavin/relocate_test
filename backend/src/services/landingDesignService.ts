@@ -13,11 +13,20 @@ export interface ElementLayoutOverride {
 export interface ElementOverride {
   id: string;
   section?: number;
+  kind?: "image" | "card";
+  src?: string;
+  alt?: string;
+  emoji?: string;
   lines?: string[];
   ctaLabel?: string;
+  href?: string;
+  background?: string;
+  shape?: string;
+  textStyle?: string;
   textColor?: string;
   fontSize?: "sm" | "md" | "lg" | "xl";
   bold?: boolean;
+  isCustom?: boolean;
   layouts?: {
     mobile?: ElementLayoutOverride;
     desktop?: ElementLayoutOverride;

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Moveable from "react-moveable";
 import { toast } from "sonner";
-import { RotateCcw } from "lucide-react";
+import { ImagePlus, RotateCcw, StickyNote, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -40,6 +40,21 @@ const BREAKPOINTS: Breakpoint[] = ["mobile", "desktop"];
  * fixed-size cards/text actually look phone-sized vs desktop-sized, like a browser's
  * device toolbar. The visible box is then scaled down to fit the editor panel. */
 const PREVIEW_WIDTH: Record<Breakpoint, number> = { mobile: 390, desktop: 1280 };
+
+const MAX_UPLOAD_BYTES = 2 * 1024 * 1024; // 2MB — uploaded images are stored inline as base64
+
+function generateElementId(): string {
+  return `custom-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function readFileAsDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 function EditableTarget({
   element,
@@ -128,6 +143,7 @@ export function HomeScreenEditor() {
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const panelRef = useRef<HTMLDivElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const elementRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   // Stable identity across renders — an inline arrow function here would make React treat
@@ -234,6 +250,60 @@ export function HomeScreenEditor() {
     setIsDirty(true);
   }
 
+  function deleteElement(id: string) {
+    setElements((current) => current.filter((e) => e.id !== id));
+    setSelectedId(null);
+    setIsDirty(true);
+  }
+
+  function addBlankCard() {
+    const id = generateElementId();
+    const layout = { x: 50, y: 50, scale: 1, rotation: 0, visible: true, zIndex: 0 };
+    const newElement: CanvasElement = {
+      id,
+      section: idx,
+      kind: "card",
+      shape: "sticky",
+      background: "yellow",
+      lines: ["New text"],
+      isCustom: true,
+      layouts: { mobile: { ...layout }, desktop: { ...layout } },
+    };
+    setElements((current) => [...current, newElement]);
+    setSelectedId(id);
+    setIsDirty(true);
+  }
+
+  async function handleAddSticker(file: File) {
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      return;
+    }
+    if (file.size > MAX_UPLOAD_BYTES) {
+      toast.error("Image is too large — please use one under 2MB");
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      const id = generateElementId();
+      const layout = { x: 50, y: 50, scale: 1, rotation: 0, visible: true, zIndex: 0 };
+      const newElement: CanvasElement = {
+        id,
+        section: idx,
+        kind: "image",
+        src: dataUrl,
+        alt: "Custom sticker",
+        isCustom: true,
+        layouts: { mobile: { ...layout }, desktop: { ...layout } },
+      };
+      setElements((current) => [...current, newElement]);
+      setSelectedId(id);
+      setIsDirty(true);
+    } catch {
+      toast.error("Failed to read that image");
+    }
+  }
+
   function updateSectionBackground(id: string, background: string) {
     setSectionBackgrounds((current) => ({ ...current, [id]: background }));
     setIsDirty(true);
@@ -302,6 +372,28 @@ export function HomeScreenEditor() {
                   {s.label}
                 </button>
               ))}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                <ImagePlus className="size-4" />
+                Add sticker from device
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleAddSticker(file);
+                  e.target.value = "";
+                }}
+              />
+              <Button type="button" variant="outline" size="sm" onClick={addBlankCard}>
+                <StickyNote className="size-4" />
+                Add blank card
+              </Button>
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
@@ -548,10 +640,17 @@ export function HomeScreenEditor() {
                   </div>
                 )}
 
-                <Button variant="outline" onClick={() => resetElement(selected.id)}>
-                  <RotateCcw className="size-4" />
-                  Reset this block
-                </Button>
+                {selected.isCustom ? (
+                  <Button variant="outline" onClick={() => deleteElement(selected.id)}>
+                    <Trash2 className="size-4" />
+                    Delete this block
+                  </Button>
+                ) : (
+                  <Button variant="outline" onClick={() => resetElement(selected.id)}>
+                    <RotateCcw className="size-4" />
+                    Reset this block
+                  </Button>
+                )}
               </>
             ) : (
               <p className="text-muted-foreground text-sm">Tap a card or sticker on the canvas to edit it.</p>

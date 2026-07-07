@@ -39,7 +39,9 @@ app.use(
     credentials: true,
   }),
 );
-app.use(express.json());
+// Raised from Express's 100kb default: the admin home-screen editor saves uploaded
+// stickers inline as base64 data URIs, which can be a few MB per save.
+app.use(express.json({ limit: "10mb" }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });

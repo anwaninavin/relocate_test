@@ -82,11 +82,22 @@ export const landingDesignSchema = z.object({
     z.object({
       id: z.string().trim().min(1),
       section: z.number().int().min(0).max(8).optional(),
+      kind: z.enum(["image", "card"]).optional(),
+      // Uploaded images are stored inline as base64 data URIs — cap comfortably above the
+      // frontend's 2MB file-size limit to account for base64's ~33% size inflation.
+      src: z.string().max(3_000_000).optional(),
+      alt: z.string().max(200).optional(),
+      emoji: z.string().max(20).optional(),
       lines: z.array(z.string()).optional(),
       ctaLabel: z.string().optional(),
+      href: z.string().max(300).optional(),
+      background: z.string().trim().max(50).optional(),
+      shape: z.string().trim().max(30).optional(),
+      textStyle: z.string().trim().max(30).optional(),
       textColor: z.string().trim().max(50).optional(),
       fontSize: z.enum(["sm", "md", "lg", "xl"]).optional(),
       bold: z.boolean().optional(),
+      isCustom: z.boolean().optional(),
       layouts: z
         .object({
           mobile: elementLayoutOverrideSchema.optional(),
