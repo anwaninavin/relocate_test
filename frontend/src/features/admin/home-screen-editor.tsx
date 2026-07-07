@@ -75,8 +75,18 @@ function EditableTarget({
     node.style.left = `${leftPx}px`;
     node.style.top = `${topPx}px`;
     node.style.transform = `rotate(${layout.rotation}deg) scale(${layout.scale})`;
+    node.style.zIndex = String(layout.zIndex);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [layout.x, layout.y, layout.rotation, layout.scale, containerSize.width, containerSize.height, element.id]);
+  }, [
+    layout.x,
+    layout.y,
+    layout.rotation,
+    layout.scale,
+    layout.zIndex,
+    containerSize.width,
+    containerSize.height,
+    element.id,
+  ]);
 
   if (!layout.visible) return null;
 
@@ -184,6 +194,31 @@ export function HomeScreenEditor() {
 
   function updateElementCta(id: string, ctaLabel: string) {
     setElements((current) => current.map((e) => (e.id === id ? { ...e, ctaLabel } : e)));
+    setIsDirty(true);
+  }
+
+  function updateElementStyle(id: string, patch: Partial<Pick<CanvasElement, "textColor" | "fontSize" | "bold">>) {
+    setElements((current) => current.map((e) => (e.id === id ? { ...e, ...patch } : e)));
+    setIsDirty(true);
+  }
+
+  function moveElementToSection(id: string, newSection: number) {
+    setElements((current) => current.map((e) => (e.id === id ? { ...e, section: newSection } : e)));
+    setSelectedId(null);
+    setIsDirty(true);
+  }
+
+  function reorderLayer(id: string, direction: "front" | "back") {
+    setElements((current) => {
+      const target = current.find((e) => e.id === id);
+      if (!target) return current;
+      const siblings = current.filter((e) => e.section === target.section);
+      const zIndexes = siblings.map((e) => e.layouts[breakpoint].zIndex);
+      const nextZ = direction === "front" ? Math.max(...zIndexes) + 1 : Math.min(...zIndexes) - 1;
+      return current.map((e) =>
+        e.id === id ? { ...e, layouts: { ...e.layouts, [breakpoint]: { ...e.layouts[breakpoint], zIndex: nextZ } } } : e,
+      );
+    });
     setIsDirty(true);
   }
 
@@ -373,6 +408,33 @@ export function HomeScreenEditor() {
                   />
                 </div>
 
+                <div className="flex flex-col gap-2">
+                  <Label>Layer order</Label>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => reorderLayer(selected.id, "front")}>
+                      Bring to front
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => reorderLayer(selected.id, "back")}>
+                      Send to back
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <Label>Section</Label>
+                  <select
+                    value={selected.section}
+                    onChange={(e) => moveElementToSection(selected.id, Number(e.target.value))}
+                    className="border-input h-10 rounded-lg border bg-transparent px-3 text-sm"
+                  >
+                    {HOME_SECTIONS.map((s, i) => (
+                      <option key={s.id} value={i}>
+                        {s.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 {selected.lines && (
                   <div className="flex flex-col gap-2">
                     <Label>Text</Label>
@@ -387,6 +449,57 @@ export function HomeScreenEditor() {
                         }}
                       />
                     ))}
+                  </div>
+                )}
+
+                {selected.lines && (
+                  <div className="flex flex-col gap-2">
+                    <Label>Text style</Label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      {(["sm", "md", "lg", "xl"] as const).map((size) => (
+                        <button
+                          key={size}
+                          type="button"
+                          onClick={() => updateElementStyle(selected.id, { fontSize: size })}
+                          className={cn(
+                            "rounded-full border px-3 py-1 text-xs font-medium uppercase transition-colors",
+                            selected.fontSize === size
+                              ? "border-foreground bg-foreground text-background"
+                              : "border-border text-muted-foreground hover:text-foreground",
+                          )}
+                        >
+                          {size}
+                        </button>
+                      ))}
+                      <button
+                        type="button"
+                        onClick={() => updateElementStyle(selected.id, { bold: !selected.bold })}
+                        className={cn(
+                          "rounded-full border px-3 py-1 text-xs font-bold transition-colors",
+                          selected.bold
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border text-muted-foreground hover:text-foreground",
+                        )}
+                      >
+                        B
+                      </button>
+                      <label className="text-muted-foreground flex items-center gap-1.5 text-xs">
+                        Color
+                        <input
+                          type="color"
+                          value={/^#[0-9a-f]{6}$/i.test(selected.textColor ?? "") ? selected.textColor! : "#3a2e2a"}
+                          onChange={(e) => updateElementStyle(selected.id, { textColor: e.target.value })}
+                          className="border-border h-6 w-8 cursor-pointer rounded border"
+                        />
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => updateElementStyle(selected.id, { textColor: undefined, fontSize: undefined, bold: undefined })}
+                        className="text-muted-foreground text-xs underline underline-offset-2 hover:text-foreground"
+                      >
+                        Reset style
+                      </button>
+                    </div>
                   </div>
                 )}
 

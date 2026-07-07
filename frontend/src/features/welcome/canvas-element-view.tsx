@@ -29,8 +29,16 @@ function transformStyle(layout: ElementLayout, useMaxContentWidth = true): React
     width: useMaxContentWidth ? "max-content" : undefined,
     transform: `translate(-50%, -50%) scale(${layout.scale}) rotate(${layout.rotation}deg)`,
     display: layout.visible ? undefined : "none",
+    zIndex: layout.zIndex,
   };
 }
+
+const FONT_SIZE_CLASSES: Record<NonNullable<CanvasElement["fontSize"]>, string> = {
+  sm: "text-sm",
+  md: "text-base",
+  lg: "text-xl",
+  xl: "text-3xl",
+};
 
 function CardChrome({ element, children }: { element: CanvasElement; children: React.ReactNode }) {
   const bg = element.background && element.background !== "none" ? element.background : undefined;
@@ -157,12 +165,16 @@ function CardContent({ element }: { element: CanvasElement }) {
                     : i === 0
                       ? "text-xl leading-snug font-bold text-[#3a2e2a]"
                       : "mt-1 text-base text-[#5a4a3e]",
+                element.fontSize && FONT_SIZE_CLASSES[element.fontSize],
+                element.bold === true && "font-bold",
+                element.bold === false && "font-normal",
               )}
-              style={
-                isSpecial || isHeading || element.shape === "quote"
+              style={{
+                ...(isSpecial || isHeading || element.shape === "quote"
                   ? { fontFamily: "var(--font-caveat-mood)" }
-                  : undefined
-              }
+                  : undefined),
+                ...(element.textColor ? { color: element.textColor } : undefined),
+              }}
             >
               <LineContent element={element} line={line} lineIndex={i} />
             </p>

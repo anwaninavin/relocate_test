@@ -74,14 +74,19 @@ const elementLayoutOverrideSchema = z.object({
   scale: z.number().min(0.2).max(4).optional(),
   rotation: z.number().min(-180).max(180).optional(),
   visible: z.boolean().optional(),
+  zIndex: z.number().int().min(-1000).max(1000).optional(),
 });
 
 export const landingDesignSchema = z.object({
   elements: z.array(
     z.object({
       id: z.string().trim().min(1),
+      section: z.number().int().min(0).max(8).optional(),
       lines: z.array(z.string()).optional(),
       ctaLabel: z.string().optional(),
+      textColor: z.string().trim().max(50).optional(),
+      fontSize: z.enum(["sm", "md", "lg", "xl"]).optional(),
+      bold: z.boolean().optional(),
       layouts: z
         .object({
           mobile: elementLayoutOverrideSchema.optional(),
