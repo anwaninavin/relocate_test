@@ -193,6 +193,8 @@ export const DEFAULT_HOME_ELEMENTS: CanvasElement[] = [
     shape: "quote",
     background: "none",
     lines: ["trust me on the plug point one"],
+    highlight: { line: 0, substring: "plug point", color: "#cfeaff" },
+    decoration: "arrow",
     layouts: { mobile: L(50, 85, 1, 0), desktop: L(50, 85, 1, 0) },
   }),
 
@@ -268,6 +270,7 @@ export const DEFAULT_HOME_ELEMENTS: CanvasElement[] = [
     shape: "quote",
     background: "none",
     lines: ["don't leave gadgets unattended — ever."],
+    highlight: { line: 0, substring: "don't leave gadgets unattended", color: "#baffc9" },
     layouts: { mobile: L(50, 90, 1, 0), desktop: L(50, 90, 1, 0) },
   }),
 
@@ -290,6 +293,7 @@ export const DEFAULT_HOME_ELEMENTS: CanvasElement[] = [
     background: "blue",
     emoji: "⏰",
     lines: ["avoid peak hours", "NOPE HOURS: 7-8:30am"],
+    specialLine: 1,
     layouts: { mobile: L(50, 35, 1, -4), desktop: L(22, 50, 1, -4) },
   }),
   el({
@@ -358,6 +362,7 @@ export const DEFAULT_HOME_ELEMENTS: CanvasElement[] = [
     shape: "quote",
     background: "none",
     lines: ["energy = mood. eat properly, bestie."],
+    highlight: { line: 0, substring: "energy = mood.", color: "#fff3b0" },
     layouts: { mobile: L(50, 88, 1, 1), desktop: L(50, 85, 1, 1) },
   }),
 
@@ -513,6 +518,8 @@ export const DEFAULT_HOME_ELEMENTS: CanvasElement[] = [
     shape: "quote",
     background: "none",
     lines: ["“Hostel life isn't comfort. It's chaos, independence, and memories you'll never forget.”"],
+    highlight: { line: 0, substring: "forget" },
+    decoration: "circle",
     layouts: { mobile: L(50, 50, 1, 0), desktop: L(50, 50, 1, 0) },
   }),
 ];
