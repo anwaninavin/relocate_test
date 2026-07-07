@@ -60,6 +60,16 @@ function elementLabel(e: CanvasElement): string {
   return e.lines?.[0] || e.alt || e.emoji || (e.kind === "image" ? "Sticker" : "Card");
 }
 
+/** Newly-added stickers/cards used to all land at the same dead-center (50, 50) spot, so
+ * adding more than one without immediately dragging it away stacked them directly on top of
+ * each other (and of whatever content already sat there) — hiding text underneath. Cascade
+ * each new addition diagonally away from center instead. */
+function nextInsertLayout(existingCustomCount: number): ElementLayout {
+  const step = existingCustomCount % 5;
+  const pos = 30 + step * 8; // 30, 38, 46, 54, 62 — then wraps
+  return { x: pos, y: pos, scale: 1, rotation: 0, visible: true, zIndex: 0 };
+}
+
 function EditableTarget({
   element,
   breakpoint,
@@ -178,10 +188,6 @@ export function HomeScreenEditor() {
       .catch(() => toast.error("Failed to load the current design"));
   }, []);
 
-  useEffect(() => {
-    setSelectedId(null);
-  }, [sectionId, breakpoint]);
-
   // Measures the editor panel (not the canvas itself, which now renders at a fixed real
   // device width) to compute how much to zoom the canvas down to fit — the same idea as a
   // browser's device toolbar.
@@ -200,10 +206,12 @@ export function HomeScreenEditor() {
   const idx = sectionIndex(sectionId);
   const sectionElements = useMemo(() => elements.filter((e) => e.section === idx), [elements, idx]);
   // Hidden elements stop rendering in the canvas entirely, so there's no way to click them
-  // to select — this list is the only way back to re-show one without a full reset.
-  const hiddenSectionElements = useMemo(
-    () => sectionElements.filter((e) => !e.layouts[breakpoint].visible),
-    [sectionElements, breakpoint],
+  // to select — this list is the only way back to re-show one without a full reset. Scoped to
+  // every section (not just the currently-selected tab), since a hidden element is otherwise
+  // easy to "lose" if you're not already on the section tab where you hid it.
+  const hiddenElements = useMemo(
+    () => elements.filter((e) => !e.layouts[breakpoint].visible),
+    [elements, breakpoint],
   );
   const selected = elements.find((e) => e.id === selectedId) ?? null;
 
@@ -268,7 +276,7 @@ export function HomeScreenEditor() {
 
   function addBlankCard() {
     const id = generateElementId();
-    const layout = { x: 50, y: 50, scale: 1, rotation: 0, visible: true, zIndex: 0 };
+    const layout = nextInsertLayout(sectionElements.filter((e) => e.isCustom).length);
     const newElement: CanvasElement = {
       id,
       section: idx,
@@ -296,7 +304,7 @@ export function HomeScreenEditor() {
     try {
       const dataUrl = await readFileAsDataUrl(file);
       const id = generateElementId();
-      const layout = { x: 50, y: 50, scale: 1, rotation: 0, visible: true, zIndex: 0 };
+      const layout = nextInsertLayout(sectionElements.filter((e) => e.isCustom).length);
       const newElement: CanvasElement = {
         id,
         section: idx,
@@ -355,7 +363,10 @@ export function HomeScreenEditor() {
                   <button
                     key={bp}
                     type="button"
-                    onClick={() => setBreakpoint(bp)}
+                    onClick={() => {
+                      setBreakpoint(bp);
+                      setSelectedId(null);
+                    }}
                     className={cn(
                       "rounded-full px-3 py-1.5 text-sm font-medium capitalize transition-colors",
                       breakpoint === bp ? "bg-card text-foreground shadow-sm" : "text-muted-foreground",
@@ -373,7 +384,10 @@ export function HomeScreenEditor() {
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setSectionId(s.id)}
+                  onClick={() => {
+                    setSectionId(s.id);
+                    setSelectedId(null);
+                  }}
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
                     sectionId === s.id ? "bg-foreground text-background" : "bg-muted text-muted-foreground",
@@ -443,19 +457,25 @@ export function HomeScreenEditor() {
               handle to rotate. Edits apply to the {breakpoint} layout only.
             </p>
 
-            {hiddenSectionElements.length > 0 && (
+            {hiddenElements.length > 0 && (
               <div className="bg-muted flex flex-col gap-2 rounded-xl p-3">
-                <Label className="text-xs">Hidden on {breakpoint} — tap to show again</Label>
+                <Label className="text-xs">Hidden on {breakpoint}, across all sections — tap to show again</Label>
                 <div className="flex flex-wrap gap-2">
-                  {hiddenSectionElements.map((e) => (
+                  {hiddenElements.map((e) => (
                     <button
                       key={e.id}
                       type="button"
-                      onClick={() => updateElementLayout(e.id, { visible: true })}
+                      onClick={() => {
+                        const elementSection = HOME_SECTIONS[e.section];
+                        if (elementSection && elementSection.id !== sectionId) setSectionId(elementSection.id);
+                        setSelectedId(e.id);
+                        updateElementLayout(e.id, { visible: true });
+                      }}
                       className="border-border bg-card hover:border-foreground flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium"
                     >
                       <Eye className="size-3.5" />
                       {elementLabel(e)}
+                      <span className="text-muted-foreground">· {HOME_SECTIONS[e.section]?.label ?? "?"}</span>
                     </button>
                   ))}
                 </div>
