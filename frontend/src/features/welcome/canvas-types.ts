@@ -7,6 +7,7 @@ export interface ElementLayout {
   scale: number; // 1 = the element's default size
   rotation: number; // degrees
   visible: boolean;
+  zIndex: number; // paint order within the section — higher renders in front
 }
 
 export type CardBackground = "yellow" | "pink" | "blue" | "lavender" | "white" | "none" | "dark";
@@ -39,6 +40,11 @@ export interface CanvasElement {
   /** Decorative accent carried over from the original design. "arrow" is a standalone
    * scribble above the text; "circle" circles `highlight.substring` instead of marking it. */
   decoration?: "arrow" | "circle";
+  /** Admin-editable text styling, applied uniformly to every line in this card. Unset
+   * means "use the built-in default look" (whatever CardContent normally applies). */
+  textColor?: string;
+  fontSize?: "sm" | "md" | "lg" | "xl";
+  bold?: boolean;
   layouts: {
     mobile: ElementLayout;
     desktop: ElementLayout;
@@ -61,8 +67,12 @@ export type Breakpoint = "mobile" | "desktop";
 /** What the backend stores per element: only the fields an admin can actually change. */
 export interface ElementOverride {
   id: string;
+  section?: number;
   lines?: string[];
   ctaLabel?: string;
+  textColor?: string;
+  fontSize?: "sm" | "md" | "lg" | "xl";
+  bold?: boolean;
   layouts?: {
     mobile?: Partial<ElementLayout>;
     desktop?: Partial<ElementLayout>;

@@ -7,12 +7,17 @@ export interface ElementLayoutOverride {
   scale?: number;
   rotation?: number;
   visible?: boolean;
+  zIndex?: number;
 }
 
 export interface ElementOverride {
   id: string;
+  section?: number;
   lines?: string[];
   ctaLabel?: string;
+  textColor?: string;
+  fontSize?: "sm" | "md" | "lg" | "xl";
+  bold?: boolean;
   layouts?: {
     mobile?: ElementLayoutOverride;
     desktop?: ElementLayoutOverride;

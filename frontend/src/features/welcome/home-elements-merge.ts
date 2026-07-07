@@ -15,8 +15,12 @@ export function mergeHomeElements(overrides: ElementOverride[] | null | undefine
     if (!o) return base;
     return {
       ...base,
+      section: o.section ?? base.section,
       lines: o.lines ?? base.lines,
       ctaLabel: o.ctaLabel ?? base.ctaLabel,
+      textColor: o.textColor ?? base.textColor,
+      fontSize: o.fontSize ?? base.fontSize,
+      bold: o.bold ?? base.bold,
       layouts: {
         mobile: { ...base.layouts.mobile, ...(o.layouts?.mobile ?? {}) },
         desktop: { ...base.layouts.desktop, ...(o.layouts?.desktop ?? {}) },
@@ -38,6 +42,10 @@ export function diffHomeElements(edited: CanvasElement[]): ElementOverride[] {
     const override: ElementOverride = { id: e.id };
     let changed = false;
 
+    if (e.section !== base.section) {
+      override.section = e.section;
+      changed = true;
+    }
     if (JSON.stringify(e.lines) !== JSON.stringify(base.lines)) {
       override.lines = e.lines;
       changed = true;
@@ -46,12 +54,31 @@ export function diffHomeElements(edited: CanvasElement[]): ElementOverride[] {
       override.ctaLabel = e.ctaLabel;
       changed = true;
     }
+    if (e.textColor !== base.textColor) {
+      override.textColor = e.textColor;
+      changed = true;
+    }
+    if (e.fontSize !== base.fontSize) {
+      override.fontSize = e.fontSize;
+      changed = true;
+    }
+    if (e.bold !== base.bold) {
+      override.bold = e.bold;
+      changed = true;
+    }
 
     const layoutDiff: ElementOverride["layouts"] = {};
     (["mobile", "desktop"] as const).forEach((bp) => {
       const a = e.layouts[bp];
       const b = base.layouts[bp];
-      if (a.x !== b.x || a.y !== b.y || a.scale !== b.scale || a.rotation !== b.rotation || a.visible !== b.visible) {
+      if (
+        a.x !== b.x ||
+        a.y !== b.y ||
+        a.scale !== b.scale ||
+        a.rotation !== b.rotation ||
+        a.visible !== b.visible ||
+        a.zIndex !== b.zIndex
+      ) {
         layoutDiff[bp] = a;
         changed = true;
       }

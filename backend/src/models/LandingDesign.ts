@@ -7,6 +7,7 @@ const ElementLayoutOverrideSchema = new Schema(
     scale: { type: Number },
     rotation: { type: Number },
     visible: { type: Boolean },
+    zIndex: { type: Number },
   },
   { _id: false },
 );
@@ -14,8 +15,12 @@ const ElementLayoutOverrideSchema = new Schema(
 const ElementOverrideSchema = new Schema(
   {
     id: { type: String, required: true },
+    section: { type: Number },
     lines: { type: [String] },
     ctaLabel: { type: String },
+    textColor: { type: String },
+    fontSize: { type: String },
+    bold: { type: Boolean },
     layouts: {
       mobile: { type: ElementLayoutOverrideSchema },
       desktop: { type: ElementLayoutOverrideSchema },

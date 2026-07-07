@@ -2,7 +2,7 @@ import type { CanvasElement, ElementLayout } from "@/features/welcome/canvas-typ
 import { sectionIndex } from "@/features/welcome/home-sections";
 
 function L(x: number, y: number, scale = 1, rotation = 0): ElementLayout {
-  return { x, y, scale, rotation, visible: true };
+  return { x, y, scale, rotation, visible: true, zIndex: 0 };
 }
 
 function el(partial: Omit<CanvasElement, "section"> & { section: string }): CanvasElement {
