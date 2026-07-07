@@ -30,6 +30,15 @@ export interface CanvasElement {
   background?: CardBackground;
   shape?: CardShape;
   textStyle?: "heading" | "body" | "quote";
+  /** Marks one line as a distinctly-styled aside (rotated, colored, handwritten) instead
+   * of the generic body-text look — e.g. the "NOPE HOURS" callout under a headline. */
+  specialLine?: number;
+  /** Targets a substring within one line for a decorative accent: a colored marker
+   * highlight, or (with decoration: "circle") a hand-drawn circle around it instead. */
+  highlight?: { line: number; substring: string; color?: string };
+  /** Decorative accent carried over from the original design. "arrow" is a standalone
+   * scribble above the text; "circle" circles `highlight.substring` instead of marking it. */
+  decoration?: "arrow" | "circle";
   layouts: {
     mobile: ElementLayout;
     desktop: ElementLayout;

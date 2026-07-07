@@ -1,5 +1,11 @@
 import { cn } from "@/lib/utils";
-import { NOTE_COLORS, type NoteColor } from "@/components/shared/scrapbook-pieces";
+import {
+  Highlight,
+  NOTE_COLORS,
+  ScribbleArrow,
+  ScribbleCircle,
+  type NoteColor,
+} from "@/components/shared/scrapbook-pieces";
 import type { Breakpoint, CanvasElement, ElementLayout } from "@/features/welcome/canvas-types";
 
 const BUBBLE_COLORS: Record<string, string> = {
@@ -67,7 +73,7 @@ function CardChrome({ element, children }: { element: CanvasElement; children: R
         </div>
       );
     case "quote":
-      return <div className="max-w-[85vw] text-center">{children}</div>;
+      return <div className="relative max-w-[85vw] text-center">{children}</div>;
     case "plain":
     default:
       if (bg === "white") {
@@ -81,12 +87,49 @@ function CardChrome({ element, children }: { element: CanvasElement; children: R
   }
 }
 
-function CardContent({ element }: { element: CanvasElement }) {
-  const isHeading = element.textStyle === "heading";
-  const isHeroCard = element.id === "hero-card";
+/** Renders one line's text, wrapping a targeted substring in either a <Highlight> marker
+ * or a <ScribbleCircle> (per `decoration`). Falls back to plain text if the configured
+ * substring can no longer be found in the line (e.g. after an admin text edit). */
+function LineContent({ element, line, lineIndex }: { element: CanvasElement; line: string; lineIndex: number }) {
+  const highlight = element.highlight?.line === lineIndex ? element.highlight : undefined;
+  if (!highlight || !line.includes(highlight.substring)) {
+    return line;
+  }
+
+  const idx = line.indexOf(highlight.substring);
+  const before = line.slice(0, idx);
+  const after = line.slice(idx + highlight.substring.length);
+
+  if (element.decoration === "circle") {
+    return (
+      <>
+        {before}
+        <span className="relative inline-block px-1">
+          <ScribbleCircle preserveAspectRatio="none" className="inset-0 h-full w-full scale-125 opacity-40" />
+          <span className="relative">{highlight.substring}</span>
+        </span>
+        {after}
+      </>
+    );
+  }
 
   return (
     <>
+      {before}
+      <Highlight color={highlight.color}>{highlight.substring}</Highlight>
+      {after}
+    </>
+  );
+}
+
+function CardContent({ element }: { element: CanvasElement }) {
+  const isHeading = element.textStyle === "heading";
+  const isHeroCard = element.id === "hero-card";
+  const hasArrow = element.decoration === "arrow";
+
+  return (
+    <>
+      {hasArrow && <ScribbleArrow className="-top-6 left-1/2 -translate-x-1/2 rotate-90" />}
       {element.emoji && <p className="text-2xl lg:text-3xl">{element.emoji}</p>}
       {isHeroCard && element.lines && (
         <>
@@ -101,21 +144,30 @@ function CardContent({ element }: { element: CanvasElement }) {
         </>
       )}
       {!isHeroCard &&
-        element.lines?.map((line, i) => (
-          <p
-            key={i}
-            className={cn(
-              i === 0 && isHeading
-                ? "text-3xl font-bold text-[#3a2e2a] sm:text-4xl"
-                : i === 0
-                  ? "text-xl leading-snug font-bold text-[#3a2e2a]"
-                  : "mt-1 text-base text-[#5a4a3e]",
-            )}
-            style={isHeading || element.shape === "quote" ? { fontFamily: "var(--font-caveat-mood)" } : undefined}
-          >
-            {line}
-          </p>
-        ))}
+        element.lines?.map((line, i) => {
+          const isSpecial = element.specialLine === i;
+          return (
+            <p
+              key={i}
+              className={cn(
+                isSpecial
+                  ? "mt-2 -rotate-3 text-lg text-[#b5453a] sm:text-xl"
+                  : i === 0 && isHeading
+                    ? "text-3xl font-bold text-[#3a2e2a] sm:text-4xl"
+                    : i === 0
+                      ? "text-xl leading-snug font-bold text-[#3a2e2a]"
+                      : "mt-1 text-base text-[#5a4a3e]",
+              )}
+              style={
+                isSpecial || isHeading || element.shape === "quote"
+                  ? { fontFamily: "var(--font-caveat-mood)" }
+                  : undefined
+              }
+            >
+              <LineContent element={element} line={line} lineIndex={i} />
+            </p>
+          );
+        })}
       {isHeroCard && element.ctaLabel && (
         <a
           href={element.href}
