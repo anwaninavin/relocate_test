@@ -22,9 +22,10 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
 import {
-  DASHBOARD_WIDGETS,
   DEFAULT_DASHBOARD_LAYOUT,
-  STAT_CARDS,
+  mergeDashboardLayout,
+  REORDERABLE_WIDGET_IDS,
+  STAT_CARD_IDS,
   widgetLabel,
   type WidgetConfig,
 } from "@/features/dashboard/widget-registry";
@@ -102,27 +103,25 @@ export function LayoutEditorView() {
     api
       .get<{ widgets: WidgetConfig[] | null }>("/api/dashboard/layout")
       .then((res) => {
-        if (res.widgets && res.widgets.length > 0) {
-          setWidgets(res.widgets);
-        }
+        setWidgets(mergeDashboardLayout(res.widgets));
       })
       .catch(() => {
         toast.error("Failed to load the current layout");
       });
   }, []);
 
-  // Sections (drag-reorderable) and individual stat cards (show/hide only — their position
-  // within the stats row is fixed, only visibility varies) live in one saved array, but are
-  // edited as two separate lists.
-  const sectionWidgets = widgets.filter((w) => DASHBOARD_WIDGETS.some((d) => d.id === w.id));
-  const statWidgets = widgets.filter((w) => STAT_CARDS.some((d) => d.id === w.id));
+  // Reorderable full-width blocks and individual stat cards (show/hide only — each stat
+  // card's position is fixed, only visibility varies) live in one saved array, but are
+  // edited as two separate lists so every piece is controlled independently.
+  const sectionWidgets = widgets.filter((w) => REORDERABLE_WIDGET_IDS.includes(w.id));
+  const statWidgets = widgets.filter((w) => STAT_CARD_IDS.includes(w.id));
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
     setWidgets((current) => {
-      const sections = current.filter((w) => DASHBOARD_WIDGETS.some((d) => d.id === w.id));
-      const stats = current.filter((w) => STAT_CARDS.some((d) => d.id === w.id));
+      const sections = current.filter((w) => REORDERABLE_WIDGET_IDS.includes(w.id));
+      const stats = current.filter((w) => STAT_CARD_IDS.includes(w.id));
       const oldIndex = sections.findIndex((w) => w.id === active.id);
       const newIndex = sections.findIndex((w) => w.id === over.id);
       return [...arrayMove(sections, oldIndex, newIndex), ...stats];
@@ -172,7 +171,7 @@ export function LayoutEditorView() {
 
         <div className="flex flex-col gap-2">
           <p className="text-muted-foreground text-sm">
-            Individual stat cards — only shown when the stat cards row above is also visible.
+            Stat cards — shown together at the top of the dashboard when visible, each controlled independently.
           </p>
           <div className="flex flex-col gap-2">
             {statWidgets.map((w) => (

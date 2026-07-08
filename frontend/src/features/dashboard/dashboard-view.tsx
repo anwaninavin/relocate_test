@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { SuccessLottie } from "@/components/shared/success-lottie";
 import { ExpenseMiniChart } from "@/features/dashboard/expense-mini-chart";
 import { getCategoryIcon } from "@/lib/checklist-icons";
-import { DEFAULT_DASHBOARD_LAYOUT, type WidgetConfig } from "@/features/dashboard/widget-registry";
+import { mergeDashboardLayout, STAT_CARD_IDS, type WidgetConfig } from "@/features/dashboard/widget-registry";
 import type { ChecklistPriority } from "@/types";
 import type { DashboardDataDTO } from "@/features/dashboard/dashboard-dto";
 
@@ -93,43 +93,41 @@ function StatsWidget({ data, visibleStatIds }: { data: DashboardDataDTO; visible
   );
 }
 
-function ExpenseTasksWidget({ data }: { data: DashboardDataDTO }) {
-  const { budgetSummary, upcomingTasks } = data;
+function ExpenseChartWidget({ data }: { data: DashboardDataDTO }) {
+  return <ExpenseMiniChart byCategory={data.budgetSummary.byCategory} />;
+}
+
+function UpcomingTasksWidget({ data }: { data: DashboardDataDTO }) {
+  const { upcomingTasks } = data;
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <div className="lg:col-span-2">
-        <ExpenseMiniChart byCategory={budgetSummary.byCategory} />
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Upcoming tasks</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-1">
-          {upcomingTasks.length === 0 ? (
-            <EmptyState icon={Sparkles} title="All caught up!" description="No pending high-priority items." />
-          ) : (
-            upcomingTasks.map((task) => {
-              const Icon = getCategoryIcon(task.category);
-              return (
-                <Link
-                  key={task.id}
-                  to={`/checklist/${encodeURIComponent(task.category)}`}
-                  className="hover:bg-muted flex items-center justify-between gap-2 rounded-xl px-2 py-2.5 transition-colors"
-                >
-                  <span className="flex items-center gap-2 text-sm">
-                    <Icon className="text-muted-foreground size-4 shrink-0" />
-                    {task.item}
-                  </span>
-                  <Badge variant={PRIORITY_VARIANT[task.priority]}>{task.priority}</Badge>
-                </Link>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>Upcoming tasks</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-1">
+        {upcomingTasks.length === 0 ? (
+          <EmptyState icon={Sparkles} title="All caught up!" description="No pending high-priority items." />
+        ) : (
+          upcomingTasks.map((task) => {
+            const Icon = getCategoryIcon(task.category);
+            return (
+              <Link
+                key={task.id}
+                to={`/checklist/${encodeURIComponent(task.category)}`}
+                className="hover:bg-muted flex items-center justify-between gap-2 rounded-xl px-2 py-2.5 transition-colors"
+              >
+                <span className="flex items-center gap-2 text-sm">
+                  <Icon className="text-muted-foreground size-4 shrink-0" />
+                  {task.item}
+                </span>
+                <Badge variant={PRIORITY_VARIANT[task.priority]}>{task.priority}</Badge>
+              </Link>
+            );
+          })
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -209,7 +207,8 @@ function RecentActivityWidget({ data }: { data: DashboardDataDTO }) {
 }
 
 const WIDGET_COMPONENTS: Record<string, (props: { data: DashboardDataDTO }) => React.JSX.Element> = {
-  "expense-tasks": ExpenseTasksWidget,
+  "expense-chart": ExpenseChartWidget,
+  "upcoming-tasks": UpcomingTasksWidget,
   "category-progress": CategoryProgressWidget,
   "recent-activity": RecentActivityWidget,
 };
@@ -223,8 +222,9 @@ export function DashboardView({
   name: string | null;
   layout?: WidgetConfig[];
 }) {
-  const order = layout && layout.length > 0 ? layout : DEFAULT_DASHBOARD_LAYOUT;
-  const visibleStatIds = new Set(order.filter((w) => w.visible).map((w) => w.id));
+  const order = mergeDashboardLayout(layout);
+  const visibleIds = new Set(order.filter((w) => w.visible).map((w) => w.id));
+  const anyStatVisible = STAT_CARD_IDS.some((id) => visibleIds.has(id));
 
   return (
     <div className="flex flex-col gap-6">
@@ -233,14 +233,12 @@ export function DashboardView({
         <p className="text-muted-foreground mt-1 text-sm">Here&apos;s how your hostel move-in is going.</p>
       </motion.div>
 
+      {anyStatVisible && <StatsWidget data={data} visibleStatIds={visibleIds} />}
+
       {order
-        .filter((w) => w.visible)
+        .filter((w) => w.visible && WIDGET_COMPONENTS[w.id])
         .map((w) => {
-          if (w.id === "stats") {
-            return <StatsWidget key={w.id} data={data} visibleStatIds={visibleStatIds} />;
-          }
           const Widget = WIDGET_COMPONENTS[w.id];
-          if (!Widget) return null;
           return <Widget key={w.id} data={data} />;
         })}
     </div>
