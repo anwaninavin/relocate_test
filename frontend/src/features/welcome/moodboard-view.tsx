@@ -1,37 +1,42 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
 import { HomeSectionCanvas } from "@/features/welcome/home-section-canvas";
 import { HOME_SECTIONS } from "@/features/welcome/home-sections";
 import { useHomeDesign } from "@/features/welcome/use-home-elements";
+import { SlideContainer } from "@/components/shared/slide-container";
 
 export function MoodboardView() {
   const { elements, sectionBackgrounds } = useHomeDesign();
+  const [activeSection, setActiveSection] = useState<string>(HOME_SECTIONS[0].id);
 
   return (
     <div className="relative overflow-x-hidden bg-[#fdf6ee] text-[#3a2e2a]">
       <div className="grain-overlay pointer-events-none fixed inset-0 z-0" />
 
-      {HOME_SECTIONS.map((section) => (
-        <div key={section.id} id={section.id === "mental-prep" ? "mental-prep" : undefined} className="relative">
-          <div className="block sm:hidden">
-            <HomeSectionCanvas
-              section={section}
-              elements={elements}
-              breakpoint="mobile"
-              background={sectionBackgrounds[section.id]}
-            />
+      <SlideContainer activeId={activeSection} onActiveChange={setActiveSection}>
+        {HOME_SECTIONS.map((section) => (
+          <div key={section.id} id={section.id} className="relative">
+            <div className="block sm:hidden">
+              <HomeSectionCanvas
+                section={section}
+                elements={elements}
+                breakpoint="mobile"
+                background={sectionBackgrounds[section.id]}
+              />
+            </div>
+            <div className="hidden sm:block">
+              <HomeSectionCanvas
+                section={section}
+                elements={elements}
+                breakpoint="desktop"
+                background={sectionBackgrounds[section.id]}
+              />
+            </div>
           </div>
-          <div className="hidden sm:block">
-            <HomeSectionCanvas
-              section={section}
-              elements={elements}
-              breakpoint="desktop"
-              background={sectionBackgrounds[section.id]}
-            />
-          </div>
-        </div>
-      ))}
+        ))}
+      </SlideContainer>
 
       {/* Persistent FAB — always reachable while scrolling the board */}
       <motion.div
