@@ -31,7 +31,7 @@ const SPEED_DIAL_ITEMS: { key: DialogKey; label: string; icon: typeof ListChecks
   { key: "budget", label: "Budget entry", icon: Wallet, navHref: "/budget" },
   { key: "note", label: "Note", icon: StickyNote, navHref: "/notes" },
   { key: "document", label: "Document", icon: FileText, navHref: "/documents" },
-  { key: "contact", label: "Contact", icon: PhoneCall },
+  { key: "contact", label: "Contact", icon: PhoneCall, navHref: "/contacts" },
   { key: "wishlist", label: "Wishlist item", icon: Heart, navHref: "/wishlist" },
   { key: "category", label: "New category", icon: FolderPlus },
 ];

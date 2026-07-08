@@ -11,22 +11,7 @@ import {
   StickerField,
   StickyNote,
 } from "@/components/shared/scrapbook-pieces";
-
-const NAV_SECTIONS = [
-  { id: "mental-prep", label: "Mental Prep" },
-  { id: "room-setup", label: "Room Setup" },
-  { id: "electronics", label: "Power & Gadgets" },
-  { id: "bathroom", label: "Bathroom" },
-  { id: "laundry", label: "Clothing & Laundry" },
-  { id: "food", label: "Food" },
-  { id: "roommates", label: "Roommates" },
-  { id: "hygiene", label: "Hygiene" },
-  { id: "safety", label: "Safety" },
-  { id: "routine", label: "Routine" },
-  { id: "social", label: "Social Life" },
-  { id: "money", label: "Money" },
-  { id: "essentials", label: "Essentials" },
-];
+import { GUIDE_TOPICS as NAV_SECTIONS } from "@/features/guide/guide-topics";
 
 function SectionTitle({ emoji, children }: { emoji: string; children: ReactNode }) {
   return (
