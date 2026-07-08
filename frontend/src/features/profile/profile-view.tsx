@@ -3,9 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { Loader2, User, School, Building2, DoorOpen, ImageIcon, LogOut } from "lucide-react";
+import { Loader2, User, LogOut } from "lucide-react";
 import { toast } from "sonner";
-import { z } from "zod";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -23,16 +22,8 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/page-header";
 import { useAuth } from "@/context/auth-context";
 import { api, ApiError } from "@/lib/api";
-
-const profileUpdateSchema = z.object({
-  name: z.string().trim().min(2, "Name is too short").max(80, "Name is too long"),
-  college: z.string().trim().max(120).optional().or(z.literal("")),
-  hostel: z.string().trim().max(120).optional().or(z.literal("")),
-  roomNumber: z.string().trim().max(20).optional().or(z.literal("")),
-  avatar: z.string().trim().url("Enter a valid URL").optional().or(z.literal("")),
-});
-
-type ProfileUpdateInput = z.infer<typeof profileUpdateSchema>;
+import { ProfileFields } from "@/features/auth/profile-fields";
+import { profileFieldsSchema, type ProfileFieldsInput } from "@/features/auth/profile-fields-schema";
 
 export function ProfileView() {
   const navigate = useNavigate();
@@ -41,18 +32,17 @@ export function ProfileView() {
 
   const initials = (user?.name ?? user?.mobile.slice(-2) ?? "?").slice(0, 2).toUpperCase();
 
-  const form = useForm<ProfileUpdateInput>({
-    resolver: zodResolver(profileUpdateSchema),
+  const form = useForm<ProfileFieldsInput>({
+    resolver: zodResolver(profileFieldsSchema),
     defaultValues: {
       name: user?.name ?? "",
+      gender: user?.gender ?? undefined,
       college: user?.college ?? "",
-      hostel: user?.hostel ?? "",
-      roomNumber: user?.roomNumber ?? "",
-      avatar: user?.avatar ?? "",
+      collegeCategory: user?.collegeCategory ?? undefined,
     },
   });
 
-  async function onSubmit(values: ProfileUpdateInput) {
+  async function onSubmit(values: ProfileFieldsInput) {
     setIsSubmitting(true);
     try {
       await api.patch("/api/profile", values);
@@ -120,77 +110,7 @@ export function ProfileView() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="college"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>College</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <School className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-                          <Input className="pl-11" placeholder="IIT Bombay" {...field} />
-                        </div>
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                <div className="grid grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="hostel"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Hostel</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <Building2 className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-                            <Input className="pl-11" placeholder="Hostel 7" {...field} />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="roomNumber"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Room</FormLabel>
-                        <FormControl>
-                          <div className="relative">
-                            <DoorOpen className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-                            <Input className="pl-11" placeholder="212" {...field} />
-                          </div>
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-                <FormField
-                  control={form.control}
-                  name="avatar"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Avatar URL</FormLabel>
-                      <FormControl>
-                        <div className="relative">
-                          <ImageIcon className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-                          <Input
-                            className="pl-11"
-                            placeholder="https://example.com/avatar.png"
-                            {...field}
-                          />
-                        </div>
-                      </FormControl>
-                      <p className="text-muted-foreground text-sm">Paste an image URL</p>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <ProfileFields form={form} />
                 <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2 self-start">
                   {isSubmitting && <Loader2 className="size-4 animate-spin" />}
                   Save changes

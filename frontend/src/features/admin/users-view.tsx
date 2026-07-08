@@ -65,7 +65,7 @@ export function UsersView({
                 <TableHead>Name</TableHead>
                 <TableHead>Mobile</TableHead>
                 <TableHead>Login code</TableHead>
-                <TableHead>Hostel / Room</TableHead>
+                <TableHead>College / Category</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead />
@@ -87,7 +87,7 @@ export function UsersView({
                     )}
                   </TableCell>
                   <TableCell>
-                    {user.hostel ?? "—"} {user.roomNumber ? `/ ${user.roomNumber}` : ""}
+                    {user.college ?? "—"} {user.collegeCategory ? `/ ${user.collegeCategory}` : ""}
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.role === "admin" ? "accent" : "outline"}>{user.role}</Badge>

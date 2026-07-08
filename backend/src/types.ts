@@ -1,13 +1,26 @@
 export type UserRole = "student" | "admin";
 
+export const GENDER_OPTIONS = ["Male", "Female", "Other"] as const;
+export type Gender = (typeof GENDER_OPTIONS)[number];
+
+export const COLLEGE_CATEGORY_OPTIONS = [
+  "Designing",
+  "Engineering",
+  "Medical",
+  "Commerce",
+  "Arts",
+  "Other",
+] as const;
+export type CollegeCategory = (typeof COLLEGE_CATEGORY_OPTIONS)[number];
+
 export interface UserDTO {
   id: string;
   name: string | null;
   mobile: string;
   avatar: string | null;
+  gender: Gender | null;
   college: string | null;
-  hostel: string | null;
-  roomNumber: string | null;
+  collegeCategory: CollegeCategory | null;
   role: UserRole;
   theme: "light" | "dark" | "system";
   needsOnboarding: boolean;

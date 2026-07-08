@@ -1,12 +1,12 @@
-import type { UserRole } from "@/types";
+import type { CollegeCategory, Gender, UserRole } from "@/types";
 
 export interface AdminUserDTO {
   id: string;
   name: string | null;
   mobile: string;
+  gender: Gender | null;
   college: string | null;
-  hostel: string | null;
-  roomNumber: string | null;
+  collegeCategory: CollegeCategory | null;
   role: UserRole;
   hasPinSet: boolean;
   createdAt: string;
