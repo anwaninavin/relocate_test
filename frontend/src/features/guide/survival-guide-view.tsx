@@ -12,6 +12,8 @@ import {
   StickyNote,
 } from "@/components/shared/scrapbook-pieces";
 import { GUIDE_TOPICS as NAV_SECTIONS } from "@/features/guide/guide-topics";
+import { SlideContainer } from "@/features/guide/slide-container";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 function SectionTitle({ emoji, children }: { emoji: string; children: ReactNode }) {
   return (
@@ -61,11 +63,17 @@ function GuideSection({
 }
 
 export function SurvivalGuideView() {
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string>("hero");
+  // Desktop turns the page into a locked, one-section-at-a-time slideshow (see
+  // SlideContainer); below that breakpoint it's the original free-scrolling page, and the
+  // scroll-spy effect below drives nav highlighting instead of the slideshow's own index.
+  const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   // Scroll-spy: highlight whichever section's top is currently nearest the sticky nav,
-  // not just whichever was last clicked.
+  // not just whichever was last clicked. Only meaningful on mobile — on desktop the
+  // slideshow itself is the single source of truth for which section is active.
   useEffect(() => {
+    if (isDesktop) return;
     const sections = NAV_SECTIONS.map((s) => document.getElementById(s.id)).filter(
       (el): el is HTMLElement => el !== null,
     );
@@ -85,61 +93,27 @@ export function SurvivalGuideView() {
 
     sections.forEach((el) => observer.observe(el));
     return () => observer.disconnect();
-  }, []);
+  }, [isDesktop]);
+
+  function handleAnchorClick(id: string, e: React.MouseEvent) {
+    setActiveSection(id);
+    // Native anchor-jump has nothing to scroll to on desktop — the target section only
+    // mounts once the slideshow makes it active, driven by the state update above.
+    if (isDesktop) e.preventDefault();
+  }
 
   return (
     <div className="relative -m-4 bg-[#fdf6ee] text-[#3a2e2a] lg:-m-8">
       <div className="grain-overlay pointer-events-none fixed inset-0 z-0" />
 
-      {/* HERO */}
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-5 py-20 text-center sm:py-28 lg:min-h-screen">
-        <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_25%_20%,#ffd6e8_0%,transparent_45%),radial-gradient(circle_at_75%_15%,#cfeaff_0%,transparent_45%),radial-gradient(circle_at_50%_85%,#e3d9ff_0%,transparent_50%)]" />
-
-        <StickerField
-          stickers={[
-            { slug: "camera", alt: "camera sticker" },
-            { slug: "bow", alt: "bow sticker" },
-            { slug: "evil-eye", alt: "evil eye sticker" },
-            { slug: "cherries", alt: "cherries sticker" },
-          ]}
-          seed={10}
-        />
-
-        <Pasted
-          rotate={-2}
-          className="tape max-w-lg bg-white/90 px-8 py-10 shadow-[6px_10px_24px_rgba(58,46,42,0.18)] lg:max-w-2xl lg:px-12 lg:py-14"
-        >
-          <p className="text-sm font-semibold tracking-[0.3em] text-[#c96b9a] uppercase lg:text-base">
-            a survival guide for
-          </p>
-          <h1
-            className="mt-2 text-5xl leading-[1.05] font-bold text-[#3a2e2a] sm:text-7xl lg:text-8xl"
-            style={{ fontFamily: "var(--font-caveat-guide)" }}
-          >
-            Hostel Survival
-            <br />
-            Guide
-          </h1>
-          <p className="mt-4 text-base text-[#6b5c50] sm:text-lg lg:text-xl">
-            Everything no one tells you before move-in day 💌
-          </p>
-          <a
-            href="#mental-prep"
-            className="mt-6 inline-block rotate-[-1deg] rounded-full bg-[#3a2e2a] px-7 py-3 text-sm font-bold text-white shadow-[3px_4px_0_rgba(0,0,0,0.15)] transition-transform hover:-translate-y-0.5 hover:rotate-0 lg:px-9 lg:py-4 lg:text-base"
-          >
-            Start Preparing →
-          </a>
-        </Pasted>
-      </section>
-
-      {/* STICKY SECTION NAV */}
-      <nav className="sticky top-0 z-20 border-y border-[#e9ddc9] bg-[#fdf6ee] shadow-[0_2px_10px_rgba(58,46,42,0.08)]">
+      {/* PERSISTENT SECTION NAV — floats over content on both mobile and desktop */}
+      <nav className="fixed inset-x-0 top-0 z-40 border-b border-[#e9ddc9] bg-[#fdf6ee]/95 shadow-[0_2px_10px_rgba(58,46,42,0.08)] backdrop-blur-md">
         <div className="scrollbar-none flex gap-1.5 overflow-x-auto px-5 py-3 sm:justify-center sm:px-8">
           {NAV_SECTIONS.map((s) => (
             <a
               key={s.id}
               href={`#${s.id}`}
-              onClick={() => setActiveSection(s.id)}
+              onClick={(e) => handleAnchorClick(s.id, e)}
               className={`shrink-0 rounded-full border px-3.5 py-1.5 text-xs font-medium whitespace-nowrap transition-colors ${
                 activeSection === s.id
                   ? "border-[#3a2e2a] bg-[#3a2e2a] text-white"
@@ -152,22 +126,71 @@ export function SurvivalGuideView() {
         </div>
       </nav>
 
-      {/* INTRO */}
-      <section className="border-b border-[#e9ddc9] px-5 py-14 text-center">
-        <motion.p
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="mx-auto max-w-2xl text-lg leading-relaxed text-[#5a4a3e] sm:text-xl"
+      <SlideContainer activeId={activeSection} onActiveChange={setActiveSection}>
+        {/* HERO */}
+        <section
+          id="hero"
+          className="relative flex flex-col items-center justify-center overflow-hidden px-5 pt-20 pb-20 text-center sm:pt-28 sm:pb-28 lg:min-h-screen lg:pt-24"
         >
-          Moving to hostel for the first time is exciting <em>and</em> a little overwhelming — new room, new
-          people, zero idea where anything is. This guide won&apos;t make it perfect, but it&apos;ll help you
-          actually survive the first few weeks and, honestly, start enjoying it.
-        </motion.p>
-      </section>
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_25%_20%,#ffd6e8_0%,transparent_45%),radial-gradient(circle_at_75%_15%,#cfeaff_0%,transparent_45%),radial-gradient(circle_at_50%_85%,#e3d9ff_0%,transparent_50%)]" />
 
-      {/* MENTAL PREP */}
+          <StickerField
+            stickers={[
+              { slug: "camera", alt: "camera sticker" },
+              { slug: "bow", alt: "bow sticker" },
+              { slug: "evil-eye", alt: "evil eye sticker" },
+              { slug: "cherries", alt: "cherries sticker" },
+            ]}
+            seed={10}
+          />
+
+          <Pasted
+            rotate={-2}
+            className="tape max-w-lg bg-white/90 px-8 py-10 shadow-[6px_10px_24px_rgba(58,46,42,0.18)] lg:max-w-2xl lg:px-12 lg:py-14"
+          >
+            <p className="text-sm font-semibold tracking-[0.3em] text-[#c96b9a] uppercase lg:text-base">
+              a survival guide for
+            </p>
+            <h1
+              className="mt-2 text-5xl leading-[1.05] font-bold text-[#3a2e2a] sm:text-7xl lg:text-8xl"
+              style={{ fontFamily: "var(--font-caveat-guide)" }}
+            >
+              Hostel Survival
+              <br />
+              Guide
+            </h1>
+            <p className="mt-4 text-base text-[#6b5c50] sm:text-lg lg:text-xl">
+              Everything no one tells you before move-in day 💌
+            </p>
+            <a
+              href="#intro"
+              onClick={(e) => handleAnchorClick("intro", e)}
+              className="mt-6 inline-block rotate-[-1deg] rounded-full bg-[#3a2e2a] px-7 py-3 text-sm font-bold text-white shadow-[3px_4px_0_rgba(0,0,0,0.15)] transition-transform hover:-translate-y-0.5 hover:rotate-0 lg:px-9 lg:py-4 lg:text-base"
+            >
+              Start Preparing →
+            </a>
+          </Pasted>
+        </section>
+
+        {/* INTRO */}
+        <section
+          id="intro"
+          className="flex flex-col items-center justify-center border-b border-[#e9ddc9] px-5 py-14 text-center lg:min-h-screen lg:border-b-0 lg:pt-24"
+        >
+          <motion.p
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="mx-auto max-w-2xl text-lg leading-relaxed text-[#5a4a3e] sm:text-xl lg:text-2xl"
+          >
+            Moving to hostel for the first time is exciting <em>and</em> a little overwhelming — new room, new
+            people, zero idea where anything is. This guide won&apos;t make it perfect, but it&apos;ll help you
+            actually survive the first few weeks and, honestly, start enjoying it.
+          </motion.p>
+        </section>
+
+        {/* MENTAL PREP */}
       <GuideSection id="mental-prep" emoji="💭" title="Get your head right">
         <div className="mx-auto flex max-w-4xl flex-wrap items-start justify-center gap-8">
           <StickyNote color="yellow" rotate={-6} delay={0}>
@@ -548,7 +571,10 @@ export function SurvivalGuideView() {
       </GuideSection>
 
       {/* FINAL / EMOTIONAL CLOSE */}
-      <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-5 py-24 text-center lg:min-h-screen">
+      <section
+        id="final"
+        className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-5 py-24 text-center lg:min-h-screen"
+      >
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,#d9c8ff_0%,#b8ddff_45%,#ffc2dd_100%)]" />
         <StickerField
           stickers={[
@@ -586,6 +612,7 @@ export function SurvivalGuideView() {
           </Link>
         </motion.div>
       </section>
+      </SlideContainer>
     </div>
   );
 }

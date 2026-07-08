@@ -1,11 +1,12 @@
 import { z } from "zod";
 
+import { collegeCategorySchema, genderSchema } from "@/validations/auth";
+
 export const profileUpdateSchema = z.object({
   name: z.string().trim().min(2, "Name is too short").max(80),
-  college: z.string().trim().max(120).optional().or(z.literal("")),
-  hostel: z.string().trim().max(120).optional().or(z.literal("")),
-  roomNumber: z.string().trim().max(20).optional().or(z.literal("")),
-  avatar: z.string().trim().url().optional().or(z.literal("")),
+  gender: genderSchema,
+  college: z.string().trim().min(1, "Enter your college name").max(120),
+  collegeCategory: collegeCategorySchema,
 });
 
 export const notificationSettingsSchema = z.object({

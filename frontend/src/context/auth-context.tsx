@@ -1,13 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import { api, ApiError, setAuthToken, getAuthToken } from "@/lib/api";
-import type { UserDTO } from "@/types";
+import type { CollegeCategory, Gender, UserDTO } from "@/types";
 
 interface OnboardingInput {
   name: string;
-  college?: string;
-  hostel?: string;
-  roomNumber?: string;
+  gender: Gender;
+  college: string;
+  collegeCategory: CollegeCategory;
 }
 
 interface OtpRequestResult {

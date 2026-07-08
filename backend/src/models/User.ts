@@ -1,13 +1,15 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 
+import { COLLEGE_CATEGORY_OPTIONS, GENDER_OPTIONS } from "@/types";
+
 const UserSchema = new Schema(
   {
     name: { type: String, default: null, trim: true, maxlength: 80 },
     mobile: { type: String, required: true, unique: true, index: true },
     avatar: { type: String, default: null },
+    gender: { type: String, enum: GENDER_OPTIONS, default: null },
     college: { type: String, default: null, trim: true, maxlength: 120 },
-    hostel: { type: String, default: null, trim: true, maxlength: 120 },
-    roomNumber: { type: String, default: null, trim: true, maxlength: 20 },
+    collegeCategory: { type: String, enum: COLLEGE_CATEGORY_OPTIONS, default: null },
     role: { type: String, enum: ["student", "admin"], default: "student" },
     theme: { type: String, enum: ["light", "dark", "system"], default: "system" },
     notificationsEnabled: { type: Boolean, default: true },
