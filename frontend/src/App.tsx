@@ -4,6 +4,7 @@ import { useAuth } from "@/context/auth-context";
 import { ProtectedRoute, AdminRoute, AuthOnlyRoute } from "@/components/protected-route";
 import { DashboardLayout } from "@/layouts/dashboard-layout";
 import { AuthLayout } from "@/layouts/auth-layout";
+import { ScrollToTop } from "@/components/shared/scroll-to-top";
 import { HOME_ROUTE } from "@/lib/nav-items";
 
 import LoginPage from "@/pages/login-page";
@@ -43,124 +44,127 @@ function RootRoute() {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/" element={<RootRoute />} />
+    <>
+      <ScrollToTop />
+      <Routes>
+        <Route path="/" element={<RootRoute />} />
 
-      <Route element={<AuthLayout />}>
+        <Route element={<AuthLayout />}>
+          <Route
+            path="/login"
+            element={
+              <AuthOnlyRoute>
+                <LoginPage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/register"
+            element={
+              <AuthOnlyRoute>
+                <RegisterPage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/forgot-password"
+            element={
+              <AuthOnlyRoute>
+                <ForgotPasswordPage />
+              </AuthOnlyRoute>
+            }
+          />
+          <Route
+            path="/onboarding"
+            element={
+              <ProtectedRoute>
+                <OnboardingPage />
+              </ProtectedRoute>
+            }
+          />
+        </Route>
+
         <Route
-          path="/login"
-          element={
-            <AuthOnlyRoute>
-              <LoginPage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <AuthOnlyRoute>
-              <RegisterPage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <AuthOnlyRoute>
-              <ForgotPasswordPage />
-            </AuthOnlyRoute>
-          }
-        />
-        <Route
-          path="/onboarding"
           element={
             <ProtectedRoute>
-              <OnboardingPage />
+              <DashboardLayout />
             </ProtectedRoute>
           }
-        />
-      </Route>
+        >
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/checklist" element={<ChecklistPage />} />
+          <Route path="/checklist/:category" element={<ChecklistCategoryPage />} />
+          <Route path="/budget" element={<BudgetPage />} />
+          <Route path="/notes" element={<NotesPage />} />
+          <Route path="/documents" element={<DocumentsPage />} />
+          <Route path="/contacts" element={<ContactsPage />} />
+          <Route path="/wishlist" element={<WishlistPage />} />
+          <Route path="/shopping" element={<ShoppingPage />} />
+          <Route path="/guide" element={<GuidePage />} />
+          <Route path="/guide/survival-guide" element={<SurvivalGuidePage />} />
+          <Route path="/guide/:slug" element={<GuideArticlePage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <AdminRoute>
+                <AdminUsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/products"
+            element={
+              <AdminRoute>
+                <AdminProductsPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/guide"
+            element={
+              <AdminRoute>
+                <AdminGuidePage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/layout"
+            element={
+              <AdminRoute>
+                <AdminLayoutPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/nav"
+            element={
+              <AdminRoute>
+                <AdminNavPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/home-screen"
+            element={
+              <AdminRoute>
+                <AdminHomeScreenPage />
+              </AdminRoute>
+            }
+          />
+        </Route>
 
-      <Route
-        element={
-          <ProtectedRoute>
-            <DashboardLayout />
-          </ProtectedRoute>
-        }
-      >
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/checklist" element={<ChecklistPage />} />
-        <Route path="/checklist/:category" element={<ChecklistCategoryPage />} />
-        <Route path="/budget" element={<BudgetPage />} />
-        <Route path="/notes" element={<NotesPage />} />
-        <Route path="/documents" element={<DocumentsPage />} />
-        <Route path="/contacts" element={<ContactsPage />} />
-        <Route path="/wishlist" element={<WishlistPage />} />
-        <Route path="/shopping" element={<ShoppingPage />} />
-        <Route path="/guide" element={<GuidePage />} />
-        <Route path="/guide/survival-guide" element={<SurvivalGuidePage />} />
-        <Route path="/guide/:slug" element={<GuideArticlePage />} />
-        <Route path="/profile" element={<ProfilePage />} />
-        <Route path="/settings" element={<SettingsPage />} />
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/users"
-          element={
-            <AdminRoute>
-              <AdminUsersPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/products"
-          element={
-            <AdminRoute>
-              <AdminProductsPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/guide"
-          element={
-            <AdminRoute>
-              <AdminGuidePage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/layout"
-          element={
-            <AdminRoute>
-              <AdminLayoutPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/nav"
-          element={
-            <AdminRoute>
-              <AdminNavPage />
-            </AdminRoute>
-          }
-        />
-        <Route
-          path="/admin/home-screen"
-          element={
-            <AdminRoute>
-              <AdminHomeScreenPage />
-            </AdminRoute>
-          }
-        />
-      </Route>
-
-      <Route path="*" element={<NotFound />} />
-    </Routes>
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </>
   );
 }

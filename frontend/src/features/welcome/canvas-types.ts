@@ -68,6 +68,12 @@ export interface HomeSectionDef {
 
 export type Breakpoint = "mobile" | "desktop";
 
+/** Real device widths (CSS px) each breakpoint's canvas is designed at — shared by the
+ * admin editor's preview and the live public page, so the two can never drift out of sync.
+ * The live page caps its section width at this value (instead of stretching edge-to-edge on
+ * wide monitors) so what the admin sees while editing matches what visitors actually see. */
+export const CANVAS_WIDTH: Record<Breakpoint, number> = { mobile: 390, desktop: 1280 };
+
 /** What the backend stores per element. For built-in elements this is a sparse diff
  * (only changed fields); for admin-added custom elements it carries every field needed
  * to fully reconstruct the element, since there's no default to merge onto. */
