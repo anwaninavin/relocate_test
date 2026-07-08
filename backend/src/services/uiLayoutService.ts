@@ -7,20 +7,34 @@ export interface WidgetConfig {
 }
 
 const DASHBOARD_PAGE = "dashboard";
+const NAV_PAGE = "nav";
 
-export async function getDashboardLayout(): Promise<WidgetConfig[] | null> {
+async function getLayout(page: string): Promise<WidgetConfig[] | null> {
   await connectDB();
-  const doc = await UiLayout.findOne({ page: DASHBOARD_PAGE }).lean();
+  const doc = await UiLayout.findOne({ page }).lean();
   return doc?.widgets ?? null;
 }
 
-/** Admin-only: persists the widget order/visibility that every student's dashboard renders. */
-export async function saveDashboardLayout(widgets: WidgetConfig[]): Promise<WidgetConfig[]> {
+async function saveLayout(page: string, widgets: WidgetConfig[]): Promise<WidgetConfig[]> {
   await connectDB();
-  await UiLayout.findOneAndUpdate(
-    { page: DASHBOARD_PAGE },
-    { widgets },
-    { upsert: true },
-  );
+  await UiLayout.findOneAndUpdate({ page }, { widgets }, { upsert: true });
   return widgets;
+}
+
+export function getDashboardLayout(): Promise<WidgetConfig[] | null> {
+  return getLayout(DASHBOARD_PAGE);
+}
+
+/** Admin-only: persists the widget order/visibility that every student's dashboard renders. */
+export function saveDashboardLayout(widgets: WidgetConfig[]): Promise<WidgetConfig[]> {
+  return saveLayout(DASHBOARD_PAGE, widgets);
+}
+
+export function getNavLayout(): Promise<WidgetConfig[] | null> {
+  return getLayout(NAV_PAGE);
+}
+
+/** Admin-only: persists which nav items are hidden/shown for every student. */
+export function saveNavLayout(widgets: WidgetConfig[]): Promise<WidgetConfig[]> {
+  return saveLayout(NAV_PAGE, widgets);
 }

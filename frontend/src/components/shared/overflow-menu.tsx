@@ -10,8 +10,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { ADMIN_NAV_ITEM, OVERFLOW_NAV_ITEMS, SETTINGS_NAV_ITEM } from "@/lib/nav-items";
 
-export function OverflowMenu({ isAdmin }: { isAdmin: boolean }) {
-  const items = [...OVERFLOW_NAV_ITEMS, SETTINGS_NAV_ITEM, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
+export function OverflowMenu({
+  isAdmin,
+  hiddenHrefs,
+}: {
+  isAdmin: boolean;
+  hiddenHrefs?: Set<string>;
+}) {
+  const items = [
+    ...OVERFLOW_NAV_ITEMS.filter((item) => !hiddenHrefs?.has(item.href)),
+    SETTINGS_NAV_ITEM,
+    ...(isAdmin ? [ADMIN_NAV_ITEM] : []),
+  ];
 
   return (
     <DropdownMenu>

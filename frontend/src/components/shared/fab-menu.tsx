@@ -26,21 +26,24 @@ import { WishlistFormDialog } from "@/features/wishlist/wishlist-form-dialog";
 
 type DialogKey = "checklist" | "budget" | "note" | "document" | "contact" | "wishlist" | "category";
 
-const SPEED_DIAL_ITEMS: { key: DialogKey; label: string; icon: typeof ListChecks }[] = [
+const SPEED_DIAL_ITEMS: { key: DialogKey; label: string; icon: typeof ListChecks; navHref?: string }[] = [
   { key: "checklist", label: "Checklist item", icon: ListChecks },
-  { key: "budget", label: "Budget entry", icon: Wallet },
-  { key: "note", label: "Note", icon: StickyNote },
-  { key: "document", label: "Document", icon: FileText },
+  { key: "budget", label: "Budget entry", icon: Wallet, navHref: "/budget" },
+  { key: "note", label: "Note", icon: StickyNote, navHref: "/notes" },
+  { key: "document", label: "Document", icon: FileText, navHref: "/documents" },
   { key: "contact", label: "Contact", icon: PhoneCall },
-  { key: "wishlist", label: "Wishlist item", icon: Heart },
+  { key: "wishlist", label: "Wishlist item", icon: Heart, navHref: "/wishlist" },
   { key: "category", label: "New category", icon: FolderPlus },
 ];
 
-export function FabMenu() {
+export function FabMenu({ hiddenNavHrefs }: { hiddenNavHrefs?: Set<string> }) {
   const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const [activeDialog, setActiveDialog] = useState<DialogKey | null>(null);
   const [categories, setCategories] = useState<string[] | null>(null);
   const [loadingKey, setLoadingKey] = useState<DialogKey | null>(null);
+  const speedDialItems = SPEED_DIAL_ITEMS.filter(
+    (item) => !item.navHref || !hiddenNavHrefs?.has(item.navHref),
+  );
 
   function closeActiveDialog(refresh = false) {
     setActiveDialog(null);
@@ -76,7 +79,7 @@ export function FabMenu() {
           transition={{ duration: 0.15 }}
           className="glass absolute bottom-14 left-1/2 flex w-56 -translate-x-1/2 flex-col gap-1 rounded-2xl p-2 shadow-xl lg:bottom-16 lg:left-auto lg:right-0 lg:translate-x-0"
         >
-          {SPEED_DIAL_ITEMS.map((item, i) => {
+          {speedDialItems.map((item, i) => {
             const Icon = item.icon;
             const isLoading = loadingKey === item.key;
             return (
