@@ -7,9 +7,10 @@ import { HOME_ROUTE } from "@/lib/nav-items";
 
 interface NavbarProps {
   isAdmin: boolean;
+  hiddenNavHrefs?: Set<string>;
 }
 
-export function Navbar({ isAdmin }: NavbarProps) {
+export function Navbar({ isAdmin, hiddenNavHrefs }: NavbarProps) {
   return (
     <header className="glass sticky top-0 z-30 flex items-center justify-between gap-3 px-4 py-3 lg:px-8">
       <Link to={HOME_ROUTE} className="flex items-center gap-2 lg:hidden">
@@ -24,7 +25,7 @@ export function Navbar({ isAdmin }: NavbarProps) {
           <GlobalSearch />
         </div>
         <div className="lg:hidden">
-          <OverflowMenu isAdmin={isAdmin} />
+          <OverflowMenu isAdmin={isAdmin} hiddenHrefs={hiddenNavHrefs} />
         </div>
       </div>
     </header>

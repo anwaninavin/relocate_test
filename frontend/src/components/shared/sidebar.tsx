@@ -10,11 +10,11 @@ import {
 } from "@/lib/nav-items";
 import { BrandName } from "@/components/shared/brand-name";
 
-export function Sidebar({ isAdmin }: { isAdmin: boolean }) {
+export function Sidebar({ isAdmin, hiddenHrefs }: { isAdmin: boolean; hiddenHrefs?: Set<string> }) {
   const { pathname } = useLocation();
 
   const items = [
-    ...PRIMARY_NAV_ITEMS,
+    ...PRIMARY_NAV_ITEMS.filter((item) => !hiddenHrefs?.has(item.href)),
     PROFILE_NAV_ITEM,
     SETTINGS_NAV_ITEM,
     ...(isAdmin ? [ADMIN_NAV_ITEM] : []),

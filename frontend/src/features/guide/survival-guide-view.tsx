@@ -65,7 +65,10 @@ function GuideSection({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="relative scroll-mt-32 px-5 py-24">
+    <section
+      id={id}
+      className="relative flex scroll-mt-32 flex-col items-center justify-center px-5 py-24 lg:min-h-screen"
+    >
       <SectionTitle emoji={emoji}>{title}</SectionTitle>
       {children}
     </section>
@@ -80,7 +83,7 @@ export function SurvivalGuideView() {
       <div className="grain-overlay pointer-events-none fixed inset-0 z-0" />
 
       {/* HERO */}
-      <section className="relative flex flex-col items-center justify-center overflow-hidden px-5 py-20 text-center sm:py-28">
+      <section className="relative flex flex-col items-center justify-center overflow-hidden px-5 py-20 text-center sm:py-28 lg:min-h-screen">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(circle_at_25%_20%,#ffd6e8_0%,transparent_45%),radial-gradient(circle_at_75%_15%,#cfeaff_0%,transparent_45%),radial-gradient(circle_at_50%_85%,#e3d9ff_0%,transparent_50%)]" />
 
         <StickerField
@@ -536,7 +539,7 @@ export function SurvivalGuideView() {
       </GuideSection>
 
       {/* FINAL / EMOTIONAL CLOSE */}
-      <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-5 py-24 text-center">
+      <section className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-5 py-24 text-center lg:min-h-screen">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-[linear-gradient(180deg,#d9c8ff_0%,#b8ddff_45%,#ffc2dd_100%)]" />
         <StickerField
           stickers={[

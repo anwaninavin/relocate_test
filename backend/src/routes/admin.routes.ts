@@ -19,7 +19,7 @@ import {
   deleteGuideArticle,
   updateGuideArticle,
 } from "@/services/guideService";
-import { saveDashboardLayout } from "@/services/uiLayoutService";
+import { saveDashboardLayout, saveNavLayout } from "@/services/uiLayoutService";
 import { saveLandingDesign } from "@/services/landingDesignService";
 import {
   createUserByAdminSchema,
@@ -166,6 +166,16 @@ adminRouter.put("/layout", async (req, res) => {
     return;
   }
   const widgets = await saveDashboardLayout(parsed.data.widgets);
+  res.json({ widgets });
+});
+
+adminRouter.put("/nav-layout", async (req, res) => {
+  const parsed = uiLayoutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const widgets = await saveNavLayout(parsed.data.widgets);
   res.json({ widgets });
 });
 
