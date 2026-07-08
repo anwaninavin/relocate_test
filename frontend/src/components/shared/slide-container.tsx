@@ -108,7 +108,10 @@ export function SlideContainer({
           animate="center"
           exit="exit"
           transition={TRANSITION}
-          className="absolute inset-0 flex h-dvh w-full items-center justify-center overflow-y-auto"
+          // Plain block flow, not flex-centered — content decides its own layout/centering
+          // (e.g. full-width, aspect-ratio-driven canvases need to stay block-level so their
+          // own w-full resolves against the full slide width, not a shrink-to-fit flex child).
+          className="absolute inset-0 h-dvh w-full overflow-y-auto"
         >
           {slides[index]?.node}
         </motion.div>
