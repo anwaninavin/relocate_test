@@ -27,7 +27,7 @@ const ACTIVITY_ICON = {
   note: StickyNote,
 };
 
-function StatsWidget({ data }: { data: DashboardDataDTO }) {
+function StatsWidget({ data, visibleStatIds }: { data: DashboardDataDTO; visibleStatIds: Set<string> }) {
   const { overallProgress, budgetSummary, wishlistCount } = data;
   const completionPercent = overallProgress.total === 0 ? 0 : (overallProgress.completed / overallProgress.total) * 100;
   const itemsRemaining = overallProgress.total - overallProgress.completed;
@@ -35,52 +35,60 @@ function StatsWidget({ data }: { data: DashboardDataDTO }) {
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
-        <Card className="from-primary/10 items-center justify-center gap-1 bg-gradient-to-br via-card to-card p-6">
-          <div className="relative">
-            <SuitcaseFill value={completionPercent} />
-            {completionPercent >= 100 && (
-              <div className="pointer-events-none absolute -top-3 -right-3">
-                <SuccessLottie size={48} />
-              </div>
-            )}
-          </div>
-          <p className="font-display mt-1 text-2xl font-bold">{Math.round(completionPercent)}%</p>
-          <p className="text-muted-foreground text-center text-sm">
-            {overallProgress.total === 0
-              ? "Add items to your checklist to get started"
-              : `${overallProgress.completed} of ${overallProgress.total} packed`}
-            {completionPercent >= 100 && overallProgress.total > 0 && " — all packed! 🎉"}
-          </p>
-        </Card>
-      </motion.div>
+      {visibleStatIds.has("stat-packing") && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}>
+          <Card className="from-primary/10 items-center justify-center gap-1 bg-gradient-to-br via-card to-card p-6">
+            <div className="relative">
+              <SuitcaseFill value={completionPercent} />
+              {completionPercent >= 100 && (
+                <div className="pointer-events-none absolute -top-3 -right-3">
+                  <SuccessLottie size={48} />
+                </div>
+              )}
+            </div>
+            <p className="font-display mt-1 text-2xl font-bold">{Math.round(completionPercent)}%</p>
+            <p className="text-muted-foreground text-center text-sm">
+              {overallProgress.total === 0
+                ? "Add items to your checklist to get started"
+                : `${overallProgress.completed} of ${overallProgress.total} packed`}
+              {completionPercent >= 100 && overallProgress.total > 0 && " — all packed! 🎉"}
+            </p>
+          </Card>
+        </motion.div>
+      )}
 
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
-        <Card className="from-secondary/10 items-center justify-center gap-1 bg-gradient-to-br via-card to-card p-6">
-          <PiggyBankFill value={budgetUsedPercent} />
-          <p className="font-display mt-1 text-2xl font-bold">{Math.round(budgetUsedPercent)}%</p>
-          <p className="text-muted-foreground text-center text-sm">
-            ₹{budgetSummary.spent.toLocaleString("en-IN")} of ₹{budgetSummary.planned.toLocaleString("en-IN")} spent
-          </p>
-        </Card>
-      </motion.div>
+      {visibleStatIds.has("stat-budget") && (
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <Card className="from-secondary/10 items-center justify-center gap-1 bg-gradient-to-br via-card to-card p-6">
+            <PiggyBankFill value={budgetUsedPercent} />
+            <p className="font-display mt-1 text-2xl font-bold">{Math.round(budgetUsedPercent)}%</p>
+            <p className="text-muted-foreground text-center text-sm">
+              ₹{budgetSummary.spent.toLocaleString("en-IN")} of ₹{budgetSummary.planned.toLocaleString("en-IN")} spent
+            </p>
+          </Card>
+        </motion.div>
+      )}
 
-      <StatCard
-        icon={<ListTodo className="size-5" />}
-        label="Items remaining"
-        value={String(itemsRemaining)}
-        hint="Still to pack or buy"
-        tone="primary"
-        delay={0.1}
-      />
-      <StatCard
-        icon={<Heart className="size-5" />}
-        label="Wishlist"
-        value={String(wishlistCount)}
-        hint="Items you're eyeing"
-        tone="accent"
-        delay={0.15}
-      />
+      {visibleStatIds.has("stat-items-remaining") && (
+        <StatCard
+          icon={<ListTodo className="size-5" />}
+          label="Items remaining"
+          value={String(itemsRemaining)}
+          hint="Still to pack or buy"
+          tone="primary"
+          delay={0.1}
+        />
+      )}
+      {visibleStatIds.has("stat-wishlist") && (
+        <StatCard
+          icon={<Heart className="size-5" />}
+          label="Wishlist"
+          value={String(wishlistCount)}
+          hint="Items you're eyeing"
+          tone="accent"
+          delay={0.15}
+        />
+      )}
     </div>
   );
 }
@@ -201,7 +209,6 @@ function RecentActivityWidget({ data }: { data: DashboardDataDTO }) {
 }
 
 const WIDGET_COMPONENTS: Record<string, (props: { data: DashboardDataDTO }) => React.JSX.Element> = {
-  stats: StatsWidget,
   "expense-tasks": ExpenseTasksWidget,
   "category-progress": CategoryProgressWidget,
   "recent-activity": RecentActivityWidget,
@@ -217,6 +224,7 @@ export function DashboardView({
   layout?: WidgetConfig[];
 }) {
   const order = layout && layout.length > 0 ? layout : DEFAULT_DASHBOARD_LAYOUT;
+  const visibleStatIds = new Set(order.filter((w) => w.visible).map((w) => w.id));
 
   return (
     <div className="flex flex-col gap-6">
@@ -228,6 +236,9 @@ export function DashboardView({
       {order
         .filter((w) => w.visible)
         .map((w) => {
+          if (w.id === "stats") {
+            return <StatsWidget key={w.id} data={data} visibleStatIds={visibleStatIds} />;
+          }
           const Widget = WIDGET_COMPONENTS[w.id];
           if (!Widget) return null;
           return <Widget key={w.id} data={data} />;
