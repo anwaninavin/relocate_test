@@ -31,6 +31,7 @@ import type {
   ElementOverride,
   SectionBackgroundOverride,
 } from "@/features/welcome/canvas-types";
+import { CANVAS_WIDTH } from "@/features/welcome/canvas-types";
 
 const PRESET_IDS = Object.keys(SECTION_BACKGROUND_PRESETS) as SectionBackgroundPresetId[];
 
@@ -38,8 +39,9 @@ const BREAKPOINTS: Breakpoint[] = ["mobile", "desktop"];
 
 /** Real device widths (CSS px) the canvas renders at — not just an aspect ratio — so
  * fixed-size cards/text actually look phone-sized vs desktop-sized, like a browser's
- * device toolbar. The visible box is then scaled down to fit the editor panel. */
-const PREVIEW_WIDTH: Record<Breakpoint, number> = { mobile: 390, desktop: 1280 };
+ * device toolbar. The visible box is then scaled down to fit the editor panel. Shared with
+ * the live public page (CANVAS_WIDTH) so the two can never render at different widths. */
+const PREVIEW_WIDTH = CANVAS_WIDTH;
 
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024; // 2MB — uploaded images are stored inline as base64
 

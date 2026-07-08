@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 
@@ -52,7 +52,7 @@ function GuideSection({
   return (
     <section
       id={id}
-      className="relative flex scroll-mt-32 flex-col items-center justify-center px-5 py-24 lg:min-h-screen"
+      className="relative flex scroll-mt-32 flex-col items-center justify-center overflow-hidden px-5 py-24 lg:min-h-screen"
     >
       <SectionTitle emoji={emoji}>{title}</SectionTitle>
       {children}
@@ -63,8 +63,32 @@ function GuideSection({
 export function SurvivalGuideView() {
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  // Scroll-spy: highlight whichever section's top is currently nearest the sticky nav,
+  // not just whichever was last clicked.
+  useEffect(() => {
+    const sections = NAV_SECTIONS.map((s) => document.getElementById(s.id)).filter(
+      (el): el is HTMLElement => el !== null,
+    );
+    if (sections.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries.filter((entry) => entry.isIntersecting);
+        if (visible.length === 0) return;
+        const topMost = visible.reduce((a, b) => (a.boundingClientRect.top <= b.boundingClientRect.top ? a : b));
+        setActiveSection(topMost.target.id);
+      },
+      // Counts a section "active" once it's scrolled to just below the sticky nav, until
+      // it's mostly scrolled past — accounts for the nav's own height.
+      { rootMargin: "-120px 0px -65% 0px", threshold: 0 },
+    );
+
+    sections.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <div className="relative -m-4 overflow-x-hidden bg-[#fdf6ee] text-[#3a2e2a] lg:-m-8">
+    <div className="relative -m-4 bg-[#fdf6ee] text-[#3a2e2a] lg:-m-8">
       <div className="grain-overlay pointer-events-none fixed inset-0 z-0" />
 
       {/* HERO */}
@@ -109,7 +133,7 @@ export function SurvivalGuideView() {
       </section>
 
       {/* STICKY SECTION NAV */}
-      <nav className="sticky top-0 z-20 border-y border-[#e9ddc9] bg-[#fdf6ee]/90 backdrop-blur-md">
+      <nav className="sticky top-0 z-20 border-y border-[#e9ddc9] bg-[#fdf6ee] shadow-[0_2px_10px_rgba(58,46,42,0.08)]">
         <div className="scrollbar-none flex gap-1.5 overflow-x-auto px-5 py-3 sm:justify-center sm:px-8">
           {NAV_SECTIONS.map((s) => (
             <a
