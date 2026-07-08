@@ -12,9 +12,10 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { api } from "@/lib/api";
+import { GUIDE_TOPICS } from "@/features/guide/guide-topics";
 
 export interface SearchResult {
-  type: "checklist" | "budget" | "note" | "document" | "contact" | "wishlist";
+  type: "checklist" | "budget" | "note" | "document" | "contact" | "wishlist" | "guide";
   id: string;
   title: string;
   subtitle?: string;
@@ -28,7 +29,23 @@ const TYPE_LABELS: Record<SearchResult["type"], string> = {
   document: "Documents",
   contact: "Emergency Contacts",
   wishlist: "Wishlist",
+  guide: "Hostel Guide",
 };
+
+/** The Hostel Survival Guide's content is a static scrapbook page, not database records, so
+ * it isn't covered by the server search — match its topics client-side instead. */
+function matchingGuideTopics(query: string): SearchResult[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return [];
+  return GUIDE_TOPICS.filter(
+    (topic) => topic.label.toLowerCase().includes(q) || topic.keywords.toLowerCase().includes(q),
+  ).map((topic) => ({
+    type: "guide" as const,
+    id: topic.id,
+    title: topic.label,
+    href: `/guide/survival-guide#${topic.id}`,
+  }));
+}
 
 export function GlobalSearch() {
   const navigate = useNavigate();
@@ -58,7 +75,7 @@ export function GlobalSearch() {
         const data = await api.get<{ results: SearchResult[] }>(
           `/api/search?q=${encodeURIComponent(query)}`,
         );
-        if (!cancelled) setResults(data.results ?? []);
+        if (!cancelled) setResults([...matchingGuideTopics(query), ...(data.results ?? [])]);
       } catch {
         // ignore failed requests
       }
@@ -80,15 +97,15 @@ export function GlobalSearch() {
         variant="outline"
         size="sm"
         onClick={() => setOpen(true)}
-        className="text-muted-foreground gap-2"
+        className="text-muted-foreground w-full justify-start gap-2 lg:h-11"
       >
         <Search className="size-4" />
         <span className="hidden sm:inline">Search everything…</span>
-        <kbd className="bg-muted ml-2 hidden rounded px-1.5 py-0.5 text-[10px] sm:inline">⌘K</kbd>
+        <kbd className="bg-muted ml-auto hidden rounded px-1.5 py-0.5 text-[10px] sm:inline">⌘K</kbd>
       </Button>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput
-          placeholder="Search checklist, budget, notes, documents…"
+          placeholder="Search checklist, budget, notes, documents, guide…"
           value={query}
           onValueChange={setQuery}
         />

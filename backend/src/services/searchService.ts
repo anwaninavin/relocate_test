@@ -5,9 +5,10 @@ import { Note } from "@/models/Note";
 import { DocumentItem } from "@/models/DocumentItem";
 import { EmergencyContact } from "@/models/EmergencyContact";
 import { WishlistItem } from "@/models/WishlistItem";
+import { GuideArticle } from "@/models/GuideArticle";
 
 export interface SearchResult {
-  type: "checklist" | "budget" | "note" | "document" | "contact" | "wishlist";
+  type: "checklist" | "budget" | "note" | "document" | "contact" | "wishlist" | "guide";
   id: string;
   title: string;
   subtitle?: string;
@@ -24,13 +25,17 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
 
   const regex = new RegExp(escapeRegex(query.trim()), "i");
 
-  const [checklist, budget, notes, documents, contacts, wishlist] = await Promise.all([
+  const [checklist, budget, notes, documents, contacts, wishlist, guide] = await Promise.all([
     ChecklistItem.find({ userId, item: regex }).limit(5).lean(),
     BudgetEntry.find({ userId, title: regex }).limit(5).lean(),
     Note.find({ userId, $or: [{ title: regex }, { content: regex }] }).limit(5).lean(),
     DocumentItem.find({ userId, title: regex }).limit(5).lean(),
     EmergencyContact.find({ userId, name: regex }).limit(5).lean(),
     WishlistItem.find({ userId, item: regex }).limit(5).lean(),
+    // Guide articles are shared content, not scoped to a user.
+    GuideArticle.find({ $or: [{ title: regex }, { summary: regex }, { content: regex }] })
+      .limit(5)
+      .lean(),
   ]);
 
   return [
@@ -72,6 +77,13 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
       id: w._id.toString(),
       title: w.item,
       href: "/wishlist",
+    })),
+    ...guide.map((g) => ({
+      type: "guide" as const,
+      id: g._id.toString(),
+      title: g.title,
+      subtitle: g.summary || undefined,
+      href: `/guide/${g.slug}`,
     })),
   ];
 }
