@@ -1,6 +1,6 @@
-import { useState, type ElementType, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ListChecks, Loader2, LogOut, Moon, Sparkles, Wand2 } from "lucide-react";
+import { ListChecks, Loader2, LogOut, Moon, Sparkles, Wand2, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ function SettingsRow({
   description,
   action,
 }: {
-  icon: ElementType;
+  icon: LucideIcon;
   label: string;
   description?: string;
   action: ReactNode;

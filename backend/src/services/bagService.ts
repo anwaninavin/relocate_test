@@ -1,9 +1,19 @@
 import { connectDB } from "@/db";
 import { Bag } from "@/models/Bag";
 import { ChecklistItem } from "@/models/ChecklistItem";
+import { BAG_COLOR_PRESETS } from "@/types";
 
 function normalize(name: string) {
   return name.trim().toLowerCase();
+}
+
+/** Idempotent: gives a brand-new user one suitcase to start with, so the Bags tab never
+ * opens empty. Mirrors ensureDefaultCategories' "seed once, then leave alone" approach. */
+async function ensureDefaultBag(userId: string) {
+  const existingCount = await Bag.countDocuments({ userId });
+  if (existingCount > 0) return;
+
+  await Bag.create({ userId, name: "My Suitcase", color: BAG_COLOR_PRESETS[0] }).catch(() => {});
 }
 
 /** Bags tab overview: every bag a user has, with packed/total counts of the checklist
@@ -11,6 +21,7 @@ function normalize(name: string) {
  * ChecklistItem.bagId reference is the source of truth. */
 export async function listBagsWithCounts(userId: string) {
   await connectDB();
+  await ensureDefaultBag(userId);
 
   const [bags, items] = await Promise.all([
     Bag.find({ userId }).sort({ createdAt: 1 }).lean(),
@@ -22,6 +33,7 @@ export async function listBagsWithCounts(userId: string) {
     return {
       id: String(bag._id),
       name: bag.name,
+      color: bag.color ?? BAG_COLOR_PRESETS[0],
       total: assigned.length,
       completed: assigned.filter((i) => i.completed).length,
     };
@@ -38,7 +50,7 @@ export async function getBagWithItems(userId: string, id: string) {
   return { bag, items };
 }
 
-export async function createBag(userId: string, name: string) {
+export async function createBag(userId: string, name: string, color?: string) {
   await connectDB();
 
   const trimmed = name.trim();
@@ -48,26 +60,39 @@ export async function createBag(userId: string, name: string) {
     return { success: false as const, error: "A bag with this name already exists" };
   }
 
-  const bag = await Bag.create({ userId, name: trimmed });
+  const bag = await Bag.create({ userId, name: trimmed, ...(color ? { color } : {}) });
   return { success: true as const, bag };
 }
 
-export async function renameBag(userId: string, id: string, name: string) {
+export async function updateBag(
+  userId: string,
+  id: string,
+  updates: { name?: string; color?: string },
+) {
   await connectDB();
 
-  const trimmed = name.trim();
   const current = await Bag.findOne({ _id: id, userId }).lean();
   if (!current) {
     return { success: false as const, error: "Bag not found" };
   }
 
-  const existing = await Bag.find({ userId, _id: { $ne: id } }).lean();
-  const clash = existing.some((b) => normalize(b.name) === normalize(trimmed));
-  if (clash) {
-    return { success: false as const, error: "A bag with this name already exists" };
+  const patch: { name?: string; color?: string } = {};
+
+  if (updates.name !== undefined) {
+    const trimmed = updates.name.trim();
+    const existing = await Bag.find({ userId, _id: { $ne: id } }).lean();
+    const clash = existing.some((b) => normalize(b.name) === normalize(trimmed));
+    if (clash) {
+      return { success: false as const, error: "A bag with this name already exists" };
+    }
+    patch.name = trimmed;
   }
 
-  await Bag.updateOne({ _id: id, userId }, { name: trimmed });
+  if (updates.color !== undefined) {
+    patch.color = updates.color;
+  }
+
+  await Bag.updateOne({ _id: id, userId }, patch);
   return { success: true as const };
 }
 

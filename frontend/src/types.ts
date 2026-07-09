@@ -68,6 +68,18 @@ export type BudgetCategory = (typeof BUDGET_CATEGORIES)[number];
 export const STORE_OPTIONS = ["Amazon", "Flipkart", "Myntra", "Decathlon", "Local Store"] as const;
 export type StoreOption = (typeof STORE_OPTIONS)[number];
 
+/** Preset pastel colors offered in the bag color picker (Gen-Z-friendly palette). */
+export const BAG_COLOR_PRESETS = [
+  "#7C9CF2",
+  "#F27C9C",
+  "#7CE0C0",
+  "#F2C97C",
+  "#B57CF2",
+  "#F29C7C",
+  "#7CD1F2",
+  "#9AA5B1",
+] as const;
+
 export const GUIDE_CATEGORIES = [
   "Packing",
   "Laundry",
