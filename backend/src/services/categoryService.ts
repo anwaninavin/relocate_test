@@ -1,14 +1,19 @@
 import { connectDB } from "@/db";
 import { Category } from "@/models/Category";
 import { ChecklistItem } from "@/models/ChecklistItem";
+import { User } from "@/models/User";
 import { DEFAULT_CHECKLIST_CATEGORIES } from "@/types";
 
 function normalize(name: string) {
   return name.trim().toLowerCase();
 }
 
+// "Fashion Design Tools" is only relevant to Designing students — everyone else's
+// default category list (and starter checklist, see checklistService) skips it.
+const DESIGN_ONLY_CATEGORY = "Fashion Design Tools";
+
 /**
- * Idempotent bootstrap: seeds the 13 default category names the first time a user has none,
+ * Idempotent bootstrap: seeds the default category names the first time a user has none,
  * unioned with any category strings already present on their checklist items.
  */
 export async function ensureDefaultCategories(userId: string) {
@@ -17,8 +22,14 @@ export async function ensureDefaultCategories(userId: string) {
   const existingCount = await Category.countDocuments({ userId });
   if (existingCount > 0) return;
 
+  const user = await User.findById(userId).select("collegeCategory").lean();
+  const defaultCategories =
+    user?.collegeCategory === "Designing"
+      ? DEFAULT_CHECKLIST_CATEGORIES
+      : DEFAULT_CHECKLIST_CATEGORIES.filter((c) => c !== DESIGN_ONLY_CATEGORY);
+
   const distinctItemCategories = await ChecklistItem.distinct("category", { userId });
-  const names = new Set<string>([...DEFAULT_CHECKLIST_CATEGORIES, ...distinctItemCategories]);
+  const names = new Set<string>([...defaultCategories, ...distinctItemCategories]);
 
   const docs = Array.from(names)
     .filter((name) => name && name.trim())

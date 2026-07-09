@@ -1,11 +1,23 @@
 import { connectDB } from "@/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { Bag } from "@/models/Bag";
+import { User } from "@/models/User";
 import type { ChecklistCategory, ChecklistPriority } from "@/types";
 import type { ChecklistItemInput, ChecklistItemUpdateInput } from "@/validations/checklist";
 import { DEFAULT_CHECKLIST_TEMPLATE } from "@/lib/defaultChecklistTemplate";
 import { areNearDuplicateNames } from "@/lib/textSimilarity";
 import { listCategories } from "@/services/categoryService";
+
+// "Fashion Design Tools" is only relevant to Designing students — see categoryService.
+const DESIGN_ONLY_CATEGORY = "Fashion Design Tools";
+
+async function getTemplateForUser(userId: string) {
+  const user = await User.findById(userId).select("collegeCategory").lean();
+  if (user?.collegeCategory === "Designing") {
+    return DEFAULT_CHECKLIST_TEMPLATE;
+  }
+  return DEFAULT_CHECKLIST_TEMPLATE.filter((item) => item.category !== DESIGN_ONLY_CATEGORY);
+}
 
 export async function getCategorySummaries(userId: string) {
   await connectDB();
@@ -62,7 +74,8 @@ export async function getAllItemsByCategory(userId: string) {
   }));
 }
 
-/** Idempotent: only seeds the starter checklist if the user has no items yet. */
+/** Idempotent: only seeds the starter checklist if the user has no items yet. Excludes
+ * "Fashion Design Tools" items unless the user's college category is Designing. */
 export async function seedDefaultChecklistIfEmpty(userId: string) {
   await connectDB();
 
@@ -71,7 +84,8 @@ export async function seedDefaultChecklistIfEmpty(userId: string) {
     return { seeded: false, count: 0 };
   }
 
-  const docs = DEFAULT_CHECKLIST_TEMPLATE.map((template) => ({ userId, ...template }));
+  const template = await getTemplateForUser(userId);
+  const docs = template.map((template) => ({ userId, ...template }));
   await ChecklistItem.insertMany(docs);
 
   return { seeded: true, count: docs.length };
@@ -81,12 +95,14 @@ export async function seedDefaultChecklistIfEmpty(userId: string) {
 export async function addMissingTemplateItems(userId: string) {
   await connectDB();
 
+  const template = await getTemplateForUser(userId);
+
   const existing = await ChecklistItem.find({ userId }).select("category item").lean();
   const existingKeys = new Set(
     existing.map((i) => `${i.category}::${i.item.trim().toLowerCase()}`),
   );
 
-  const missing = DEFAULT_CHECKLIST_TEMPLATE.filter(
+  const missing = template.filter(
     (template) => !existingKeys.has(`${template.category}::${template.item.trim().toLowerCase()}`),
   );
 
