@@ -30,35 +30,6 @@ function pickSticker(seed: number) {
   return PAGE_STICKERS[i];
 }
 
-/** A dark punched hole drilled through the paper — sits just inside the page's top margin,
- * peeking through the gap of the wire loop threaded above it. */
-function PunchHole({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("block shrink-0 rounded-full bg-[#2b2620]", className)}
-      style={{ boxShadow: "inset 0 1px 2px rgba(0,0,0,0.75), 0 1px 0 rgba(255,255,255,0.35)" }}
-    />
-  );
-}
-
-/** A single loop of a dark wire spiral coil — an open, elongated ring (not a filled disc) so
- * the page pattern shows through its center, matching a real notebook's coil binding. */
-function CoilRing({ className }: { className?: string }) {
-  return (
-    <span
-      aria-hidden
-      className={cn("block shrink-0 rounded-[50%]", className)}
-      style={{
-        border: "2.5px solid #232226",
-        background:
-          "linear-gradient(155deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0) 32%, rgba(255,255,255,0.18) 62%, rgba(255,255,255,0) 100%)",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.5)",
-      }}
-    />
-  );
-}
-
 /** A small decorative sticker pinned to a fixed spot on the notebook's outer chrome. */
 function CornerSticker({ slug, alt, className }: { slug: string; alt: string; className: string }) {
   return (
@@ -67,7 +38,7 @@ function CornerSticker({ slug, alt, className }: { slug: string; alt: string; cl
       alt={alt}
       draggable={false}
       className={cn(
-        "animate-bob pointer-events-none absolute z-30 size-11 object-contain drop-shadow-[2px_4px_8px_rgba(58,46,42,0.3)] sm:size-14 lg:size-16",
+        "pointer-events-none absolute z-30 size-11 object-contain drop-shadow-[2px_4px_8px_rgba(58,46,42,0.3)] sm:size-14 lg:size-16",
         className,
       )}
     />
@@ -181,17 +152,6 @@ export function NotebookView({
             }}
           />
         ))}
-        <div className="pointer-events-none absolute top-2 right-9 left-9 z-20 flex justify-between sm:top-2.5">
-          {Array.from({ length: 16 }).map((_, i) => (
-            <PunchHole key={i} className="size-2 sm:size-2.5" />
-          ))}
-        </div>
-        <div className="pointer-events-none absolute -top-3 right-9 left-9 z-30 flex justify-between sm:-top-3.5">
-          {Array.from({ length: 16 }).map((_, i) => (
-            <CoilRing key={i} className="h-5 w-3 sm:h-6 sm:w-3.5" />
-          ))}
-        </div>
-
         <CornerSticker
           {...pickSticker(index * 3 + 1)}
           className="-top-4 -left-3 rotate-[-10deg] sm:-top-5 sm:-left-4"
