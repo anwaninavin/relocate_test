@@ -43,8 +43,6 @@ interface ItemFormDialogProps {
   categories: string[];
   /** Preselected category (e.g. creating from within a specific category's panel). Defaults to the first category when omitted. */
   category?: ChecklistCategory;
-  /** Preselected bag (e.g. creating from within a bag's detail screen). */
-  defaultBagId?: string | null;
   item?: ChecklistItemDTO;
   trigger?: React.ReactNode;
   open?: boolean;
@@ -54,7 +52,6 @@ interface ItemFormDialogProps {
 export function ItemFormDialog({
   categories,
   category,
-  defaultBagId,
   item,
   trigger,
   open: controlledOpen,
@@ -81,7 +78,7 @@ export function ItemFormDialog({
       item: item?.item ?? "",
       description: item?.description ?? "",
       imageUrl: item?.imageUrl ?? "",
-      bagId: item?.bagId ?? defaultBagId ?? null,
+      bagId: item?.bagId ?? null,
       notes: item?.notes ?? "",
       priority: item?.priority ?? "medium",
       price: item?.price ?? null,
