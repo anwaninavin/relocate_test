@@ -21,6 +21,7 @@ import { searchRouter } from "@/routes/search.routes";
 import { adminRouter } from "@/routes/admin.routes";
 import { landingRouter } from "@/routes/landing.routes";
 import { navRouter } from "@/routes/nav.routes";
+import { uploadRouter } from "@/routes/upload.routes";
 
 const app = express();
 
@@ -76,6 +77,7 @@ app.use("/api/search", searchRouter);
 app.use("/api/admin", adminRouter);
 app.use("/api/landing", landingRouter);
 app.use("/api/nav", navRouter);
+app.use("/api/uploads", uploadRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
