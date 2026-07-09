@@ -6,6 +6,9 @@ export interface ChecklistItemDTO {
   item: string;
   description: string;
   imageUrl: string | null;
+  bagId: string | null;
+  bagName: string | null;
+  notes: string;
   completed: boolean;
   priority: ChecklistPriority;
   price: number | null;
@@ -25,6 +28,9 @@ export interface ChecklistItemRaw {
   item: string;
   description?: string;
   imageUrl?: string | null;
+  bagId?: string | null;
+  bagName?: string | null;
+  notes?: string;
   completed: boolean;
   priority: ChecklistPriority;
   price?: number | null;
@@ -44,6 +50,9 @@ export function toChecklistItemDTO(raw: ChecklistItemRaw): ChecklistItemDTO {
     item: raw.item,
     description: raw.description ?? "",
     imageUrl: raw.imageUrl ?? null,
+    bagId: raw.bagId ? String(raw.bagId) : null,
+    bagName: raw.bagName ?? null,
+    notes: raw.notes ?? "",
     completed: raw.completed,
     priority: raw.priority,
     price: raw.price ?? null,

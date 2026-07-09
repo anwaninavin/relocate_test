@@ -15,15 +15,18 @@ import { api } from "@/lib/api";
 import { GUIDE_TOPICS } from "@/features/guide/guide-topics";
 
 export interface SearchResult {
-  type: "checklist" | "budget" | "note" | "document" | "contact" | "wishlist" | "guide";
+  type: "checklist" | "bag" | "budget" | "note" | "document" | "contact" | "wishlist" | "guide";
   id: string;
   title: string;
   subtitle?: string;
   href: string;
+  imageUrl?: string | null;
+  completed?: boolean;
 }
 
 const TYPE_LABELS: Record<SearchResult["type"], string> = {
   checklist: "Checklist",
+  bag: "Bags",
   budget: "Budget",
   note: "Notes",
   document: "Documents",
@@ -122,6 +125,9 @@ export function GlobalSearch() {
                     navigate(item.href);
                   }}
                 >
+                  {item.imageUrl && (
+                    <img src={item.imageUrl} alt="" className="size-6 rounded object-cover" />
+                  )}
                   <div className="flex flex-col">
                     <span>{item.title}</span>
                     {item.subtitle && (

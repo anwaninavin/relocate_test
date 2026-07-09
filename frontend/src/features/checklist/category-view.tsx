@@ -310,7 +310,10 @@ export function CategoryView({
                       <p className={item.completed ? "text-muted-foreground truncate line-through" : "truncate font-medium"}>
                         {item.item}
                       </p>
-                      {item.price != null && <p className="text-muted-foreground text-xs">₹{item.price}</p>}
+                      <div className="text-muted-foreground flex items-center gap-2 text-xs">
+                        {item.price != null && <span>₹{item.price}</span>}
+                        {item.bagName && <span>🎒 {item.bagName}</span>}
+                      </div>
                     </div>
                   </button>
 

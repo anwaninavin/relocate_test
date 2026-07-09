@@ -1,5 +1,6 @@
 import { connectDB } from "@/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
+import { Bag } from "@/models/Bag";
 import { BudgetEntry } from "@/models/BudgetEntry";
 import { Note } from "@/models/Note";
 import { DocumentItem } from "@/models/DocumentItem";
@@ -8,11 +9,13 @@ import { WishlistItem } from "@/models/WishlistItem";
 import { GuideArticle } from "@/models/GuideArticle";
 
 export interface SearchResult {
-  type: "checklist" | "budget" | "note" | "document" | "contact" | "wishlist" | "guide";
+  type: "checklist" | "bag" | "budget" | "note" | "document" | "contact" | "wishlist" | "guide";
   id: string;
   title: string;
   subtitle?: string;
   href: string;
+  imageUrl?: string | null;
+  completed?: boolean;
 }
 
 function escapeRegex(value: string) {
@@ -25,8 +28,9 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
 
   const regex = new RegExp(escapeRegex(query.trim()), "i");
 
-  const [checklist, budget, notes, documents, contacts, wishlist, guide] = await Promise.all([
+  const [checklist, bags, budget, notes, documents, contacts, wishlist, guide] = await Promise.all([
     ChecklistItem.find({ userId, item: regex }).limit(5).lean(),
+    Bag.find({ userId, name: regex }).limit(5).lean(),
     BudgetEntry.find({ userId, title: regex }).limit(5).lean(),
     Note.find({ userId, $or: [{ title: regex }, { content: regex }] }).limit(5).lean(),
     DocumentItem.find({ userId, title: regex }).limit(5).lean(),
@@ -38,13 +42,31 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
       .lean(),
   ]);
 
+  const bagIds = [...new Set(checklist.map((c) => c.bagId).filter(Boolean).map(String))];
+  const assignedBags = bagIds.length
+    ? await Bag.find({ userId, _id: { $in: bagIds } }).lean()
+    : [];
+  const bagNameById = new Map(assignedBags.map((b) => [String(b._id), b.name]));
+
   return [
-    ...checklist.map((c) => ({
-      type: "checklist" as const,
-      id: c._id.toString(),
-      title: c.item,
-      subtitle: c.category,
-      href: `/checklist/${encodeURIComponent(c.category)}`,
+    ...checklist.map((c) => {
+      const bagName = c.bagId ? bagNameById.get(String(c.bagId)) : undefined;
+      return {
+        type: "checklist" as const,
+        id: c._id.toString(),
+        title: c.item,
+        subtitle: [c.category, bagName ?? "No bag", c.completed ? "Packed" : "Unpacked"].join(" · "),
+        href: `/checklist/${encodeURIComponent(c.category)}`,
+        imageUrl: c.imageUrl ?? null,
+        completed: c.completed,
+      };
+    }),
+    ...bags.map((b) => ({
+      type: "bag" as const,
+      id: b._id.toString(),
+      title: b.name,
+      subtitle: "Bag",
+      href: `/bags/${b._id.toString()}`,
     })),
     ...budget.map((b) => ({
       type: "budget" as const,
