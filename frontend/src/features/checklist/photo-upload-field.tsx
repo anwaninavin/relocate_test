@@ -4,45 +4,67 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { compressImageToDataUrl } from "@/lib/image-compression";
+import { api, ApiError } from "@/lib/api";
 
 interface PhotoUploadFieldProps {
   value: string;
   onChange: (value: string) => void;
 }
 
-/** Optional single-photo picker for a checklist item. Compresses on-device to keep
- * items lightweight in the database — one photo per item, no cloud upload involved. */
+/** Optional single-photo picker for a checklist item. Compresses on-device, then
+ * uploads the result to Cloudinary via the backend — the form only ever holds the
+ * short hosted URL, not the raw image data, and the Cloudinary API secret never
+ * leaves the server. */
 export function PhotoUploadField({ value, onChange }: PhotoUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [compressing, setCompressing] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   async function handleFile(file: File | undefined) {
     if (!file) return;
-    setCompressing(true);
+    setBusy(true);
     try {
       const dataUrl = await compressImageToDataUrl(file);
-      onChange(dataUrl);
+      setPreviewUrl(dataUrl);
+      const { url } = await api.post<{ url: string }>("/api/uploads/image", { image: dataUrl });
+      onChange(url);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to process photo");
+      toast.error(
+        error instanceof ApiError
+          ? error.message
+          : error instanceof Error
+            ? error.message
+            : "Failed to upload photo",
+      );
     } finally {
-      setCompressing(false);
+      setBusy(false);
+      setPreviewUrl(null);
       if (inputRef.current) inputRef.current.value = "";
     }
   }
 
+  const displayUrl = previewUrl ?? value;
+
   return (
     <div className="flex items-center gap-3">
-      {value ? (
+      {displayUrl ? (
         <div className="relative size-20 shrink-0 overflow-hidden rounded-lg border">
-          <img src={value} alt="Item photo" className="h-full w-full object-cover" />
-          <button
-            type="button"
-            onClick={() => onChange("")}
-            aria-label="Remove photo"
-            className="bg-background/90 absolute top-1 right-1 flex size-5 items-center justify-center rounded-full border"
-          >
-            <X className="size-3" />
-          </button>
+          <img src={displayUrl} alt="Item photo" className="h-full w-full object-cover" />
+          {!busy && (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              aria-label="Remove photo"
+              className="bg-background/90 absolute top-1 right-1 flex size-5 items-center justify-center rounded-full border"
+            >
+              <X className="size-3" />
+            </button>
+          )}
+          {busy && (
+            <div className="bg-background/60 absolute inset-0 flex items-center justify-center">
+              <Loader2 className="size-5 animate-spin" />
+            </div>
+          )}
         </div>
       ) : (
         <div className="text-muted-foreground bg-muted flex size-20 shrink-0 items-center justify-center rounded-lg border border-dashed">
@@ -54,10 +76,10 @@ export function PhotoUploadField({ value, onChange }: PhotoUploadFieldProps) {
         type="button"
         variant="outline"
         size="sm"
-        disabled={compressing}
+        disabled={busy}
         onClick={() => inputRef.current?.click()}
       >
-        {compressing && <Loader2 className="size-4 animate-spin" />}
+        {busy && <Loader2 className="size-4 animate-spin" />}
         {value ? "Change photo" : "Add photo"}
       </Button>
 
