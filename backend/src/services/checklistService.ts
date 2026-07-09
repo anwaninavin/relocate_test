@@ -1,5 +1,6 @@
 import { connectDB } from "@/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
+import { Bag } from "@/models/Bag";
 import type { ChecklistCategory, ChecklistPriority } from "@/types";
 import type { ChecklistItemInput, ChecklistItemUpdateInput } from "@/validations/checklist";
 import { DEFAULT_CHECKLIST_TEMPLATE } from "@/lib/defaultChecklistTemplate";
@@ -38,17 +39,26 @@ export async function listItemsByCategory(userId: string, category: ChecklistCat
   return ChecklistItem.find({ userId, category }).sort({ createdAt: -1 }).lean();
 }
 
-/** All items for a user, grouped by category — for the expandable accordion overview. */
+/** All items for a user, grouped by category — for the expandable accordion overview.
+ * Attaches a `bagName` alongside each item's `bagId` for display purposes only; the
+ * bag assignment itself still lives solely on the checklist item. */
 export async function getAllItemsByCategory(userId: string) {
   await connectDB();
-  const [categories, items] = await Promise.all([
+  const [categories, items, bags] = await Promise.all([
     listCategories(userId),
     ChecklistItem.find({ userId }).sort({ createdAt: -1 }).lean(),
+    Bag.find({ userId }).select("name").lean(),
   ]);
+
+  const bagNameById = new Map(bags.map((b) => [String(b._id), b.name]));
+  const itemsWithBagName = items.map((item) => ({
+    ...item,
+    bagName: item.bagId ? (bagNameById.get(String(item.bagId)) ?? null) : null,
+  }));
 
   return categories.map(({ name: category }) => ({
     category,
-    items: items.filter((i) => i.category === category),
+    items: itemsWithBagName.filter((i) => i.category === category),
   }));
 }
 
@@ -211,6 +221,8 @@ export async function bulkUpdateItems(
       item: doc.item,
       description: doc.description,
       imageUrl: doc.imageUrl,
+      bagId: doc.bagId,
+      notes: doc.notes,
       priority: doc.priority,
       price: doc.price,
       priceRangeMin: doc.priceRangeMin,

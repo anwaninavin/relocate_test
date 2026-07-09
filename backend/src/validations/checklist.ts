@@ -4,11 +4,26 @@ import { CHECKLIST_PRIORITIES, STORE_OPTIONS } from "@/types";
 
 const checklistCategoryField = z.string().trim().min(1, "Category is required").max(60);
 
+// Photos are compressed client-side and stored as base64 data URIs (this app's existing
+// convention — see the admin home-screen editor); plain https URLs are also accepted for
+// items created before that convention or via the legacy URL field.
+const checklistImageField = z
+  .string()
+  .trim()
+  .max(200_000, "Image is too large")
+  .refine((val) => val === "" || val.startsWith("data:image/") || /^https?:\/\//i.test(val), {
+    message: "Image must be a photo or a valid URL",
+  })
+  .optional()
+  .or(z.literal(""));
+
 export const checklistItemSchema = z.object({
   category: checklistCategoryField,
   item: z.string().trim().min(1, "Item name is required").max(120),
   description: z.string().trim().max(500).optional().or(z.literal("")),
-  imageUrl: z.string().trim().url().optional().or(z.literal("")),
+  imageUrl: checklistImageField,
+  bagId: z.string().trim().min(1).nullable().optional(),
+  notes: z.string().trim().max(1000).optional().or(z.literal("")),
   priority: z.enum(CHECKLIST_PRIORITIES),
   price: z.coerce.number().min(0).optional().nullable(),
   priceRangeMin: z.coerce.number().min(0).optional().nullable(),

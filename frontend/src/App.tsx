@@ -18,6 +18,8 @@ const WelcomePage = lazy(() => import("@/pages/welcome-page"));
 const DashboardPage = lazy(() => import("@/pages/dashboard-page"));
 const ChecklistPage = lazy(() => import("@/pages/checklist-page"));
 const ChecklistCategoryPage = lazy(() => import("@/pages/checklist-category-page"));
+const BagsPage = lazy(() => import("@/pages/bags-page"));
+const BagDetailPage = lazy(() => import("@/pages/bag-detail-page"));
 const BudgetPage = lazy(() => import("@/pages/budget-page"));
 const NotesPage = lazy(() => import("@/pages/notes-page"));
 const DocumentsPage = lazy(() => import("@/pages/documents-page"));
@@ -97,6 +99,8 @@ export default function App() {
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/checklist" element={<ChecklistPage />} />
             <Route path="/checklist/:category" element={<ChecklistCategoryPage />} />
+            <Route path="/bags" element={<BagsPage />} />
+            <Route path="/bags/:id" element={<BagDetailPage />} />
             <Route path="/budget" element={<BudgetPage />} />
             <Route path="/notes" element={<NotesPage />} />
             <Route path="/documents" element={<DocumentsPage />} />

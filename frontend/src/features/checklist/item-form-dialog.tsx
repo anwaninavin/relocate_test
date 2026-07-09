@@ -34,6 +34,8 @@ import { checklistItemSchema, type ChecklistItemInput } from "@/lib/validations/
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
 import { CategorySelect } from "@/features/checklist/category-select";
+import { PhotoUploadField } from "@/features/checklist/photo-upload-field";
+import { BagSelect } from "@/features/bags/bag-select";
 import { CHECKLIST_PRIORITIES, STORE_OPTIONS, type ChecklistCategory } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
@@ -79,6 +81,8 @@ export function ItemFormDialog({
       item: item?.item ?? "",
       description: item?.description ?? "",
       imageUrl: item?.imageUrl ?? "",
+      bagId: item?.bagId ?? null,
+      notes: item?.notes ?? "",
       priority: item?.priority ?? "medium",
       price: item?.price ?? null,
       priceRangeMin: item?.priceRangeMin ?? null,
@@ -331,9 +335,35 @@ export function ItemFormDialog({
               name="imageUrl"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Image URL</FormLabel>
+                  <FormLabel>Photo (optional)</FormLabel>
                   <FormControl>
-                    <Input type="url" placeholder="https://…" {...field} />
+                    <PhotoUploadField value={field.value ?? ""} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="bagId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Bag (optional)</FormLabel>
+                  <BagSelect value={field.value ?? null} onChange={field.onChange} />
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="notes"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Notes (optional)</FormLabel>
+                  <FormControl>
+                    <Textarea rows={2} placeholder="Any extra notes…" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

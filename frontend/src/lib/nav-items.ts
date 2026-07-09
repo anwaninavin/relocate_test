@@ -2,6 +2,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   LayoutDashboard,
   ListChecks,
+  Luggage,
   Wallet,
   StickyNote,
   FileText,
@@ -25,6 +26,7 @@ export interface NavItem {
 export const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/checklist", label: "Checklist", icon: ListChecks },
+  { href: "/bags", label: "Bags", icon: Luggage },
   { href: "/budget", label: "Budget", icon: Wallet },
   { href: "/notes", label: "Notes", icon: StickyNote },
   { href: "/documents", label: "Documents", icon: FileText },

@@ -59,7 +59,15 @@ export function ItemDetailSheet({ item, open, onOpenChange }: ItemDetailSheetPro
               {item.priority.charAt(0).toUpperCase() + item.priority.slice(1)} priority
             </Badge>
             {item.completed && <Badge variant="success">Packed</Badge>}
+            {item.bagName && <Badge variant="outline">🎒 {item.bagName}</Badge>}
           </div>
+
+          {item.notes && (
+            <div>
+              <p className="mb-1 text-sm font-medium">Notes</p>
+              <p className="text-muted-foreground text-sm whitespace-pre-wrap">{item.notes}</p>
+            </div>
+          )}
 
           {item.importance && (
             <div>

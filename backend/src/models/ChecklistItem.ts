@@ -9,6 +9,8 @@ const ChecklistItemSchema = new Schema(
     item: { type: String, required: true, trim: true, maxlength: 120 },
     description: { type: String, default: "", maxlength: 500 },
     imageUrl: { type: String, default: null },
+    bagId: { type: Schema.Types.ObjectId, ref: "Bag", default: null, index: true },
+    notes: { type: String, default: "", maxlength: 1000 },
     completed: { type: Boolean, default: false, index: true },
     priority: { type: String, enum: CHECKLIST_PRIORITIES, default: "medium" },
     price: { type: Number, default: null, min: 0 },
