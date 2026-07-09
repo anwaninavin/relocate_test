@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { Check, Copy, ListChecks, Pencil, Plus, Trash2 } from "lucide-react";
+import { Check, Copy, ListChecks, Luggage, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { HandDrawnCheckbox } from "@/features/checklist/hand-drawn-checkbox";
 import { ItemFormDialog } from "@/features/checklist/item-form-dialog";
 import { QuickRenameDialog } from "@/features/checklist/quick-rename-dialog";
+import { AddToBagPopover } from "@/features/bags/add-to-bag-popover";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
@@ -79,6 +80,25 @@ function ItemRowMenu({
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+
+      <AddToBagPopover
+        itemId={item.id}
+        bagId={item.bagId}
+        trigger={
+          <Button
+            variant="ghost"
+            size="icon"
+            className={
+              item.bagId
+                ? "text-primary size-7"
+                : "size-7 text-[#8a7a6a] hover:text-[#3a2e2a]"
+            }
+            aria-label="Add to bag"
+          >
+            <Luggage className="size-3.5" />
+          </Button>
+        }
+      />
 
       <ConfirmDialog
         trigger={
