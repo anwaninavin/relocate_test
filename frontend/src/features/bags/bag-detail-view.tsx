@@ -23,7 +23,7 @@ import { api, ApiError } from "@/lib/api";
 import { emitRefresh, subscribeRefresh } from "@/lib/refresh-bus";
 import { BagQrDialog } from "@/features/bags/bag-qr-dialog";
 import { Suitcase3D } from "@/features/bags/suitcase-3d";
-import { ItemFormDialog } from "@/features/checklist/item-form-dialog";
+import { AddItemsToBagDialog } from "@/features/bags/add-items-to-bag-dialog";
 import {
   toChecklistItemDTO,
   type ChecklistItemDTO,
@@ -137,9 +137,9 @@ export function BagDetailView({ bagId }: { bagId: string }) {
         description={`${completedCount} / ${items.length} items packed`}
         action={
           <div className="flex flex-wrap items-center gap-2">
-            <ItemFormDialog
+            <AddItemsToBagDialog
+              bagId={bagId}
               categories={categories}
-              defaultBagId={bagId}
               trigger={
                 <Button size="sm">
                   <Plus className="size-4" />
