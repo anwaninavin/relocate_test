@@ -18,7 +18,8 @@ uploadRouter.post("/image", async (req, res) => {
   try {
     const { url, publicId } = await uploadImage(req.user!._id.toString(), parsed.data.image);
     res.json({ url, publicId });
-  } catch {
+  } catch (error) {
+    console.error("Cloudinary upload failed:", error);
     res.status(502).json({ error: "Failed to upload image" });
   }
 });

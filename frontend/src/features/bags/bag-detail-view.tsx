@@ -24,6 +24,7 @@ import { emitRefresh, subscribeRefresh } from "@/lib/refresh-bus";
 import { BagQrDialog } from "@/features/bags/bag-qr-dialog";
 import { Suitcase3D } from "@/features/bags/suitcase-3d";
 import { AddItemsToBagDialog } from "@/features/bags/add-items-to-bag-dialog";
+import { QuickPhotoAdd } from "@/features/checklist/quick-photo-add";
 import {
   toChecklistItemDTO,
   type ChecklistItemDTO,
@@ -226,9 +227,14 @@ export function BagDetailView({ bagId }: { bagId: string }) {
                       className="size-12 shrink-0 rounded-lg object-cover"
                     />
                   ) : (
-                    <div className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-lg">
-                      <ImageIcon className="size-5" />
-                    </div>
+                    <QuickPhotoAdd
+                      itemId={item.id}
+                      onUploaded={(url) =>
+                        setItems((prev) =>
+                          prev.map((i) => (i.id === item.id ? { ...i, imageUrl: url } : i)),
+                        )
+                      }
+                    />
                   )}
 
                   <div className="min-w-0 flex-1">
