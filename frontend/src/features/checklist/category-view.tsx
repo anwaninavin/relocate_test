@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Copy, ListChecks, Pencil, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, ListChecks, Luggage, Pencil, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -32,6 +32,7 @@ import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 import { ItemFormDialog } from "@/features/checklist/item-form-dialog";
 import { ItemDetailSheet } from "@/features/checklist/item-detail-sheet";
 import { QuickRenameDialog } from "@/features/checklist/quick-rename-dialog";
+import { AddToBagPopover } from "@/features/bags/add-to-bag-popover";
 
 type PriorityFilter = "all" | ChecklistPriority;
 type StatusFilter = "all" | "completed" | "incomplete";
@@ -347,6 +348,21 @@ export function CategoryView({
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+
+                      <AddToBagPopover
+                        itemId={item.id}
+                        bagId={item.bagId}
+                        trigger={
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className={item.bagId ? "text-primary size-8" : "size-8"}
+                            aria-label="Add to bag"
+                          >
+                            <Luggage className="size-4" />
+                          </Button>
+                        }
+                      />
 
                       <ConfirmDialog
                         trigger={

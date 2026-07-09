@@ -102,7 +102,9 @@ authRouter.post("/register/verify", async (req, res) => {
     return;
   }
 
-  await seedDefaultChecklistIfEmpty(result.user._id.toString());
+  // Seeding waits until /onboarding, where collegeCategory is known — the starter
+  // checklist depends on it (e.g. Fashion Design Tools items are Designing-only), and
+  // ProtectedRoute blocks the checklist page until onboarding is complete anyway.
 
   const token = signAuthToken(result.user._id.toString());
   res.json({ token, user: serializeUser(result.user) });
