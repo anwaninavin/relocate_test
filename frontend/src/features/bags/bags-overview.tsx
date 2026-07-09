@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { Loader2, Luggage, Pencil, Plus, QrCode, Trash2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
+import { Loader2, Luggage, MoreVertical, Pencil, QrCode, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import {
@@ -25,16 +25,21 @@ import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh, subscribeRefresh } from "@/lib/refresh-bus";
+import { AddBagDialog } from "@/features/bags/add-bag-dialog";
 import { BagQrDialog } from "@/features/bags/bag-qr-dialog";
+import { Suitcase3D } from "@/features/bags/suitcase-3d";
 import type { BagSummaryDTO } from "@/features/bags/bag-dto";
 
+/** How long the lid-open animation plays before we navigate into the bag. */
+const OPEN_ANIMATION_MS = 550;
+
 export function BagsOverview() {
+  const navigate = useNavigate();
   const [bags, setBags] = useState<BagSummaryDTO[] | null>(null);
-  const [creating, setCreating] = useState(false);
-  const [newName, setNewName] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [openingId, setOpeningId] = useState<string | null>(null);
   const [renameTarget, setRenameTarget] = useState<BagSummaryDTO | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function fetchData() {
     try {
@@ -50,21 +55,10 @@ export function BagsOverview() {
     return subscribeRefresh(fetchData);
   }, []);
 
-  async function handleCreate() {
-    const name = newName.trim();
-    if (!name) return;
-    setIsSubmitting(true);
-    try {
-      await api.post("/api/bags", { name });
-      emitRefresh();
-      toast.success("Bag added");
-      setCreating(false);
-      setNewName("");
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to add bag");
-    } finally {
-      setIsSubmitting(false);
-    }
+  function handleOpenBag(bagId: string) {
+    if (openingId) return;
+    setOpeningId(bagId);
+    setTimeout(() => navigate(`/bags/${bagId}`), OPEN_ANIMATION_MS);
   }
 
   async function handleRename() {
@@ -96,48 +90,12 @@ export function BagsOverview() {
 
   if (bags === null) return null;
 
-  const action = creating ? (
-    <div className="flex items-center gap-2">
-      <Input
-        autoFocus
-        value={newName}
-        onChange={(e) => setNewName(e.target.value)}
-        placeholder="Bag name"
-        className="w-40"
-        onKeyDown={(e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            handleCreate();
-          }
-        }}
-      />
-      <Button size="sm" onClick={handleCreate} disabled={isSubmitting}>
-        {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : "Add"}
-      </Button>
-      <Button
-        size="sm"
-        variant="ghost"
-        onClick={() => {
-          setCreating(false);
-          setNewName("");
-        }}
-      >
-        Cancel
-      </Button>
-    </div>
-  ) : (
-    <Button size="sm" onClick={() => setCreating(true)}>
-      <Plus className="size-4" />
-      New bag
-    </Button>
-  );
-
   return (
     <div className="pb-24">
       <PageHeader
         title="Bags"
-        description="Group your checklist items by which bag they're packed in."
-        action={action}
+        description="Pack your real suitcases digitally — tap a bag to see what's inside."
+        action={<AddBagDialog />}
       />
 
       {bags.length === 0 ? (
@@ -147,22 +105,28 @@ export function BagsOverview() {
           description="Create a bag, then assign checklist items to it from the Checklist tab."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {bags.map((bag) => {
+        <div className="flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 sm:grid sm:grid-cols-2 sm:overflow-visible sm:pb-0 lg:grid-cols-3">
+          {bags.map((bag, i) => {
             const percent = bag.total > 0 ? Math.round((bag.completed / bag.total) * 100) : 0;
             return (
-              <Card key={bag.id} className="gap-3 p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <Link to={`/bags/${bag.id}`} className="min-w-0 flex-1">
-                    <p className="font-display truncate font-semibold">{bag.name}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {bag.completed} / {bag.total} packed
-                    </p>
-                  </Link>
+              <motion.div
+                key={bag.id}
+                initial={{ opacity: 0, scale: 0.85 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.35, delay: i * 0.04 }}
+                className="border-border/60 bg-card relative w-40 shrink-0 snap-start rounded-2xl border p-3 shadow-sm sm:w-auto"
+              >
+                <div className="absolute top-2 right-2 z-10">
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="size-8 shrink-0" aria-label="Bag options">
-                        <Pencil className="size-4" />
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="size-8"
+                        aria-label="Bag options"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
@@ -203,8 +167,20 @@ export function BagsOverview() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
-                <Progress value={percent} />
-              </Card>
+
+                <button
+                  type="button"
+                  onClick={() => handleOpenBag(bag.id)}
+                  className="flex w-full flex-col items-center gap-1"
+                >
+                  <Suitcase3D color={bag.color} open={openingId === bag.id} size={128} />
+                  <p className="font-display w-full truncate text-center font-semibold">{bag.name}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {bag.completed} / {bag.total} packed
+                  </p>
+                  <Progress value={percent} className="mt-1 w-full" />
+                </button>
+              </motion.div>
             );
           })}
         </div>

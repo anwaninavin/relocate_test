@@ -1,14 +1,15 @@
 import { Router } from "express";
 
-import { createBagSchema, renameBagSchema } from "@/validations/bag";
+import { createBagSchema, updateBagSchema } from "@/validations/bag";
 import {
   createBag,
   deleteBag,
   getBagWithItems,
   listBagsWithCounts,
-  renameBag,
+  updateBag,
 } from "@/services/bagService";
 import { requireAuth } from "@/middleware/auth";
+import { BAG_COLOR_PRESETS } from "@/types";
 
 export const bagRouter = Router();
 
@@ -26,7 +27,11 @@ bagRouter.get("/:id", async (req, res) => {
     return;
   }
   res.json({
-    bag: { id: String(result.bag._id), name: result.bag.name },
+    bag: {
+      id: String(result.bag._id),
+      name: result.bag.name,
+      color: result.bag.color ?? BAG_COLOR_PRESETS[0],
+    },
     items: result.items,
   });
 });
@@ -38,22 +43,27 @@ bagRouter.post("/", async (req, res) => {
     return;
   }
 
-  const result = await createBag(req.user!._id.toString(), parsed.data.name);
+  const result = await createBag(req.user!._id.toString(), parsed.data.name, parsed.data.color);
   if (!result.success) {
     res.status(400).json({ error: result.error });
     return;
   }
-  res.json({ bag: { id: String(result.bag._id), name: result.bag.name } });
+  res.json({
+    bag: { id: String(result.bag._id), name: result.bag.name, color: result.bag.color },
+  });
 });
 
 bagRouter.patch("/:id", async (req, res) => {
-  const parsed = renameBagSchema.safeParse({ ...req.body, id: req.params.id });
+  const parsed = updateBagSchema.safeParse({ ...req.body, id: req.params.id });
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
 
-  const result = await renameBag(req.user!._id.toString(), parsed.data.id, parsed.data.name);
+  const result = await updateBag(req.user!._id.toString(), parsed.data.id, {
+    name: parsed.data.name,
+    color: parsed.data.color,
+  });
   if (!result.success) {
     res.status(400).json({ error: result.error });
     return;

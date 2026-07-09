@@ -43,7 +43,10 @@ export function BagSelect({ value, onChange }: BagSelectProps) {
 
     setIsSubmitting(true);
     try {
-      const { bag } = await api.post<{ bag: { id: string; name: string } }>("/api/bags", { name });
+      const { bag } = await api.post<{ bag: { id: string; name: string; color: string } }>(
+        "/api/bags",
+        { name },
+      );
       toast.success("Bag added");
       setBags((prev) => [...(prev ?? []), { ...bag, total: 0, completed: 0 }]);
       onChange(bag.id);
@@ -105,7 +108,13 @@ export function BagSelect({ value, onChange }: BagSelectProps) {
         <SelectItem value={NONE_BAG}>No bag</SelectItem>
         {(bags ?? []).map((b) => (
           <SelectItem key={b.id} value={b.id}>
-            {b.name}
+            <span className="flex items-center gap-2">
+              <span
+                className="size-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: b.color }}
+              />
+              {b.name}
+            </span>
           </SelectItem>
         ))}
         <SelectItem value={NEW_BAG_VALUE}>

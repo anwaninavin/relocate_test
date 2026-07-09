@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, ImageIcon, Pencil, QrCode, Trash2 } from "lucide-react";
+import { motion } from "framer-motion";
+import { ArrowLeft, ImageIcon, Pencil, Plus, QrCode, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh, subscribeRefresh } from "@/lib/refresh-bus";
 import { BagQrDialog } from "@/features/bags/bag-qr-dialog";
+import { Suitcase3D } from "@/features/bags/suitcase-3d";
+import { ItemFormDialog } from "@/features/checklist/item-form-dialog";
 import {
   toChecklistItemDTO,
   type ChecklistItemDTO,
@@ -28,10 +31,17 @@ import {
 } from "@/features/checklist/checklist-item-dto";
 import NotFound from "@/pages/not-found";
 
+interface BagInfo {
+  id: string;
+  name: string;
+  color: string;
+}
+
 export function BagDetailView({ bagId }: { bagId: string }) {
   const navigate = useNavigate();
-  const [bagName, setBagName] = useState<string | null>(null);
+  const [bag, setBag] = useState<BagInfo | null>(null);
   const [items, setItems] = useState<ChecklistItemDTO[]>([]);
+  const [categories, setCategories] = useState<string[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [loading, setLoading] = useState(true);
   const [renaming, setRenaming] = useState(false);
@@ -40,11 +50,13 @@ export function BagDetailView({ bagId }: { bagId: string }) {
 
   async function fetchData() {
     try {
-      const data = await api.get<{ bag: { id: string; name: string }; items: ChecklistItemRaw[] }>(
-        `/api/bags/${bagId}`,
-      );
-      setBagName(data.bag.name);
-      setItems(data.items.map(toChecklistItemDTO));
+      const [bagData, categoryData] = await Promise.all([
+        api.get<{ bag: BagInfo; items: ChecklistItemRaw[] }>(`/api/bags/${bagId}`),
+        api.get<{ categories: { id: string; name: string }[] }>("/api/categories"),
+      ]);
+      setBag(bagData.bag);
+      setItems(bagData.items.map(toChecklistItemDTO));
+      setCategories(categoryData.categories.map((c) => c.name));
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) {
         setNotFound(true);
@@ -101,9 +113,10 @@ export function BagDetailView({ bagId }: { bagId: string }) {
   }
 
   if (loading) return null;
-  if (notFound || !bagName) return <NotFound />;
+  if (notFound || !bag) return <NotFound />;
 
   const completedCount = items.filter((i) => i.completed).length;
+  const gallery = items.filter((i) => i.imageUrl);
 
   return (
     <div className="pb-24">
@@ -115,16 +128,30 @@ export function BagDetailView({ bagId }: { bagId: string }) {
         All bags
       </Link>
 
+      <div className="mb-2 flex justify-center">
+        <Suitcase3D color={bag.color} open interactive={false} size={200} />
+      </div>
+
       <PageHeader
-        title={bagName}
+        title={bag.name}
         description={`${completedCount} / ${items.length} items packed`}
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <ItemFormDialog
+              categories={categories}
+              defaultBagId={bagId}
+              trigger={
+                <Button size="sm">
+                  <Plus className="size-4" />
+                  Add Item
+                </Button>
+              }
+            />
             <Button
               variant="outline"
               size="sm"
               onClick={() => {
-                setRenameValue(bagName);
+                setRenameValue(bag.name);
                 setRenaming(true);
               }}
             >
@@ -133,7 +160,7 @@ export function BagDetailView({ bagId }: { bagId: string }) {
             </Button>
             <BagQrDialog
               bagId={bagId}
-              bagName={bagName}
+              bagName={bag.name}
               trigger={
                 <Button variant="outline" size="sm">
                   <QrCode className="size-4" />
@@ -160,38 +187,64 @@ export function BagDetailView({ bagId }: { bagId: string }) {
         <EmptyState
           icon={ImageIcon}
           title="No items in this bag yet"
-          description="Assign checklist items to this bag from the Checklist tab."
+          description="Tap Add Item, or assign existing checklist items to this bag from the Checklist tab."
         />
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {items.map((item) => (
-            <Card key={item.id} className="flex-row items-center gap-3 p-3">
-              <Checkbox checked={item.completed} onCheckedChange={() => toggleCompleted(item)} />
-
-              {item.imageUrl ? (
-                <img
-                  src={item.imageUrl}
-                  alt={item.item}
-                  className="size-12 shrink-0 rounded-lg object-cover"
-                />
-              ) : (
-                <div className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-lg">
-                  <ImageIcon className="size-5" />
-                </div>
-              )}
-
-              <div className="min-w-0 flex-1">
-                <p className={item.completed ? "text-muted-foreground truncate text-sm line-through" : "truncate text-sm font-medium"}>
-                  {item.item}
-                </p>
-                <div className="mt-0.5 flex flex-wrap items-center gap-1">
-                  <Badge variant="outline">{item.category}</Badge>
-                </div>
-                {item.notes && <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{item.notes}</p>}
+        <>
+          {gallery.length > 0 && (
+            <div className="mb-5">
+              <p className="text-muted-foreground mb-2 text-sm font-medium">Gallery</p>
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                {gallery.map((item) => (
+                  <img
+                    key={item.id}
+                    src={item.imageUrl!}
+                    alt={item.item}
+                    className="size-16 shrink-0 rounded-lg object-cover"
+                  />
+                ))}
               </div>
-            </Card>
-          ))}
-        </div>
+            </div>
+          )}
+
+          <p className="text-muted-foreground mb-2 text-sm font-medium">Items in this bag</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {items.map((item, i) => (
+              <motion.div
+                key={item.id}
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.25, delay: i * 0.03 }}
+              >
+                <Card className="flex-row items-center gap-3 p-3">
+                  <Checkbox checked={item.completed} onCheckedChange={() => toggleCompleted(item)} />
+
+                  {item.imageUrl ? (
+                    <img
+                      src={item.imageUrl}
+                      alt={item.item}
+                      className="size-12 shrink-0 rounded-lg object-cover"
+                    />
+                  ) : (
+                    <div className="bg-muted text-muted-foreground flex size-12 shrink-0 items-center justify-center rounded-lg">
+                      <ImageIcon className="size-5" />
+                    </div>
+                  )}
+
+                  <div className="min-w-0 flex-1">
+                    <p className={item.completed ? "text-muted-foreground truncate text-sm line-through" : "truncate text-sm font-medium"}>
+                      {item.item}
+                    </p>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-1">
+                      <Badge variant="outline">{item.category}</Badge>
+                    </div>
+                    {item.notes && <p className="text-muted-foreground mt-1 line-clamp-2 text-xs">{item.notes}</p>}
+                  </div>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        </>
       )}
 
       <Dialog open={renaming} onOpenChange={setRenaming}>
