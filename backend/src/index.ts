@@ -22,6 +22,7 @@ import { adminRouter } from "@/routes/admin.routes";
 import { landingRouter } from "@/routes/landing.routes";
 import { navRouter } from "@/routes/nav.routes";
 import { uploadRouter } from "@/routes/upload.routes";
+import { whatsappRouter } from "@/routes/whatsapp.routes";
 
 const app = express();
 
@@ -54,7 +55,17 @@ app.use(
 );
 // Raised from Express's 100kb default: the admin home-screen editor saves uploaded
 // stickers inline as base64 data URIs, which can be a few MB per save.
-app.use(express.json({ limit: "10mb" }));
+// `verify` stashes the raw request bytes on `req.rawBody` — needed by the Metabsp
+// webhook to check its HMAC signature against the exact bytes that were signed,
+// since re-serializing the parsed JSON is not guaranteed to be byte-identical.
+app.use(
+  express.json({
+    limit: "10mb",
+    verify: (req, _res, buf) => {
+      (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+    },
+  }),
+);
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -78,6 +89,7 @@ app.use("/api/admin", adminRouter);
 app.use("/api/landing", landingRouter);
 app.use("/api/nav", navRouter);
 app.use("/api/uploads", uploadRouter);
+app.use("/api/whatsapp", whatsappRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
