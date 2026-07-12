@@ -44,32 +44,42 @@ function verifySignature(req: Request): boolean {
   return crypto.timingSafeEqual(expectedBuffer, actualBuffer);
 }
 
-async function isRelevantMessage(payload: MetabspPayload): Promise<boolean> {
-  const text = (payload.text ?? payload.message ?? "").trim().toUpperCase();
-  if (ENTRY_KEYWORDS.some((keyword) => text === keyword || text.startsWith(`${keyword} `))) {
+async function isRelevantMessage(from: string, text: string): Promise<boolean> {
+  const upperText = text.trim().toUpperCase();
+  if (ENTRY_KEYWORDS.some((keyword) => upperText === keyword || upperText.startsWith(`${keyword} `))) {
     return true;
   }
 
-  if (!payload.from) {
+  if (!from) {
     return false;
   }
 
   await connectDB();
-  const existingUser = await User.findOne({ mobile: payload.from }).select("_id").lean();
+  const existingUser = await User.findOne({ mobile: from }).select("_id").lean();
   return existingUser !== null;
 }
 
 async function processMetabspMessage(payload: MetabspPayload): Promise<void> {
   try {
-    const relevant = await isRelevantMessage(payload);
+    // Metabsp also forwards the bot's own outbound sends back through this webhook
+    // (and fans the same WhatsApp number out to unrelated projects) — only handle
+    // genuine inbound messages.
+    if (payload.fromMe || (payload.direction && payload.direction !== "incoming")) {
+      return;
+    }
+
+    const from = String(payload.from ?? "").replace(/\D/g, "");
+    const text = String(payload.text ?? payload.message ?? "");
+
+    const relevant = await isRelevantMessage(from, text);
     if (!relevant) {
       return;
     }
 
     // TODO: wire up actual message-handling behavior per entry keyword once confirmed.
     console.log("Metabsp WhatsApp message for pack-with-me:", {
-      from: payload.from,
-      text: payload.text ?? payload.message,
+      from,
+      text,
       messageId: payload.messageId,
     });
   } catch (error) {
@@ -89,5 +99,7 @@ whatsappRouter.post("/webhook-metabsp", (req, res) => {
 
   res.status(200).json({ received: true });
 
-  void processMetabspMessage(req.body as MetabspPayload);
+  setImmediate(() => {
+    void processMetabspMessage(req.body as MetabspPayload);
+  });
 });
