@@ -18,7 +18,10 @@ const UserChecklistSchema = new Schema(
   { timestamps: true },
 );
 
-UserChecklistSchema.index({ userId: 1, defaultChecklistItemId: 1 }, { unique: true, sparse: true });
+UserChecklistSchema.index(
+  { userId: 1, defaultChecklistItemId: 1 },
+  { unique: true, partialFilterExpression: { defaultChecklistItemId: { $type: "objectId" } } },
+);
 UserChecklistSchema.index({ userId: 1, deleted: 1, checked: 1 });
 UserChecklistSchema.index({ userId: 1, isCustomItem: 1, customName: 1 });
 
