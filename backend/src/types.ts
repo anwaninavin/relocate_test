@@ -24,6 +24,7 @@ export interface UserDTO {
   role: UserRole;
   theme: "light" | "dark" | "system";
   needsOnboarding: boolean;
+  verified: boolean;
   createdAt: string;
 }
 
@@ -93,3 +94,58 @@ export const GUIDE_CATEGORIES = [
   "Budget Planning",
 ] as const;
 export type GuideCategory = (typeof GUIDE_CATEGORIES)[number];
+
+// --- Discovery / Booking / Places -------------------------------------------------------
+
+export const ACCOMMODATION_TYPES = ["Hostel", "PG", "Flat", "Apartment", "Hotel"] as const;
+export type AccommodationType = (typeof ACCOMMODATION_TYPES)[number];
+
+export const DISCOVERY_CONTEXTS = ["co_packer", "roommate"] as const;
+export type DiscoveryContext = (typeof DISCOVERY_CONTEXTS)[number];
+
+export const CONNECTION_STATUSES = ["pending", "accepted", "declined"] as const;
+export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];
+
+export const CONTACT_CATEGORIES = [
+  "Friend",
+  "Senior",
+  "Classmate",
+  "Alumni",
+  "Relative",
+  "Emergency Contact",
+  "Verified Local Volunteer",
+  "Useful Shop",
+] as const;
+export type ContactCategory = (typeof CONTACT_CATEGORIES)[number];
+
+export const TRAVEL_TYPES = ["Train", "Flight", "Bus", "Cab"] as const;
+export type TravelType = (typeof TRAVEL_TYPES)[number];
+
+export const BOOKING_CATEGORIES = ["travel", "stay"] as const;
+export type BookingCategoryType = (typeof BOOKING_CATEGORIES)[number];
+
+export const BOOKING_STATUSES = ["upcoming", "completed", "missed", "cancelled"] as const;
+export type BookingStatus = (typeof BOOKING_STATUSES)[number];
+
+export const PLACE_CATEGORIES = [
+  "Tourist Place",
+  "Restaurant",
+  "Street Food",
+  "Shopping",
+  "Medical",
+  "Station",
+  "Airport",
+  "Bank",
+  "ATM",
+  "Laundry",
+  "Gym",
+  "Library",
+  "Cafe",
+  "Temple",
+  "Mosque",
+  "Church",
+  "Park",
+  "Market",
+  "Nearby Attraction",
+] as const;
+export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];

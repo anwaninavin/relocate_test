@@ -57,6 +57,16 @@ export function UsersView({
     }
   }
 
+  async function handleToggleVerified(id: string, verified: boolean) {
+    setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, verified } : u)));
+    try {
+      await api.patch(`/api/admin/users/${id}`, { verified });
+    } catch (error) {
+      setUsers((prev) => prev.map((u) => (u.id === id ? { ...u, verified: !verified } : u)));
+      toast.error(error instanceof ApiError ? error.message : "Failed to update user");
+    }
+  }
+
   return (
     <div>
       <PageHeader title="Users" description="Everyone with access to Pack with Me" action={<UserFormDialog />} />
@@ -85,6 +95,7 @@ export function UsersView({
                 <TableHead>Login code</TableHead>
                 <TableHead>College / Category</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Verified</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead />
               </TableRow>
@@ -109,6 +120,15 @@ export function UsersView({
                   </TableCell>
                   <TableCell>
                     <Badge variant={user.role === "admin" ? "accent" : "outline"}>{user.role}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleToggleVerified(user.id, !user.verified)}
+                    >
+                      {user.verified ? <Badge variant="success">Verified</Badge> : "Mark verified"}
+                    </Button>
                   </TableCell>
                   <TableCell>{format(new Date(user.createdAt), "d MMM yyyy")}</TableCell>
                   <TableCell>

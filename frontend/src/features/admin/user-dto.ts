@@ -8,6 +8,7 @@ export interface AdminUserDTO {
   college: string | null;
   collegeCategory: CollegeCategory | null;
   role: UserRole;
+  verified: boolean;
   hasPinSet: boolean;
   createdAt: string;
 }

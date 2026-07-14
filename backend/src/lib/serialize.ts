@@ -15,6 +15,7 @@ export function serializeUser(user: HydratedDocument<UserDocument>): UserDTO {
     role: user.role as UserDTO["role"],
     theme: user.theme as UserDTO["theme"],
     needsOnboarding: !user.name,
+    verified: Boolean(user.verified),
     createdAt: (user as unknown as { createdAt: Date }).createdAt.toISOString(),
   };
 }

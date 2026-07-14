@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { DEFAULT_CHECKLIST_CATEGORIES, GUIDE_CATEGORIES } from "@/types";
+import { DEFAULT_CHECKLIST_CATEGORIES, GUIDE_CATEGORIES, PLACE_CATEGORIES } from "@/types";
 import { mobileSchema } from "@/validations/auth";
 
 export const productSchema = z.object({
@@ -55,6 +55,7 @@ export const createUserByAdminSchema = z.object({
 export const updateUserByAdminSchema = z.object({
   mobile: mobileSchema.optional(),
   role: z.enum(["student", "admin"]).optional(),
+  verified: z.boolean().optional(),
 });
 
 export const uiLayoutSchema = z.object({
@@ -116,6 +117,34 @@ export const landingDesignSchema = z.object({
     .optional(),
 });
 
+export const citySchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  state: z.string().trim().max(80).optional().or(z.literal("")),
+  imageUrl: z.string().trim().url().optional().or(z.literal("")),
+  featured: z.boolean().optional(),
+});
+
+export const cityUpdateSchema = citySchema.partial().extend({
+  id: z.string().min(1),
+});
+
+export const placeSchema = z.object({
+  city: z.string().trim().min(1).max(80),
+  category: z.enum(PLACE_CATEGORIES),
+  name: z.string().trim().min(1).max(150),
+  imageUrl: z.string().trim().url().optional().or(z.literal("")),
+  rating: z.coerce.number().min(0).max(5).optional().nullable(),
+  address: z.string().trim().max(300).optional().or(z.literal("")),
+  mapsLink: z.string().trim().max(500).optional().or(z.literal("")),
+  openingHours: z.string().trim().max(120).optional().or(z.literal("")),
+  description: z.string().trim().max(500).optional().or(z.literal("")),
+  featured: z.boolean().optional(),
+});
+
+export const placeUpdateSchema = placeSchema.partial().extend({
+  id: z.string().min(1),
+});
+
 export type ProductInput = z.infer<typeof productSchema>;
 export type ProductUpdateInput = z.infer<typeof productUpdateSchema>;
 export type GuideArticleInput = z.infer<typeof guideArticleSchema>;
@@ -124,3 +153,7 @@ export type CreateUserByAdminInput = z.infer<typeof createUserByAdminSchema>;
 export type UpdateUserByAdminInput = z.infer<typeof updateUserByAdminSchema>;
 export type UiLayoutInput = z.infer<typeof uiLayoutSchema>;
 export type LandingDesignInput = z.infer<typeof landingDesignSchema>;
+export type CityInput = z.infer<typeof citySchema>;
+export type CityUpdateInput = z.infer<typeof cityUpdateSchema>;
+export type PlaceInput = z.infer<typeof placeSchema>;
+export type PlaceUpdateInput = z.infer<typeof placeUpdateSchema>;
