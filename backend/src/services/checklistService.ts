@@ -2,11 +2,43 @@ import { connectDB } from "@/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { Bag } from "@/models/Bag";
 import { User } from "@/models/User";
+import { UserChecklist } from "@/models/UserChecklist";
+import { activeDefaultItemsForUser } from "@/services/checklistMasterService";
 import type { ChecklistCategory, ChecklistPriority } from "@/types";
 import type { ChecklistItemInput, ChecklistItemUpdateInput } from "@/validations/checklist";
 import { DEFAULT_CHECKLIST_TEMPLATE } from "@/lib/defaultChecklistTemplate";
 import { areNearDuplicateNames } from "@/lib/textSimilarity";
 import { listCategories } from "@/services/categoryService";
+
+
+function fromUserChecklist(doc: any, master?: any, bag?: any) {
+  const isCustom = doc.isCustomItem || !master;
+  return {
+    _id: doc._id,
+    userId: doc.userId,
+    category: isCustom ? doc.customCategory : master.category,
+    item: isCustom ? doc.customName : master.title,
+    description: isCustom ? "" : master.description,
+    imageUrl: isCustom ? null : master.image,
+    bagId: doc.bagId,
+    notes: doc.note ?? "",
+    completed: doc.checked,
+    priority: isCustom ? "medium" : master.priority,
+    price: isCustom ? null : master.estimatedPrice,
+    recommendedBrand: isCustom ? null : master.recommendedBrand,
+    recommendedStore: isCustom ? null : master.recommendedStore,
+    purchaseLink: isCustom ? null : master.purchaseLink,
+    importance: isCustom ? "" : master.importance,
+    bagName: bag?.name ?? null,
+    bagColor: bag?.color ?? null,
+    createdAt: doc.createdAt,
+    updatedAt: doc.updatedAt,
+  };
+}
+
+async function hasNewChecklist(userId: string) {
+  return (await UserChecklist.countDocuments({ userId })) > 0;
+}
 
 // "Fashion Design Tools" is only relevant to Designing students — see categoryService.
 const DESIGN_ONLY_CATEGORY = "Fashion Design Tools";
@@ -57,26 +89,34 @@ export async function listItemsByCategory(userId: string, category: ChecklistCat
  * round-trip); the bag assignment itself still lives solely on the checklist item. */
 export async function getAllItemsByCategory(userId: string) {
   await connectDB();
-  const [categories, items, bags] = await Promise.all([
-    listCategories(userId),
-    ChecklistItem.find({ userId }).sort({ createdAt: -1 }).lean(),
+
+  if (!(await hasNewChecklist(userId))) {
+    const [categories, items, bags] = await Promise.all([
+      listCategories(userId),
+      ChecklistItem.find({ userId }).sort({ createdAt: -1 }).lean(),
+      Bag.find({ userId }).select("name color").lean(),
+    ]);
+
+    const bagById = new Map(bags.map((b) => [String(b._id), b]));
+    const itemsWithBagInfo = items.map((item) => {
+      const bag = item.bagId ? bagById.get(String(item.bagId)) : undefined;
+      return { ...item, bagName: bag?.name ?? null, bagColor: bag?.color ?? null };
+    });
+
+    return categories.map(({ name: category }) => ({
+      category,
+      items: itemsWithBagInfo.filter((i) => i.category === category),
+    }));
+  }
+
+  const [rows, bags] = await Promise.all([
+    UserChecklist.find({ userId, deleted: false }).populate("defaultChecklistItemId").sort({ customOrder: 1, createdAt: -1 }).lean(),
     Bag.find({ userId }).select("name color").lean(),
   ]);
-
   const bagById = new Map(bags.map((b) => [String(b._id), b]));
-  const itemsWithBagInfo = items.map((item) => {
-    const bag = item.bagId ? bagById.get(String(item.bagId)) : undefined;
-    return {
-      ...item,
-      bagName: bag?.name ?? null,
-      bagColor: bag?.color ?? null,
-    };
-  });
-
-  return categories.map(({ name: category }) => ({
-    category,
-    items: itemsWithBagInfo.filter((i) => i.category === category),
-  }));
+  const items = rows.map((row: any) => fromUserChecklist(row, row.defaultChecklistItemId, row.bagId ? bagById.get(String(row.bagId)) : undefined));
+  const categories = [...new Set(items.map((i) => i.category).filter(Boolean))];
+  return categories.map((category) => ({ category, items: items.filter((i) => i.category === category) }));
 }
 
 /** Idempotent: only seeds the starter checklist if the user has no items yet. Excludes
@@ -84,14 +124,26 @@ export async function getAllItemsByCategory(userId: string) {
 export async function seedDefaultChecklistIfEmpty(userId: string) {
   await connectDB();
 
-  const existingCount = await ChecklistItem.countDocuments({ userId });
-  if (existingCount > 0) {
+  const [existingNewCount, existingLegacyCount, user] = await Promise.all([
+    UserChecklist.countDocuments({ userId }),
+    ChecklistItem.countDocuments({ userId }),
+    User.findById(userId).lean(),
+  ]);
+  if (existingNewCount > 0 || existingLegacyCount > 0 || !user) {
     return { seeded: false, count: 0 };
   }
 
-  const template = await getTemplateForUser(userId);
-  const docs = template.map((template) => ({ userId, ...template }));
-  await ChecklistItem.insertMany(docs);
+  const templateItems = await activeDefaultItemsForUser(user);
+  const docs = templateItems.map((item: any) => ({
+    userId,
+    defaultChecklistItemId: item._id,
+    checked: false,
+    quantity: 1,
+    note: "",
+    metadataVersion: item.__v ?? 1,
+    deleted: false,
+  }));
+  if (docs.length > 0) await UserChecklist.insertMany(docs, { ordered: false });
 
   return { seeded: true, count: docs.length };
 }
@@ -121,6 +173,9 @@ export async function addMissingTemplateItems(userId: string) {
 
 export async function createChecklistItem(userId: string, input: ChecklistItemInput) {
   await connectDB();
+  if (await hasNewChecklist(userId)) {
+    return UserChecklist.create({ userId, defaultChecklistItemId: null, isCustomItem: true, customName: input.item, customCategory: input.category, checked: false, quantity: 1, note: input.notes ?? "", bagId: input.bagId ?? null });
+  }
   return ChecklistItem.create({ userId, ...input });
 }
 
@@ -160,12 +215,16 @@ export async function createChecklistItems(
 
 export async function updateChecklistItem(userId: string, input: ChecklistItemUpdateInput) {
   await connectDB();
-  const { id, ...rest } = input;
-  return ChecklistItem.findOneAndUpdate({ _id: id, userId }, rest, { returnDocument: "after" }).lean();
+  const { id, completed, notes, item, category, bagId, ...rest } = input;
+  if (await hasNewChecklist(userId)) {
+    return UserChecklist.findOneAndUpdate({ _id: id, userId }, { ...(completed !== undefined ? { checked: completed } : {}), ...(notes !== undefined ? { note: notes } : {}), ...(item !== undefined ? { customName: item, isCustomItem: true } : {}), ...(category !== undefined ? { customCategory: category, isCustomItem: true } : {}), ...(bagId !== undefined ? { bagId } : {}) }, { returnDocument: "after" }).lean();
+  }
+  return ChecklistItem.findOneAndUpdate({ _id: id, userId }, { completed, notes, item, category, bagId, ...rest }, { returnDocument: "after" }).lean();
 }
 
 export async function renameChecklistItem(userId: string, id: string, item: string) {
   await connectDB();
+  if (await hasNewChecklist(userId)) return UserChecklist.findOneAndUpdate({ _id: id, userId }, { customName: item, isCustomItem: true }, { returnDocument: "after" }).lean();
   return ChecklistItem.findOneAndUpdate({ _id: id, userId }, { item }, { returnDocument: "after" }).lean();
 }
 
@@ -213,6 +272,7 @@ export async function mergeDuplicateItems(userId: string) {
 
 export async function deleteChecklistItem(userId: string, id: string) {
   await connectDB();
+  if (await hasNewChecklist(userId)) return UserChecklist.findOneAndUpdate({ _id: id, userId }, { deleted: true }, { returnDocument: "after" }).lean();
   return ChecklistItem.deleteOne({ _id: id, userId });
 }
 
