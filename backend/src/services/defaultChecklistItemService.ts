@@ -158,7 +158,9 @@ export async function findApplicableItems(
     ? { $or: [{ isForAllCourses: true }, { applicableCourses: courseId }] }
     : { isForAllCourses: true };
 
-  const genderClause = gender ? { $or: [{ gender: "All" }, { gender }] } : { gender: "All" };
+  const genderClause: Record<string, unknown> = gender
+    ? { $or: [{ gender: "All" }, { gender }] }
+    : { gender: "All" };
 
   return DefaultChecklistItem.find({
     templateId,
