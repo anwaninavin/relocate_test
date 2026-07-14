@@ -5,7 +5,6 @@ import {
   ListChecks,
   Loader2,
   LogOut,
-  Moon,
   Share,
   Sparkles,
   SquarePlus,
@@ -18,7 +17,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
-import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { BulkAddDialog } from "@/features/checklist/bulk-add-dialog";
 import { CategoryManagerDialog } from "@/features/checklist/category-manager-dialog";
 import { useAuth } from "@/context/auth-context";
@@ -149,10 +147,6 @@ export function SettingsView({ categories }: { categories: string[] }) {
   return (
     <div>
       <PageHeader title="Settings" description="Appearance, checklist tools, and your account" />
-
-      <SettingsSection title="Appearance">
-        <SettingsRow icon={Moon} label="Theme" description="Light or dark" action={<ThemeToggle />} />
-      </SettingsSection>
 
       <SettingsSection title="App">
         <SettingsRow
