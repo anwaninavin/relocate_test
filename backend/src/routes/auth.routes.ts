@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request } from "express";
 
 import {
   checkMobileSchema,
@@ -15,8 +15,23 @@ import { requestOtp, verifyOtp, OtpCooldownError } from "@/services/otpService";
 import { signAuthToken } from "@/lib/jwt";
 import { serializeUser } from "@/lib/serialize";
 import { requireAuth } from "@/middleware/auth";
+import { logEventAsync } from "@/services/eventService";
 
 export const authRouter = Router();
+
+/** Pulls the visitor/session ids the frontend's analytics client attaches to every request
+ * (see frontend lib/analytics/client.ts) so server-emitted auth events land in the same
+ * timeline as the client-tracked page views for that visitor. Falls back to an ip-derived
+ * id for old/no-JS clients so the event is still recorded, just not funnel-attributable. */
+function eventContext(req: Request) {
+  const fallback = `server-${req.analytics?.ip ?? "unknown"}`;
+  return {
+    visitorId: req.analytics?.visitorId ?? fallback,
+    sessionId: req.analytics?.sessionId ?? fallback,
+    ip: req.analytics?.ip ?? null,
+    userAgent: req.analytics?.userAgent ?? null,
+  };
+}
 
 authRouter.post("/login", async (req, res) => {
   const parsed = loginSchema.safeParse(req.body);
@@ -25,17 +40,22 @@ authRouter.post("/login", async (req, res) => {
     return;
   }
 
+  const ctx = eventContext(req);
+
   try {
     const user = await authenticateWithPin(parsed.data.mobile, parsed.data.pin);
     if (!user) {
+      logEventAsync({ eventName: "login_failed", ...ctx });
       res.status(401).json({ error: "Invalid mobile number or login code" });
       return;
     }
 
+    logEventAsync({ eventName: "login_success", userId: user._id.toString(), ...ctx });
     const token = signAuthToken(user._id.toString());
     res.json({ token, user: serializeUser(user) });
   } catch (error) {
     if (error instanceof RateLimitedError) {
+      logEventAsync({ eventName: "login_failed", ...ctx, metadata: { reason: "rate_limited" } });
       res.status(429).json({ error: error.message });
       return;
     }
@@ -73,6 +93,7 @@ authRouter.post("/register/request-otp", async (req, res) => {
 
   try {
     const result = await requestOtp(parsed.data.mobile, "register");
+    logEventAsync({ eventName: "otp_requested", ...eventContext(req), metadata: { purpose: "register" } });
     res.json(result);
   } catch (error) {
     if (error instanceof OtpCooldownError) {
@@ -90,17 +111,23 @@ authRouter.post("/register/verify", async (req, res) => {
     return;
   }
 
+  const ctx = eventContext(req);
+
   const isValid = await verifyOtp(parsed.data.mobile, parsed.data.code, "register");
   if (!isValid) {
+    logEventAsync({ eventName: "otp_failed", ...ctx, metadata: { purpose: "register" } });
     res.status(400).json({ error: "Invalid or expired code" });
     return;
   }
+  logEventAsync({ eventName: "otp_verified", ...ctx, metadata: { purpose: "register" } });
 
   const result = await registerUserWithOtp(parsed.data.mobile, parsed.data.code, parsed.data.pin);
   if (!result.success) {
     res.status(400).json({ error: result.error });
     return;
   }
+
+  logEventAsync({ eventName: "registration_success", userId: result.user._id.toString(), ...ctx });
 
   // Seeding waits until /onboarding, where collegeCategory is known — the starter
   // checklist depends on it (e.g. Fashion Design Tools items are Designing-only), and
@@ -125,6 +152,7 @@ authRouter.post("/forgot-password/request-otp", async (req, res) => {
 
   try {
     const result = await requestOtp(parsed.data.mobile, "reset");
+    logEventAsync({ eventName: "otp_requested", ...eventContext(req), metadata: { purpose: "reset" } });
     res.json(result);
   } catch (error) {
     if (error instanceof OtpCooldownError) {
@@ -142,11 +170,15 @@ authRouter.post("/forgot-password/reset", async (req, res) => {
     return;
   }
 
+  const ctx = eventContext(req);
+
   const isValid = await verifyOtp(parsed.data.mobile, parsed.data.code, "reset");
   if (!isValid) {
+    logEventAsync({ eventName: "otp_failed", ...ctx, metadata: { purpose: "reset" } });
     res.status(400).json({ error: "Invalid or expired code" });
     return;
   }
+  logEventAsync({ eventName: "otp_verified", ...ctx, metadata: { purpose: "reset" } });
 
   const result = await resetPinWithOtp(parsed.data.mobile, parsed.data.code, parsed.data.pin);
   if (!result.success) {
@@ -154,6 +186,7 @@ authRouter.post("/forgot-password/reset", async (req, res) => {
     return;
   }
 
+  logEventAsync({ eventName: "login_success", userId: result.user._id.toString(), ...ctx, metadata: { via: "reset" } });
   const token = signAuthToken(result.user._id.toString());
   res.json({ token, user: serializeUser(result.user) });
 });

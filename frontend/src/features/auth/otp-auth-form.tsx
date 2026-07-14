@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { BrandName } from "@/components/shared/brand-name";
 import { ApiError } from "@/lib/api";
+import { trackRegistrationPageOpened } from "@/lib/analytics/client";
 
 interface OtpRequestResult {
   sent: boolean;
@@ -24,6 +25,10 @@ interface OtpAuthFormProps {
   requestOtp: (mobile: string) => Promise<OtpRequestResult>;
   submit: (mobile: string, code: string) => Promise<void>;
   footer: { prompt: string; linkLabel: string; linkTo: string };
+  /** True for the self-registration flow — tags the form for registration-funnel tracking
+   * and fires a "registration page opened" event on mount. False for forgot-code/reset,
+   * which shares this same component but isn't part of the registration funnel. */
+  isRegistration?: boolean;
 }
 
 export function OtpAuthForm({
@@ -33,8 +38,13 @@ export function OtpAuthForm({
   requestOtp,
   submit,
   footer,
+  isRegistration = false,
 }: OtpAuthFormProps) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isRegistration) trackRegistrationPageOpened();
+  }, [isRegistration]);
   const [step, setStep] = useState<0 | 1>(0);
   const [mobile, setMobile] = useState("");
   const [code, setCode] = useState("");
@@ -93,6 +103,7 @@ export function OtpAuthForm({
 
       {step === 0 ? (
         <motion.form
+          id={isRegistration ? "register-form" : "reset-form"}
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           onSubmit={handleRequestOtp}

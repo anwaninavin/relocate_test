@@ -10,6 +10,7 @@ import { useAuth } from "@/context/auth-context";
 import { ApiError } from "@/lib/api";
 import { HOME_ROUTE } from "@/lib/nav-items";
 import { cn } from "@/lib/utils";
+import { trackFormInteraction, trackRegistrationPageOpened } from "@/lib/analytics/client";
 
 type Step = "mobile" | "pin" | "otp";
 
@@ -72,6 +73,8 @@ export function LoginForm() {
             message: result.error ?? "Couldn't confirm the WhatsApp send — check your WhatsApp and try again.",
           });
         }
+        trackRegistrationPageOpened();
+        trackFormInteraction("register-form", "start", "mobile");
         setStep("otp");
       }
     } catch (err) {
@@ -255,7 +258,7 @@ export function LoginForm() {
               <p className="text-muted-foreground mt-1 text-sm">Enter the code sent to {mobile}</p>
             </div>
 
-            <form onSubmit={handleOtpSubmit} className="flex flex-col items-center gap-5">
+            <form id="register-form" onSubmit={handleOtpSubmit} className="flex flex-col items-center gap-5">
               {sendStatus && (
                 <div
                   className={cn(

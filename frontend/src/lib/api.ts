@@ -1,4 +1,5 @@
 import { emitUnauthorized } from "@/lib/auth-events";
+import { getVisitorAndSessionIds } from "@/lib/analytics/client";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:4000";
 const TOKEN_KEY = "pwm_auth_token";
@@ -69,6 +70,11 @@ async function apiFetch<T>(path: string, options: RequestInit = {}, attempt = 0)
   if (authToken) {
     headers.set("Authorization", `Bearer ${authToken}`);
   }
+  // Lets server-emitted analytics events (login, registration, OTP outcomes) join the same
+  // visitor/session timeline as the client-tracked page views — see lib/analytics/client.ts.
+  const { visitorId, sessionId } = getVisitorAndSessionIds();
+  headers.set("X-Visitor-Id", visitorId);
+  headers.set("X-Session-Id", sessionId);
 
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
