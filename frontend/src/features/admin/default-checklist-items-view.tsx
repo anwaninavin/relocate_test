@@ -61,8 +61,11 @@ export function DefaultChecklistItemsView({
 
   async function handleDelete(id: string) {
     try {
-      await api.delete(`/api/admin/default-checklist-items/${id}`);
+      const { detachedCount } = await api.delete<{ detachedCount?: number }>(`/api/admin/default-checklist-items/${id}`);
       emitRefresh();
+      if (detachedCount) {
+        toast.info(`${detachedCount} student(s) had this item — kept as a custom item on their checklist`);
+      }
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to delete item");
     }
@@ -71,16 +74,27 @@ export function DefaultChecklistItemsView({
   async function bulkAction(action: "delete" | "activate" | "deactivate") {
     try {
       if (action === "delete") {
-        await api.post("/api/admin/default-checklist-items/bulk-delete", { ids: selectedIds });
-      } else {
-        await api.post("/api/admin/default-checklist-items/bulk-set-active", {
-          ids: selectedIds,
-          active: action === "activate",
-        });
+        const { detachedCount } = await api.post<{ detachedCount?: number }>(
+          "/api/admin/default-checklist-items/bulk-delete",
+          { ids: selectedIds },
+        );
+        setSelectedIds([]);
+        emitRefresh();
+        toast.success(
+          `${selectedIds.length} item(s) deleted${detachedCount ? ` — ${detachedCount} student checklist row(s) kept as custom items` : ""}`,
+        );
+        return;
       }
+
+      const { backfilledCount } = await api.post<{ backfilledCount?: number }>(
+        "/api/admin/default-checklist-items/bulk-set-active",
+        { ids: selectedIds, active: action === "activate" },
+      );
       setSelectedIds([]);
       emitRefresh();
-      toast.success(`${selectedIds.length} item(s) updated`);
+      toast.success(
+        `${selectedIds.length} item(s) updated${backfilledCount ? ` — added to ${backfilledCount} existing student(s)' checklists` : ""}`,
+      );
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Bulk action failed");
     }

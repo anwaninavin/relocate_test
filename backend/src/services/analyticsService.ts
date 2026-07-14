@@ -28,11 +28,14 @@ export async function getAdminAnalytics() {
     totalProducts,
     totalGuideArticles,
   ] = await Promise.all([
-    User.countDocuments(),
+    // Admin-dashboard-only reads — safe to prefer a secondary so this doesn't compete with
+    // the operational write path (checklist toggles, etc.) once this is a multi-node replica
+    // set. Never applied to the per-student checklist read/write path.
+    User.countDocuments().read("secondaryPreferred"),
     countActiveUsers(7),
     countActiveUsers(30),
-    ChecklistItem.countDocuments(),
-    ChecklistItem.countDocuments({ completed: true }),
+    ChecklistItem.countDocuments().read("secondaryPreferred"),
+    ChecklistItem.countDocuments({ completed: true }).read("secondaryPreferred"),
     ChecklistItem.aggregate<CategoryRow>([
       {
         $group: {
@@ -41,12 +44,14 @@ export async function getAdminAnalytics() {
           completed: { $sum: { $cond: ["$completed", 1, 0] } },
         },
       },
-    ]),
+    ])
+      .allowDiskUse(true)
+      .read("secondaryPreferred"),
     // UserChecklist (the DB-driven, post-migration architecture) — combined with the legacy
     // counts above so this dashboard reflects every user regardless of which architecture
     // generated their checklist. See services/userChecklistService.ts.
-    UserChecklist.countDocuments({ deleted: false }),
-    UserChecklist.countDocuments({ deleted: false, checked: true }),
+    UserChecklist.countDocuments({ deleted: false }).read("secondaryPreferred"),
+    UserChecklist.countDocuments({ deleted: false, checked: true }).read("secondaryPreferred"),
     UserChecklist.aggregate<CategoryRow>([
       { $match: { deleted: false } },
       {
@@ -65,7 +70,9 @@ export async function getAdminAnalytics() {
           completed: { $sum: { $cond: ["$checked", 1, 0] } },
         },
       },
-    ]),
+    ])
+      .allowDiskUse(true)
+      .read("secondaryPreferred"),
     countProducts(),
     countGuideArticles(),
   ]);

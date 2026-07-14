@@ -18,6 +18,9 @@ const UserChecklistSchema = new Schema(
     customName: { type: String, default: null, trim: true, maxlength: 120 },
     customCategory: { type: String, default: null, trim: true, maxlength: 60 },
     customOrder: { type: Number, default: 0 },
+    /** normalizeItemName(customName), stored so the admin "Suggested Items" queue can group
+     * and look up custom items by an index instead of scanning + normalizing every row. */
+    customNameNormalized: { type: String, default: null, index: true },
 
     /** Snapshot of the ChecklistTemplate.version this row was generated against, so a future
      * template bump can detect and backfill rows seeded under an older version. */
@@ -33,6 +36,9 @@ const UserChecklistSchema = new Schema(
 UserChecklistSchema.index({ userId: 1, defaultChecklistItemId: 1 }, { unique: true, sparse: true });
 UserChecklistSchema.index({ userId: 1, deleted: 1 });
 UserChecklistSchema.index({ defaultChecklistItemId: 1, checked: 1 });
+/** Suggested-items queue scans exactly this shape (all custom, non-deleted rows) — covers
+ * the query so it doesn't fall back to a full collection scan as this collection grows. */
+UserChecklistSchema.index({ isCustomItem: 1, deleted: 1 });
 
 export type UserChecklistDocument = InferSchemaType<typeof UserChecklistSchema>;
 

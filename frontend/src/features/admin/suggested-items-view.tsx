@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { EmptyState } from "@/components/shared/empty-state";
 import { PageHeader } from "@/components/shared/page-header";
 import { AddSuggestedToDefaultDialog } from "@/features/admin/add-suggested-to-default-dialog";
+import { ViewSuggestedItemUsersDialog } from "@/features/admin/view-suggested-item-users-dialog";
 import type { SuggestedItemDTO } from "@/features/admin/suggested-item-dto";
 
 export function SuggestedItemsView({ suggestions }: { suggestions: SuggestedItemDTO[] }) {
@@ -38,7 +39,9 @@ export function SuggestedItemsView({ suggestions }: { suggestions: SuggestedItem
                 <TableRow key={s.key}>
                   <TableCell className="font-medium">{s.name}</TableCell>
                   <TableCell>{s.category}</TableCell>
-                  <TableCell>{s.usersUsing}</TableCell>
+                  <TableCell>
+                    <ViewSuggestedItemUsersDialog suggestion={s} />
+                  </TableCell>
                   <TableCell>{s.completionPercent}%</TableCell>
                   <TableCell>{s.mostPopularCollegeCategory ?? "—"}</TableCell>
                   <TableCell>{s.mostPopularCourse ?? "—"}</TableCell>

@@ -4,7 +4,7 @@ import { DefaultChecklistItem, type DefaultChecklistItemDocument } from "@/model
 import { User } from "@/models/User";
 import { getOrCreateActiveTemplate } from "@/services/checklistTemplateService";
 import { findApplicableItems } from "@/services/defaultChecklistItemService";
-import { areNearDuplicateNames } from "@/lib/textSimilarity";
+import { areNearDuplicateNames, normalizeItemName } from "@/lib/textSimilarity";
 import type { ChecklistCategory } from "@/types";
 
 export async function hasUserChecklist(userId: string) {
@@ -138,12 +138,14 @@ export async function createCustomItem(
   input: { category: string; item: string; notes?: string; bagId?: string | null },
 ) {
   await connectDB();
+  const customName = input.item.trim();
   const doc = await UserChecklist.create({
     userId,
     defaultChecklistItemId: null,
     isCustomItem: true,
     customCategory: input.category.trim(),
-    customName: input.item.trim(),
+    customName,
+    customNameNormalized: normalizeItemName(customName),
     note: input.notes ?? "",
     bagId: input.bagId ?? null,
     checked: false,
@@ -163,7 +165,13 @@ export async function createCustomItems(userId: string, category: string, names:
   const existingNames = existing.map((i) => i.customName ?? "");
 
   const seen: string[] = [];
-  const docs: { userId: string; isCustomItem: true; customCategory: string; customName: string }[] = [];
+  const docs: {
+    userId: string;
+    isCustomItem: true;
+    customCategory: string;
+    customName: string;
+    customNameNormalized: string;
+  }[] = [];
 
   for (const rawName of names) {
     const name = rawName.trim();
@@ -171,7 +179,7 @@ export async function createCustomItems(userId: string, category: string, names:
     const isDuplicate = [...existingNames, ...seen].some((other) => areNearDuplicateNames(name, other));
     if (isDuplicate) continue;
     seen.push(name);
-    docs.push({ userId, isCustomItem: true, customCategory: category, customName: name });
+    docs.push({ userId, isCustomItem: true, customCategory: category, customName: name, customNameNormalized: normalizeItemName(name) });
   }
 
   if (docs.length === 0) {
@@ -209,7 +217,11 @@ export async function updateItem(
   if (input.notes !== undefined) patch.note = input.notes;
   if (input.bagId !== undefined) patch.bagId = input.bagId;
   if (row.isCustomItem) {
-    if (input.item !== undefined) patch.customName = input.item.trim();
+    if (input.item !== undefined) {
+      const customName = input.item.trim();
+      patch.customName = customName;
+      patch.customNameNormalized = normalizeItemName(customName);
+    }
     if (input.category !== undefined) patch.customCategory = input.category.trim();
   }
 
@@ -274,6 +286,7 @@ export async function bulkUpdateItems(
       isCustomItem: true,
       customCategory: doc.customCategory,
       customName: doc.customName,
+      customNameNormalized: doc.customNameNormalized ?? normalizeItemName(doc.customName ?? ""),
       note: doc.note,
       bagId: doc.bagId,
       quantity: doc.quantity,

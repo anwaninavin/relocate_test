@@ -81,10 +81,12 @@ export async function listUsers(page: number, pageSize: number) {
   return { users, total };
 }
 
+// Admin-dashboard-only (the sole caller is analyticsService.getAdminAnalytics) — safe to
+// prefer a secondary rather than compete with operational writes for this read.
 export async function countActiveUsers(sinceDays: number) {
   await connectDB();
   const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
-  return User.countDocuments({ updatedAt: { $gte: since } });
+  return User.countDocuments({ updatedAt: { $gte: since } }).read("secondaryPreferred");
 }
 
 /** Admin-provisioned account: creates the user with a fresh PIN and returns the plaintext

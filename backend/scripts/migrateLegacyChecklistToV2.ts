@@ -25,6 +25,7 @@ import { User } from "@/models/User";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { UserChecklist } from "@/models/UserChecklist";
 import { DefaultChecklistItem } from "@/models/DefaultChecklistItem";
+import { normalizeItemName } from "@/lib/textSimilarity";
 
 interface MigrationResult {
   userId: string;
@@ -98,6 +99,7 @@ async function migrateUser(userId: string, masters: { _id: mongoose.Types.Object
       defaultChecklistItemId: null,
       isCustomItem: true,
       customName: item.item,
+      customNameNormalized: normalizeItemName(item.item),
       customCategory: item.category,
       customOrder: 0,
     };

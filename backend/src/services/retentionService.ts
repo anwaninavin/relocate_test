@@ -26,7 +26,7 @@ export async function getRetentionAnalytics() {
         days: { $addToSet: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } } },
       },
     },
-  ]);
+  ]).allowDiskUse(true);
 
   const today = startOfDay(new Date());
   const dayMs = 24 * 60 * 60 * 1000;

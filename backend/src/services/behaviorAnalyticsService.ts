@@ -19,7 +19,7 @@ export async function getPageLoadStats(range: DateRange) {
       },
     },
     { $group: { _id: "$page", avgLoadMs: { $avg: "$metadata.loadMs" }, samples: { $sum: 1 } } },
-  ]);
+  ]).allowDiskUse(true);
 
   const pages = rows
     .filter((r) => r._id)

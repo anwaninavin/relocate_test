@@ -25,7 +25,7 @@ export async function getLoginAnalytics(range: DateRange) {
       { $match: { ...match, eventName: "login_failed" } },
       { $group: { _id: "$visitorId", count: { $sum: 1 } } },
       { $match: { count: { $gte: 3 } } },
-    ]),
+    ]).allowDiskUse(true),
   ]);
 
   const now = new Date();

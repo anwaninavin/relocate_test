@@ -42,6 +42,11 @@ const TravelProfileSchema = new Schema(
 
 TravelProfileSchema.index({ destinationCity: 1, travelMonth: 1 });
 TravelProfileSchema.index({ destinationCity: 1, arrivalDate: 1 });
+/** Fully covers findCoPackers' mandatory match (destinationCity + travelMonth + currentCity +
+ * active) so it doesn't fall back to filtering the last two fields in memory. */
+TravelProfileSchema.index({ destinationCity: 1, travelMonth: 1, currentCity: 1, active: 1 });
+/** Covers findRoommates' mandatory match (destinationCity + active). */
+TravelProfileSchema.index({ destinationCity: 1, active: 1 });
 
 export type TravelProfileDocument = InferSchemaType<typeof TravelProfileSchema>;
 

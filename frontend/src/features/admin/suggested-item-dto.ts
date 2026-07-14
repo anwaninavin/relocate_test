@@ -9,3 +9,13 @@ export interface SuggestedItemDTO {
   firstAdded: string;
   lastUsed: string;
 }
+
+export interface SuggestedItemUserDTO {
+  userId: string;
+  name: string | null;
+  mobile: string;
+  collegeCategory: string | null;
+  course: string | null;
+  checked: boolean;
+  addedAt: string;
+}

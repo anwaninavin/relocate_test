@@ -86,6 +86,14 @@ AnalyticsEventSchema.index({ "utm.campaign": 1 });
 const TTL_SECONDS = Number(process.env.ANALYTICS_TTL_DAYS ?? 180) * 24 * 60 * 60;
 AnalyticsEventSchema.index({ timestamp: 1 }, { expireAfterSeconds: TTL_SECONDS });
 
+// This collection is write-heavy (one insert per tracked page action) and only ever read by
+// admin analytics dashboards, never on a user-facing request path — so every read against it
+// defaults to preferring a secondary (falls back to primary automatically on a single-node
+// deployment, and keeps analytics queries from competing with the operational write path once
+// this runs as a proper multi-node replica set). Reads on a hot, correctness-sensitive
+// operational collection like UserChecklist deliberately do NOT get this treatment.
+AnalyticsEventSchema.set("read", "secondaryPreferred");
+
 export type AnalyticsEventDocument = InferSchemaType<typeof AnalyticsEventSchema>;
 
 export const AnalyticsEvent: Model<AnalyticsEventDocument> =

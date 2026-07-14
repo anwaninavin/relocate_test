@@ -36,13 +36,19 @@ const UserSchema = new Schema(
     /** Optional — enables age-range matching in Co-Packer/Roommate discovery. Never required. */
     dateOfBirth: { type: Date, default: null },
     /** Users this account has blocked, for discovery/directory features. Kept as an embedded
-     * array (same rationale as loginAttempts) rather than a new collection. */
-    blockedUserIds: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [] },
+     * array (same rationale as loginAttempts) rather than a new collection. Indexed (multikey)
+     * since discovery looks up "who has blocked me" via `User.find({ blockedUserIds: viewerId })`
+     * on every Co-Packer/Roommate request. */
+    blockedUserIds: { type: [{ type: Schema.Types.ObjectId, ref: "User" }], default: [], index: true },
     /** Saved Places to Explore, most-recent first. */
     favoritePlaceIds: { type: [{ type: Schema.Types.ObjectId, ref: "Place" }], default: [] },
   },
   { timestamps: true },
 );
+
+/** Backs the admin dashboard's "active in last 7/30 days" counts (countActiveUsers), which
+ * filter on updatedAt — without this, that query is a full collection scan. */
+UserSchema.index({ updatedAt: 1 });
 
 export type UserDocument = InferSchemaType<typeof UserSchema>;
 

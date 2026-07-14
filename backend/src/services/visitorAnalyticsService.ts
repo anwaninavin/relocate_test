@@ -37,7 +37,7 @@ export async function getVisitorOverview(range: DateRange) {
   const firstSeenRows = await AnalyticsEvent.aggregate<{ _id: string; firstSeen: Date }>([
     { $match: { visitorId: { $in: activeVisitorIds } } },
     { $group: { _id: "$visitorId", firstSeen: { $min: "$timestamp" } } },
-  ]);
+  ]).allowDiskUse(true);
 
   let newVisitors = 0;
   let returningVisitors = 0;
@@ -100,7 +100,7 @@ export async function getSessionAnalytics(range: DateRange) {
         end: { $max: "$timestamp" },
       },
     },
-  ]);
+  ]).allowDiskUse(true);
 
   const sessionCount = sessions.length;
   if (sessionCount === 0) {
@@ -156,11 +156,11 @@ export async function getPageEngagement(range: DateRange) {
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: { ...match, eventName: "page_view" } },
       { $group: { _id: "$page", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; avgPercent: number }>([
       { $match: { ...match, eventName: "scroll_checkpoint" } },
       { $group: { _id: "$page", avgPercent: { $avg: "$metadata.percent" } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.find({ ...match, eventName: "page_view" })
       .select("sessionId page timestamp")
       .sort({ sessionId: 1, timestamp: 1 })
@@ -210,12 +210,12 @@ export async function getInteractionAnalytics(range: DateRange) {
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: { ...match, eventName: "button_click" } },
       { $group: { _id: "$metadata.label", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.countDocuments({ ...match, eventName: "click", "metadata.dead": true }),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: { ...match, eventName: "form_interaction" } },
       { $group: { _id: "$metadata.formId", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
   ]);
 
   return {
@@ -234,23 +234,23 @@ export async function getTechBreakdown(range: DateRange) {
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$device.type", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$browser", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$os", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$language", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$timezone", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       {
@@ -259,7 +259,7 @@ export async function getTechBreakdown(range: DateRange) {
           count: { $sum: 1 },
         },
       },
-    ]),
+    ]).allowDiskUse(true),
   ]);
 
   return {
@@ -281,15 +281,15 @@ export async function getGeoBreakdown(range: DateRange) {
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$geo.country", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$geo.state", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$geo.city", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
   ]);
 
   return { countries: topN(countries, 15), states: topN(states, 15), cities: topN(cities, 15) };
@@ -305,7 +305,7 @@ export async function getReferralAnalytics(range: DateRange) {
     AnalyticsEvent.aggregate<{ _id: string; count: number }>([
       { $match: match },
       { $group: { _id: "$referralSource", count: { $sum: 1 } } },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.aggregate<{ _id: { campaign: string; source: string; medium: string }; visitors: string[] }>([
       { $match: { ...match, "utm.campaign": { $ne: null } } },
       {
@@ -314,7 +314,7 @@ export async function getReferralAnalytics(range: DateRange) {
           visitors: { $addToSet: "$visitorId" },
         },
       },
-    ]),
+    ]).allowDiskUse(true),
     AnalyticsEvent.distinct("visitorId", { ...match, eventName: "registration_success" }),
   ]);
 

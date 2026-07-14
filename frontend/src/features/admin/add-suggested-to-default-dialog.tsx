@@ -43,9 +43,16 @@ export function AddSuggestedToDefaultDialog({ suggestion }: { suggestion: Sugges
     try {
       // Applies to all college categories/courses by default — narrow it from the Default
       // Checklist Items page afterward if it should be scoped.
-      await api.post("/api/admin/suggested-items/add-to-default", values);
+      const { convertedCount } = await api.post<{ convertedCount?: number }>(
+        "/api/admin/suggested-items/add-to-default",
+        values,
+      );
       emitRefresh();
-      toast.success(`"${values.name}" added to the default checklist`);
+      toast.success(
+        convertedCount
+          ? `"${values.name}" added to the default checklist — ${convertedCount} existing ${convertedCount === 1 ? "student's item was" : "students' items were"} merged into it`
+          : `"${values.name}" added to the default checklist`,
+      );
       setOpen(false);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Something went wrong");

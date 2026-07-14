@@ -64,7 +64,7 @@ import {
   listDistinctCategories,
   updateDefaultChecklistItem,
 } from "@/services/defaultChecklistItemService";
-import { addSuggestedItemToDefault, listSuggestedItems } from "@/services/suggestedItemsService";
+import { addSuggestedItemToDefault, getSuggestedItemUsers, listSuggestedItems } from "@/services/suggestedItemsService";
 import { getChecklistDashboardStats, getDefaultItemAnalytics } from "@/services/checklistAnalyticsService";
 import {
   addSuggestedToDefaultSchema,
@@ -475,7 +475,7 @@ adminRouter.post("/default-checklist-items", async (req, res) => {
     res.status(400).json({ error: result.error });
     return;
   }
-  res.json({ item: result.item });
+  res.json({ item: result.item, backfilledCount: result.backfilledCount });
 });
 
 adminRouter.patch("/default-checklist-items/:id", async (req, res) => {
@@ -490,12 +490,12 @@ adminRouter.patch("/default-checklist-items/:id", async (req, res) => {
     res.status(400).json({ error: result.error });
     return;
   }
-  res.json({ item: result.item });
+  res.json({ item: result.item, backfilledCount: result.backfilledCount });
 });
 
 adminRouter.delete("/default-checklist-items/:id", async (req, res) => {
-  await deleteDefaultChecklistItem(req.params.id);
-  res.json({ success: true });
+  const result = await deleteDefaultChecklistItem(req.params.id);
+  res.json({ success: true, detachedCount: result.detachedCount });
 });
 
 adminRouter.post("/default-checklist-items/bulk-delete", async (req, res) => {
@@ -551,6 +551,10 @@ adminRouter.get("/suggested-items", async (_req, res) => {
   res.json({ suggestions: await listSuggestedItems() });
 });
 
+adminRouter.get("/suggested-items/:key/users", async (req, res) => {
+  res.json({ users: await getSuggestedItemUsers(req.params.key) });
+});
+
 adminRouter.post("/suggested-items/add-to-default", async (req, res) => {
   const parsed = addSuggestedToDefaultSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -562,7 +566,7 @@ adminRouter.post("/suggested-items/add-to-default", async (req, res) => {
     res.status(400).json({ error: result.error });
     return;
   }
-  res.json({ item: result.item });
+  res.json({ item: result.item, convertedCount: result.convertedCount });
 });
 
 // --- Checklist dashboard ---

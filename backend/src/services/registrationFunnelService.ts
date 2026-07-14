@@ -28,7 +28,7 @@ async function firstTimestampByVisitor(eventName: string, range: DateRange, extr
   const rows = await AnalyticsEvent.aggregate<FirstTimestampRow>([
     { $match: { eventName, timestamp: { $gte: range.start, $lte: range.end }, ...extraMatch } },
     { $group: { _id: "$visitorId", firstAt: { $min: "$timestamp" } } },
-  ]);
+  ]).allowDiskUse(true);
   return new Map(rows.map((r) => [r._id, r.firstAt]));
 }
 

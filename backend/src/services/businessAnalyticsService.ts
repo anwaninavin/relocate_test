@@ -24,15 +24,17 @@ export async function getBusinessAnalytics(range: DateRange) {
     legacyActivatedUserIds,
     v2ActivatedUserIds,
   ] = await Promise.all([
-    User.countDocuments(),
-    User.countDocuments({ createdAt: { $gte: today } }),
+    // Admin-dashboard-only reads — prefer a secondary rather than compete with the
+    // operational write path.
+    User.countDocuments().read("secondaryPreferred"),
+    User.countDocuments({ createdAt: { $gte: today } }).read("secondaryPreferred"),
     AnalyticsEvent.distinct("visitorId", match),
     AnalyticsEvent.distinct("visitorId", { ...match, eventName: "registration_success" }),
     AnalyticsEvent.distinct("userId", { ...match, eventName: "login_success", userId: { $ne: null } }),
-    ChecklistItem.distinct("userId", { createdAt: { $gte: range.start, $lte: range.end } }),
+    ChecklistItem.distinct("userId", { createdAt: { $gte: range.start, $lte: range.end } }).read("secondaryPreferred"),
     // DB-driven (post-migration) users get their checklist auto-generated at onboarding —
     // same "added a checklist" activation signal as the legacy ChecklistItem row above.
-    UserChecklist.distinct("userId", { createdAt: { $gte: range.start, $lte: range.end } }),
+    UserChecklist.distinct("userId", { createdAt: { $gte: range.start, $lte: range.end } }).read("secondaryPreferred"),
   ]);
 
   const activeUserIds = await AnalyticsEvent.distinct("userId", { ...match, userId: { $ne: null } });
@@ -60,7 +62,7 @@ export async function getBusinessAnalytics(range: DateRange) {
         days: { $addToSet: { $dateToString: { format: "%Y-%m-%d", date: "$timestamp" } } },
       },
     },
-  ]);
+  ]).allowDiskUse(true);
   const repeatUsers = loginCountByUser.filter((row) => row.days.length > 1).length;
   const repeatUsersRate = loginCountByUser.length === 0 ? 0 : Math.round((repeatUsers / loginCountByUser.length) * 1000) / 10;
 
