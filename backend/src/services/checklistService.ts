@@ -20,6 +20,21 @@ async function getTemplateForUser(userId: string) {
   return DEFAULT_CHECKLIST_TEMPLATE.filter((item) => item.category !== DESIGN_ONLY_CATEGORY);
 }
 
+/** Self-heal for accounts that registered while the DB-driven catalog (DefaultChecklistItem)
+ * was empty: generateUserChecklist ran once at /onboarding, found nothing applicable, and never
+ * runs again for that user, leaving them with zero rows in both the v2 and legacy collections.
+ * Only acts when BOTH are empty — genuine pre-migration legacy users have real ChecklistItem
+ * rows and must never be switched onto the v2 path here. */
+async function ensureChecklistSeeded(userId: string) {
+  const [hasV2, legacyCount] = await Promise.all([
+    userChecklistService.hasUserChecklist(userId),
+    ChecklistItem.countDocuments({ userId }),
+  ]);
+  if (!hasV2 && legacyCount === 0) {
+    await userChecklistService.generateUserChecklist(userId);
+  }
+}
+
 /** Every read/write entry point below is a thin router: users who were generated against the
  * new DB-driven catalog (they have UserChecklist rows) are served entirely from there; every
  * other user — the 200+ pre-migration accounts — keeps using the legacy ChecklistItem path
@@ -30,6 +45,7 @@ async function getTemplateForUser(userId: string) {
 
 export async function getCategorySummaries(userId: string) {
   await connectDB();
+  await ensureChecklistSeeded(userId);
 
   if (await userChecklistService.hasUserChecklist(userId)) {
     const [categories, items] = await Promise.all([listCategories(userId), userChecklistService.listItemsForUser(userId)]);
@@ -86,6 +102,7 @@ export async function listItemsByCategory(userId: string, category: ChecklistCat
  * round-trip); the bag assignment itself still lives solely on the checklist item. */
 export async function getAllItemsByCategory(userId: string) {
   await connectDB();
+  await ensureChecklistSeeded(userId);
 
   const isV2 = await userChecklistService.hasUserChecklist(userId);
   const [categories, items, bags] = await Promise.all([
