@@ -1,15 +1,28 @@
 import { useState, type ReactNode } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ListChecks, Loader2, LogOut, Moon, Sparkles, Wand2, type LucideIcon } from "lucide-react";
+import {
+  Download,
+  ListChecks,
+  Loader2,
+  LogOut,
+  Moon,
+  Share,
+  Sparkles,
+  SquarePlus,
+  Wand2,
+  type LucideIcon,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { PageHeader } from "@/components/shared/page-header";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { BulkAddDialog } from "@/features/checklist/bulk-add-dialog";
 import { CategoryManagerDialog } from "@/features/checklist/category-manager-dialog";
 import { useAuth } from "@/context/auth-context";
+import { usePwaInstall } from "@/lib/use-pwa-install";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
 
@@ -44,6 +57,47 @@ function SettingsRow({
       </div>
       {action}
     </div>
+  );
+}
+
+function InstallAppAction() {
+  const { installed, isIOS, canInstall, promptInstall } = usePwaInstall();
+  const [iosDialogOpen, setIosDialogOpen] = useState(false);
+
+  if (installed) {
+    return (
+      <span className="text-muted-foreground text-xs font-medium">Installed</span>
+    );
+  }
+
+  if (isIOS && !canInstall) {
+    return (
+      <>
+        <Button variant="outline" size="sm" onClick={() => setIosDialogOpen(true)}>
+          Install
+        </Button>
+        <Dialog open={iosDialogOpen} onOpenChange={setIosDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Install Pack with Me</DialogTitle>
+              <DialogDescription asChild>
+                <p className="flex flex-wrap items-center gap-1 pt-1 text-left">
+                  Tap <Share className="mx-0.5 inline size-3.5" aria-hidden /> <strong>Share</strong> in your
+                  browser toolbar, then choose <SquarePlus className="mx-0.5 inline size-3.5" aria-hidden />{" "}
+                  <strong>"Add to Home Screen"</strong>.
+                </p>
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  return (
+    <Button variant="outline" size="sm" disabled={!canInstall} onClick={() => promptInstall()}>
+      Install
+    </Button>
   );
 }
 
@@ -98,6 +152,15 @@ export function SettingsView({ categories }: { categories: string[] }) {
 
       <SettingsSection title="Appearance">
         <SettingsRow icon={Moon} label="Theme" description="Light or dark" action={<ThemeToggle />} />
+      </SettingsSection>
+
+      <SettingsSection title="App">
+        <SettingsRow
+          icon={Download}
+          label="Install app"
+          description="Add Pack with Me to your home screen"
+          action={<InstallAppAction />}
+        />
       </SettingsSection>
 
       <SettingsSection title="Checklist tools">

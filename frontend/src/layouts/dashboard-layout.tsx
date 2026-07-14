@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/shared/sidebar";
 import { Navbar } from "@/components/shared/navbar";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { FabMenu } from "@/components/shared/fab-menu";
+import { PWAInstallPrompt } from "@/components/shared/pwa-install-prompt";
 import { useHiddenNavHrefs } from "@/features/nav/use-nav-visibility";
 
 export function DashboardLayout() {
@@ -23,6 +24,7 @@ export function DashboardLayout() {
       </div>
       <BottomNav />
       <FabMenu hiddenNavHrefs={hiddenNavHrefs} />
+      <PWAInstallPrompt />
     </div>
   );
 }
