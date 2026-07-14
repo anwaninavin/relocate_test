@@ -50,11 +50,23 @@ const allowedOrigins = (process.env.CORS_ORIGIN ?? "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+// Vercel deploys a brand-new preview URL for every branch/PR push (hostel-jsk8-git-<branch>-
+// <team>.vercel.app, plus a random-hash variant per deployment) — there's no way to keep a
+// static CORS_ORIGIN env var in sync with those, so any preview of this specific Vercel project
+// is allowed in addition to the explicit allowlist. Without this, every API call from a preview
+// deploy (registration, onboarding, checklist, everything) fails with a CORS error.
+const VERCEL_PREVIEW_ORIGIN = /^https:\/\/hostel-jsk8(-[a-z0-9-]+)?\.vercel\.app$/;
+
 app.use(
   cors({
     origin(origin, callback) {
       // Allow same-origin/non-browser requests (no Origin header) and any configured origin.
-      if (!origin || allowedOrigins.length === 0 || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.length === 0 ||
+        allowedOrigins.includes(origin) ||
+        VERCEL_PREVIEW_ORIGIN.test(origin)
+      ) {
         callback(null, true);
         return;
       }
