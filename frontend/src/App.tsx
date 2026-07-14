@@ -8,6 +8,7 @@ import { AuthLayout } from "@/layouts/auth-layout";
 import { ScrollToTop } from "@/components/shared/scroll-to-top";
 import { RouteFallback } from "@/components/shared/route-fallback";
 import { HOME_ROUTE } from "@/lib/nav-items";
+import { useAnalyticsPageViews } from "@/lib/analytics/use-page-view-tracking";
 
 const LoginPage = lazy(() => import("@/pages/login-page"));
 const RegisterPage = lazy(() => import("@/pages/register-page"));
@@ -32,6 +33,7 @@ const SurvivalGuidePage = lazy(() => import("@/pages/survival-guide-page"));
 const ProfilePage = lazy(() => import("@/pages/profile-page"));
 const SettingsPage = lazy(() => import("@/pages/settings-page"));
 const AdminPage = lazy(() => import("@/pages/admin-page"));
+const AdminAnalyticsProPage = lazy(() => import("@/pages/admin-analytics-pro-page"));
 const AdminUsersPage = lazy(() => import("@/pages/admin-users-page"));
 const AdminProductsPage = lazy(() => import("@/pages/admin-products-page"));
 const AdminGuidePage = lazy(() => import("@/pages/admin-guide-page"));
@@ -47,6 +49,8 @@ function RootRoute() {
 }
 
 export default function App() {
+  useAnalyticsPageViews();
+
   return (
     <>
       <ScrollToTop />
@@ -117,6 +121,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/analytics-pro"
+              element={
+                <AdminRoute>
+                  <AdminAnalyticsProPage />
                 </AdminRoute>
               }
             />

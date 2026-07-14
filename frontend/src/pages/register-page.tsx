@@ -12,6 +12,7 @@ export default function RegisterPage() {
       requestOtp={requestRegisterOtp}
       submit={registerWithOtp}
       footer={{ prompt: "Already have an account?", linkLabel: "Log in", linkTo: "/login" }}
+      isRegistration
     />
   );
 }

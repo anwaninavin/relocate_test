@@ -4,6 +4,7 @@ import express from "express";
 import helmet from "helmet";
 
 import { connectDB } from "@/db";
+import { analyticsContext } from "@/middleware/analyticsContext";
 import { authRouter } from "@/routes/auth.routes";
 import { profileRouter } from "@/routes/profile.routes";
 import { categoriesRouter } from "@/routes/categories.routes";
@@ -23,6 +24,7 @@ import { landingRouter } from "@/routes/landing.routes";
 import { navRouter } from "@/routes/nav.routes";
 import { uploadRouter } from "@/routes/upload.routes";
 import { whatsappRouter } from "@/routes/whatsapp.routes";
+import { analyticsRouter } from "@/routes/analytics.routes";
 
 const app = express();
 
@@ -71,6 +73,8 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+app.use(analyticsContext);
+
 app.use("/api/auth", authRouter);
 app.use("/api/profile", profileRouter);
 app.use("/api/categories", categoriesRouter);
@@ -90,6 +94,7 @@ app.use("/api/landing", landingRouter);
 app.use("/api/nav", navRouter);
 app.use("/api/uploads", uploadRouter);
 app.use("/api/whatsapp", whatsappRouter);
+app.use("/api/analytics", analyticsRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
