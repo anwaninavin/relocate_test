@@ -40,6 +40,12 @@ const AdminGuidePage = lazy(() => import("@/pages/admin-guide-page"));
 const AdminLayoutPage = lazy(() => import("@/pages/admin-layout-page"));
 const AdminNavPage = lazy(() => import("@/pages/admin-nav-page"));
 const AdminHomeScreenPage = lazy(() => import("@/pages/admin-home-screen-page"));
+const AdminCitiesPage = lazy(() => import("@/pages/admin-cities-page"));
+const AdminPlacesPage = lazy(() => import("@/pages/admin-places-page"));
+const AdminContactsPage = lazy(() => import("@/pages/admin-contacts-page"));
+const DiscoverPage = lazy(() => import("@/pages/discover-page"));
+const BookingsPage = lazy(() => import("@/pages/bookings-page"));
+const ExplorePage = lazy(() => import("@/pages/explore-page"));
 
 function RootRoute() {
   const { user, loading } = useAuth();
@@ -111,6 +117,9 @@ export default function App() {
             <Route path="/contacts" element={<ContactsPage />} />
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/shopping" element={<ShoppingPage />} />
+            <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/bookings" element={<BookingsPage />} />
+            <Route path="/explore" element={<ExplorePage />} />
             <Route path="/guide" element={<GuidePage />} />
             <Route path="/guide/survival-guide" element={<SurvivalGuidePage />} />
             <Route path="/guide/:slug" element={<GuideArticlePage />} />
@@ -177,6 +186,30 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminHomeScreenPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/cities"
+              element={
+                <AdminRoute>
+                  <AdminCitiesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/places"
+              element={
+                <AdminRoute>
+                  <AdminPlacesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/reported-contacts"
+              element={
+                <AdminRoute>
+                  <AdminContactsPage />
                 </AdminRoute>
               }
             />

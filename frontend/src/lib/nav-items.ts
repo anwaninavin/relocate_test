@@ -13,6 +13,9 @@ import {
   UserRound,
   ShieldCheck,
   Settings,
+  Users,
+  Ticket,
+  Compass,
 } from "lucide-react";
 
 export { HOME_ROUTE } from "@/lib/routes";
@@ -34,6 +37,9 @@ export const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: "/wishlist", label: "Wishlist", icon: Heart },
   { href: "/shopping", label: "Shopping", icon: ShoppingBag },
   { href: "/guide/survival-guide", label: "Hostel Guide", icon: BookOpen },
+  { href: "/discover", label: "Discover", icon: Users },
+  { href: "/bookings", label: "Bookings", icon: Ticket },
+  { href: "/explore", label: "Explore", icon: Compass },
 ];
 
 export const PROFILE_NAV_ITEM: NavItem = {

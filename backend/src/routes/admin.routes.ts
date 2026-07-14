@@ -21,11 +21,22 @@ import {
 } from "@/services/guideService";
 import { saveDashboardLayout, saveNavLayout } from "@/services/uiLayoutService";
 import { saveLandingDesign } from "@/services/landingDesignService";
+import { createCity, deleteCity, listCities, updateCity } from "@/services/cityService";
+import { createPlace, deletePlace, listPlaces, updatePlace } from "@/services/placeService";
+import {
+  adminDeleteDirectoryContact,
+  listReportedContacts,
+  verifyDirectoryContact,
+} from "@/services/directoryContactService";
 import {
   createUserByAdminSchema,
+  citySchema,
+  cityUpdateSchema,
   guideArticleSchema,
   guideArticleUpdateSchema,
   landingDesignSchema,
+  placeSchema,
+  placeUpdateSchema,
   productSchema,
   productUpdateSchema,
   uiLayoutSchema,
@@ -53,6 +64,7 @@ adminRouter.get("/users", async (req, res) => {
     college: user.college ?? null,
     collegeCategory: user.collegeCategory ?? null,
     role: user.role,
+    verified: Boolean(user.verified),
     hasPinSet: Boolean(user.loginPinHash),
     createdAt: (user as unknown as { createdAt: Date }).createdAt.toISOString(),
   }));
@@ -187,4 +199,83 @@ adminRouter.put("/landing-design", async (req, res) => {
   }
   const design = await saveLandingDesign(parsed.data.elements, parsed.data.sectionBackgrounds ?? []);
   res.json(design);
+});
+
+// --- Cities ---
+
+adminRouter.get("/cities", async (_req, res) => {
+  res.json({ cities: await listCities() });
+});
+
+adminRouter.post("/cities", async (req, res) => {
+  const parsed = citySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const city = await createCity(parsed.data);
+  res.json({ city });
+});
+
+adminRouter.patch("/cities/:id", async (req, res) => {
+  const parsed = cityUpdateSchema.safeParse({ ...req.body, id: req.params.id });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const city = await updateCity(parsed.data);
+  res.json({ city });
+});
+
+adminRouter.delete("/cities/:id", async (req, res) => {
+  await deleteCity(req.params.id);
+  res.json({ success: true });
+});
+
+// --- Places ---
+
+adminRouter.get("/places", async (req, res) => {
+  const city = typeof req.query.city === "string" ? req.query.city : undefined;
+  res.json({ places: await listPlaces(city) });
+});
+
+adminRouter.post("/places", async (req, res) => {
+  const parsed = placeSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const place = await createPlace(parsed.data);
+  res.json({ place });
+});
+
+adminRouter.patch("/places/:id", async (req, res) => {
+  const parsed = placeUpdateSchema.safeParse({ ...req.body, id: req.params.id });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const place = await updatePlace(parsed.data);
+  res.json({ place });
+});
+
+adminRouter.delete("/places/:id", async (req, res) => {
+  await deletePlace(req.params.id);
+  res.json({ success: true });
+});
+
+// --- Directory contact moderation ---
+
+adminRouter.get("/directory-contacts/reported", async (_req, res) => {
+  res.json({ contacts: await listReportedContacts() });
+});
+
+adminRouter.post("/directory-contacts/:id/verify", async (req, res) => {
+  const contact = await verifyDirectoryContact(req.params.id, req.body?.verified !== false);
+  res.json({ contact });
+});
+
+adminRouter.delete("/directory-contacts/:id", async (req, res) => {
+  await adminDeleteDirectoryContact(req.params.id);
+  res.json({ success: true });
 });

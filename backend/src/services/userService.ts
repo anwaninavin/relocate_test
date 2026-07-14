@@ -133,7 +133,7 @@ export async function regeneratePin(userId: string) {
 
 export async function adminUpdateUser(
   userId: string,
-  input: { mobile?: string; role?: UserRole },
+  input: { mobile?: string; role?: UserRole; verified?: boolean },
 ) {
   await connectDB();
 
@@ -147,6 +147,7 @@ export async function adminUpdateUser(
   await User.findByIdAndUpdate(userId, {
     ...(input.mobile ? { mobile: input.mobile } : {}),
     ...(input.role ? { role: input.role } : {}),
+    ...(input.verified !== undefined ? { verified: input.verified } : {}),
   });
 
   return { success: true as const };

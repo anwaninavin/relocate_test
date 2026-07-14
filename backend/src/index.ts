@@ -25,6 +25,11 @@ import { navRouter } from "@/routes/nav.routes";
 import { uploadRouter } from "@/routes/upload.routes";
 import { whatsappRouter } from "@/routes/whatsapp.routes";
 import { analyticsRouter } from "@/routes/analytics.routes";
+import { discoveryRouter } from "@/routes/discovery.routes";
+import { directoryContactsRouter } from "@/routes/directoryContacts.routes";
+import { bookingsRouter } from "@/routes/bookings.routes";
+import { placesRouter } from "@/routes/places.routes";
+import { citiesRouter } from "@/routes/cities.routes";
 
 const app = express();
 
@@ -95,6 +100,11 @@ app.use("/api/nav", navRouter);
 app.use("/api/uploads", uploadRouter);
 app.use("/api/whatsapp", whatsappRouter);
 app.use("/api/analytics", analyticsRouter);
+app.use("/api/discovery", discoveryRouter);
+app.use("/api/directory-contacts", directoryContactsRouter);
+app.use("/api/bookings", bookingsRouter);
+app.use("/api/places", placesRouter);
+app.use("/api/cities", citiesRouter);
 
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error(err);
