@@ -66,13 +66,15 @@ export const SETTINGS_NAV_ITEM: NavItem = {
   icon: Settings,
 };
 
-/** Bottom tab bar: Home, Checklist, [FAB in the middle], Hostel Guide, Profile. Dashboard
- * moved into the overflow ("more") menu to make room for Home. */
+/** Bottom tab bar: Home, Checklist, [FAB in the middle], Community, Discover. Hostel Guide
+ * and Profile moved into the overflow ("more") menu to make room for Community/Discover —
+ * see OverflowMenu, which adds PROFILE_NAV_ITEM back in explicitly since it isn't part of
+ * PRIMARY_NAV_ITEMS. */
 export const BOTTOM_NAV_ITEMS: NavItem[] = [
   PRIMARY_NAV_ITEMS.find((i) => i.href === "/wa-login/home")!,
   PRIMARY_NAV_ITEMS.find((i) => i.href === "/checklist")!,
-  PRIMARY_NAV_ITEMS.find((i) => i.href === "/guide/survival-guide")!,
-  PROFILE_NAV_ITEM,
+  PRIMARY_NAV_ITEMS.find((i) => i.href === "/community")!,
+  PRIMARY_NAV_ITEMS.find((i) => i.href === "/discover")!,
 ];
 
 /** Everything not already reachable from the bottom tab bar. */
