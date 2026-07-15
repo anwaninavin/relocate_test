@@ -8,7 +8,6 @@ import {
   quickRenameItemSchema,
 } from "@/validations/checklist";
 import {
-  addMissingTemplateItems,
   bulkUpdateItems,
   createChecklistItem,
   createChecklistItems,
@@ -78,11 +77,6 @@ checklistRouter.post("/bulk-action", async (req, res) => {
 checklistRouter.post("/merge-duplicates", async (req, res) => {
   const { mergedCount } = await mergeDuplicateItems(req.user!._id.toString());
   res.json({ success: true, mergedCount });
-});
-
-checklistRouter.post("/load-starter", async (req, res) => {
-  const { count } = await addMissingTemplateItems(req.user!._id.toString());
-  res.json({ success: true, count });
 });
 
 checklistRouter.patch("/:id/rename", async (req, res) => {

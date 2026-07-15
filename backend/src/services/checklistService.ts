@@ -1,53 +1,23 @@
 import { connectDB } from "@/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { Bag } from "@/models/Bag";
-import { User } from "@/models/User";
 import type { ChecklistCategory, ChecklistPriority } from "@/types";
 import type { ChecklistItemInput, ChecklistItemUpdateInput } from "@/validations/checklist";
-import { DEFAULT_CHECKLIST_TEMPLATE } from "@/lib/defaultChecklistTemplate";
 import { areNearDuplicateNames } from "@/lib/textSimilarity";
 import { listCategories } from "@/services/categoryService";
 import * as userChecklistService from "@/services/userChecklistService";
 
-// "Fashion Design Tools" is only relevant to Designing students — see categoryService.
-const DESIGN_ONLY_CATEGORY = "Fashion Design Tools";
-
-async function getTemplateForUser(userId: string) {
-  const user = await User.findById(userId).select("collegeCategory").lean();
-  if (user?.collegeCategory === "Designing") {
-    return DEFAULT_CHECKLIST_TEMPLATE;
-  }
-  return DEFAULT_CHECKLIST_TEMPLATE.filter((item) => item.category !== DESIGN_ONLY_CATEGORY);
-}
-
-/** Self-heal for accounts that registered while the DB-driven catalog (DefaultChecklistItem)
- * was empty: generateUserChecklist ran once at /onboarding, found nothing applicable, and never
- * runs again for that user, leaving them with zero rows in both the v2 and legacy collections.
- * Only acts when BOTH are empty — genuine pre-migration legacy users have real ChecklistItem
- * rows and must never be switched onto the v2 path here. */
-async function ensureChecklistSeeded(userId: string) {
-  const [hasV2, legacyCount] = await Promise.all([
-    userChecklistService.hasUserChecklist(userId),
-    ChecklistItem.countDocuments({ userId }),
-  ]);
-  if (!hasV2 && legacyCount === 0) {
-    await userChecklistService.generateUserChecklist(userId);
-  }
-}
-
-/** Every read/write entry point below is a thin router: users who were generated against the
- * new DB-driven catalog (they have UserChecklist rows) are served entirely from there; every
- * other user — the 200+ pre-migration accounts — keeps using the legacy ChecklistItem path
- * completely unchanged. The frontend hits the same endpoints and gets the same DTO shape
- * either way; only this file knows the difference. See services/userChecklistService.ts for
- * the new-architecture implementation and scripts/migrateChecklistToV2.ts for the one-time,
- * opt-in migration of legacy users into the new shape. */
+/** Every read/write entry point below is a thin router: legacy users (real ChecklistItem rows
+ * from before the DB-driven catalog existed) keep using that path completely unchanged; every
+ * other user — including a brand-new signup with zero UserChecklist rows, since nothing gets
+ * materialized until they touch an item — is served from the live catalog merge in
+ * userChecklistService.ts. The frontend hits the same endpoints and gets the same DTO shape
+ * either way; only this file knows the difference. */
 
 export async function getCategorySummaries(userId: string) {
   await connectDB();
-  await ensureChecklistSeeded(userId);
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     const [categories, items] = await Promise.all([listCategories(userId), userChecklistService.listItemsForUser(userId)]);
     return categories.map(({ name: category }) => {
       const inCategory = items.filter((i) => i.category === category);
@@ -74,7 +44,7 @@ export async function getCategorySummaries(userId: string) {
 export async function getOverallProgress(userId: string) {
   await connectDB();
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     return userChecklistService.getOverallProgress(userId);
   }
 
@@ -88,7 +58,7 @@ export async function getOverallProgress(userId: string) {
 export async function listItemsByCategory(userId: string, category: ChecklistCategory) {
   await connectDB();
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     const items = await userChecklistService.listItemsForUser(userId);
     return items.filter((i) => i.category === category);
   }
@@ -102,12 +72,11 @@ export async function listItemsByCategory(userId: string, category: ChecklistCat
  * round-trip); the bag assignment itself still lives solely on the checklist item. */
 export async function getAllItemsByCategory(userId: string) {
   await connectDB();
-  await ensureChecklistSeeded(userId);
 
-  const isV2 = await userChecklistService.hasUserChecklist(userId);
+  const isLegacy = await userChecklistService.isLegacyChecklistUser(userId);
   const [categories, items, bags] = await Promise.all([
     listCategories(userId),
-    isV2 ? userChecklistService.listItemsForUser(userId) : ChecklistItem.find({ userId }).sort({ createdAt: -1 }).lean(),
+    isLegacy ? ChecklistItem.find({ userId }).sort({ createdAt: -1 }).lean() : userChecklistService.listItemsForUser(userId),
     Bag.find({ userId }).select("name color").lean(),
   ]);
 
@@ -127,53 +96,14 @@ export async function getAllItemsByCategory(userId: string) {
   }));
 }
 
-/** Idempotent: only seeds the starter checklist if the user has no items yet. Excludes
- * "Fashion Design Tools" items unless the user's college category is Designing. */
-export async function seedDefaultChecklistIfEmpty(userId: string) {
-  await connectDB();
-
-  const existingCount = await ChecklistItem.countDocuments({ userId });
-  if (existingCount > 0) {
-    return { seeded: false, count: 0 };
-  }
-
-  const template = await getTemplateForUser(userId);
-  const docs = template.map((template) => ({ userId, ...template }));
-  await ChecklistItem.insertMany(docs);
-
-  return { seeded: true, count: docs.length };
-}
-
-/** Adds any starter-template items the user doesn't already have (by category + item name). */
-export async function addMissingTemplateItems(userId: string) {
-  await connectDB();
-
-  const template = await getTemplateForUser(userId);
-
-  const existing = await ChecklistItem.find({ userId }).select("category item").lean();
-  const existingKeys = new Set(
-    existing.map((i) => `${i.category}::${i.item.trim().toLowerCase()}`),
-  );
-
-  const missing = template.filter(
-    (template) => !existingKeys.has(`${template.category}::${template.item.trim().toLowerCase()}`),
-  );
-
-  if (missing.length === 0) {
-    return { count: 0 };
-  }
-
-  await ChecklistItem.insertMany(missing.map((template) => ({ userId, ...template })));
-  return { count: missing.length };
-}
-
 export async function createChecklistItem(userId: string, input: ChecklistItemInput) {
   await connectDB();
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     // Custom items only carry a name/category/notes/bag — see UserChecklist's schema comment.
     // Any other field on the legacy create form (price, brand, priority, ...) is accepted but
-    // not persisted for v2 users, since that metadata is admin-managed master data now.
+    // not persisted for new-architecture users, since that metadata is admin-managed master
+    // data now.
     return userChecklistService.createCustomItem(userId, {
       category: input.category,
       item: input.item,
@@ -194,7 +124,7 @@ export async function createChecklistItems(
 ) {
   await connectDB();
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     return userChecklistService.createCustomItems(userId, category, names);
   }
 
@@ -227,7 +157,7 @@ export async function updateChecklistItem(userId: string, input: ChecklistItemUp
   await connectDB();
   const { id, ...rest } = input;
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     return userChecklistService.updateItem(userId, id, rest);
   }
 
@@ -237,7 +167,7 @@ export async function updateChecklistItem(userId: string, input: ChecklistItemUp
 export async function renameChecklistItem(userId: string, id: string, item: string) {
   await connectDB();
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     return userChecklistService.renameItem(userId, id, item);
   }
 
@@ -289,7 +219,7 @@ export async function mergeDuplicateItems(userId: string) {
 export async function deleteChecklistItem(userId: string, id: string) {
   await connectDB();
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     await userChecklistService.deleteItem(userId, id);
     return { acknowledged: true };
   }
@@ -304,7 +234,7 @@ export async function bulkUpdateItems(
 ) {
   await connectDB();
 
-  if (await userChecklistService.hasUserChecklist(userId)) {
+  if (!(await userChecklistService.isLegacyChecklistUser(userId))) {
     await userChecklistService.bulkUpdateItems(userId, ids, action);
     return { acknowledged: true };
   }

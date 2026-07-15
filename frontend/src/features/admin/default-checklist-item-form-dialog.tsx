@@ -97,12 +97,13 @@ export function DefaultChecklistItemFormDialog({
         estimatedPrice: values.estimatedPrice === "" ? null : values.estimatedPrice,
         recommendedStore: values.recommendedStore === "" ? null : values.recommendedStore,
       };
-      const { backfilledCount } = isEdit
-        ? await api.patch<{ backfilledCount?: number }>(`/api/admin/default-checklist-items/${item!.id}`, payload)
-        : await api.post<{ backfilledCount?: number }>("/api/admin/default-checklist-items", payload);
+      if (isEdit) {
+        await api.patch(`/api/admin/default-checklist-items/${item!.id}`, payload);
+      } else {
+        await api.post("/api/admin/default-checklist-items", payload);
+      }
       emitRefresh();
-      const suffix = backfilledCount ? ` and added to ${backfilledCount} existing student(s)' checklists` : "";
-      toast.success(`${isEdit ? "Item updated" : "Item added"}${suffix}`);
+      toast.success(isEdit ? "Item updated" : "Item added");
       setOpen(false);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Something went wrong");

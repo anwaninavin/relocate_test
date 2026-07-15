@@ -3,77 +3,9 @@ import { Types } from "mongoose";
 import { connectDB } from "@/db";
 import { DefaultChecklistItem } from "@/models/DefaultChecklistItem";
 import { UserChecklist } from "@/models/UserChecklist";
-import { User } from "@/models/User";
 import { getOrCreateActiveTemplate } from "@/services/checklistTemplateService";
 import { normalizeItemName } from "@/lib/textSimilarity";
 import type { ChecklistGender, ChecklistPriority, StoreOption } from "@/types";
-
-const PROPAGATION_PAGE_SIZE = 1000;
-
-/** When admin adds (or reactivates) a DefaultChecklistItem, `generateUserChecklist` only ever
- * reaches brand-new signups — it's a strict "seed once" guard (see userChecklistService.ts), so
- * students who already have a checklist would otherwise never see items added after they
- * onboarded. This backfills one unchecked row for every already-migrated user this item
- * applies to, cursor-paginated so it stays safe as the user base grows instead of loading
- * everyone into memory at once. */
-async function propagateDefaultItemToExistingUsers(item: {
-  _id: Types.ObjectId;
-  isForAllCollegeCategories: boolean;
-  applicableCollegeCategories: unknown[];
-  isForAllCourses: boolean;
-  applicableCourses: unknown[];
-  gender?: ChecklistGender;
-}) {
-  await connectDB();
-
-  const userQuery: Record<string, unknown> = {};
-  if (!item.isForAllCollegeCategories) {
-    userQuery.collegeCategoryId = { $in: item.applicableCollegeCategories };
-  }
-  if (!item.isForAllCourses) {
-    userQuery.courseId = { $in: item.applicableCourses };
-  }
-  if (item.gender && item.gender !== "All") {
-    userQuery.gender = item.gender;
-  }
-
-  let backfilled = 0;
-  let lastId: Types.ObjectId | null = null;
-  for (;;) {
-    const pageQuery: Record<string, unknown> = lastId ? { ...userQuery, _id: { $gt: lastId } } : userQuery;
-    const page: { _id: Types.ObjectId }[] = await User.find(pageQuery)
-      .select("_id")
-      .sort({ _id: 1 })
-      .limit(PROPAGATION_PAGE_SIZE)
-      .lean();
-    if (page.length === 0) break;
-
-    const pageUserIds = page.map((u) => u._id);
-    // Only backfill users who already have a checklist generated — brand-new users get this
-    // item naturally the first time generateUserChecklist runs for them.
-    const alreadyGenerated = await UserChecklist.distinct("userId", { userId: { $in: pageUserIds } });
-    const alreadyGeneratedIds = new Set(alreadyGenerated.map(String));
-    const targetUserIds = pageUserIds.filter((id) => alreadyGeneratedIds.has(String(id)));
-
-    if (targetUserIds.length > 0) {
-      const docs = targetUserIds.map((userId) => ({
-        userId,
-        defaultChecklistItemId: item._id,
-        checked: false,
-        quantity: 1,
-      }));
-      await UserChecklist.insertMany(docs, { ordered: false }).catch(() => {
-        // Unique (userId, defaultChecklistItemId) index guards against double-seeding.
-      });
-      backfilled += targetUserIds.length;
-    }
-
-    lastId = page[page.length - 1]._id;
-    if (page.length < PROPAGATION_PAGE_SIZE) break;
-  }
-
-  return backfilled;
-}
 
 /** Deleting a DefaultChecklistItem that existing students already reference would otherwise
  * leave their UserChecklist row pointing at nothing — silently rendering as a blank/"Untitled"
@@ -264,9 +196,7 @@ export async function createDefaultChecklistItem(input: DefaultChecklistItemInpu
     updatedBy: adminUserId,
   });
 
-  const backfilledCount = item.active ? await propagateDefaultItemToExistingUsers(item) : 0;
-
-  return { success: true as const, item, backfilledCount };
+  return { success: true as const, item };
 }
 
 export async function updateDefaultChecklistItem(
@@ -285,19 +215,7 @@ export async function updateDefaultChecklistItem(
     return { success: false as const, error: "Item not found" };
   }
 
-  // Re-propagate whenever targeting could have changed (reactivated, or applicability
-  // widened/narrowed) — idempotent thanks to the unique (userId, defaultChecklistItemId)
-  // index, so re-running it on an unrelated edit (e.g. price) is a cheap no-op.
-  const targetingChanged =
-    input.active !== undefined ||
-    input.gender !== undefined ||
-    input.applicableCollegeCategories !== undefined ||
-    input.applicableCourses !== undefined ||
-    input.isForAllCollegeCategories !== undefined ||
-    input.isForAllCourses !== undefined;
-  const backfilledCount = item.active && targetingChanged ? await propagateDefaultItemToExistingUsers(item) : 0;
-
-  return { success: true as const, item, backfilledCount };
+  return { success: true as const, item };
 }
 
 export async function deleteDefaultChecklistItem(id: string) {
@@ -317,16 +235,7 @@ export async function bulkDeleteDefaultChecklistItems(ids: string[]) {
 export async function bulkSetActive(ids: string[], active: boolean) {
   await connectDB();
   const result = await DefaultChecklistItem.updateMany({ _id: { $in: ids } }, { active });
-
-  let backfilledCount = 0;
-  if (active) {
-    const items = await DefaultChecklistItem.find({ _id: { $in: ids }, active: true }).lean();
-    for (const item of items) {
-      backfilledCount += await propagateDefaultItemToExistingUsers(item);
-    }
-  }
-
-  return { modifiedCount: result.modifiedCount ?? 0, backfilledCount };
+  return { modifiedCount: result.modifiedCount ?? 0 };
 }
 
 export interface BulkImportRow {
@@ -385,15 +294,11 @@ export async function bulkImportDefaultChecklistItems(
     });
   }
 
-  let backfilledCount = 0;
   if (docs.length > 0) {
-    const created = await DefaultChecklistItem.insertMany(docs);
-    for (const item of created) {
-      if (item.active) backfilledCount += await propagateDefaultItemToExistingUsers(item);
-    }
+    await DefaultChecklistItem.insertMany(docs);
   }
 
-  return { imported: docs.length, skipped, backfilledCount };
+  return { imported: docs.length, skipped };
 }
 
 export async function listDistinctCategories(templateId?: string) {

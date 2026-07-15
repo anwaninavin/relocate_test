@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Loader2, RefreshCw, Search } from "lucide-react";
+import { Loader2, Search } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -39,35 +39,13 @@ interface HealthSnapshot {
   user?: UserSnapshot;
 }
 
-interface GenerateResult {
-  success: boolean;
-  error?: string;
-  result?: { generated: boolean; count: number };
-  debug?: {
-    templateId: string;
-    templateVersion: number;
-    applicableItemsFound: number;
-    sampleItem: {
-      title: string;
-      templateId: string;
-      active: boolean;
-      gender: string;
-      isForAllCollegeCategories: boolean;
-      isForAllCourses: boolean;
-    } | null;
-  };
-}
-
-/** Read-only diagnostic view of the checklist self-heal seeds, so an admin can confirm whether
- * DefaultChecklistItem/CollegeCategory actually have data in production — from a phone, using
- * the same authenticated session as the rest of the admin panel — without needing DB access or
- * browser devtools. */
+/** Read-only diagnostic view of the checklist catalog and one user's checklist state — so an
+ * admin can confirm the starter catalog/taxonomy has real data, and see how many rows a given
+ * account has actually materialized (touched) vs. is still seeing live from the catalog. */
 export default function AdminChecklistHealthPage() {
   const [snapshot, setSnapshot] = useState<HealthSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
   const [mobile, setMobile] = useState("");
-  const [generating, setGenerating] = useState(false);
-  const [generateResult, setGenerateResult] = useState<GenerateResult | null>(null);
 
   async function fetchData(withMobile?: string) {
     setLoading(true);
@@ -79,21 +57,6 @@ export default function AdminChecklistHealthPage() {
       toast.error(error instanceof ApiError ? error.message : "Failed to load checklist health");
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleForceGenerate() {
-    if (!mobile.trim()) return;
-    setGenerating(true);
-    setGenerateResult(null);
-    try {
-      const data = await api.post<GenerateResult>("/api/admin/checklist-health/generate", { mobile: mobile.trim() });
-      setGenerateResult(data);
-      await fetchData(mobile.trim());
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to run generateUserChecklist");
-    } finally {
-      setGenerating(false);
     }
   }
 
@@ -166,51 +129,6 @@ export default function AdminChecklistHealthPage() {
             {loading ? <Loader2 className="size-4 animate-spin" /> : <Search className="size-4" />}
           </Button>
         </form>
-        {snapshot?.user?.found && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="mb-3"
-            onClick={handleForceGenerate}
-            disabled={generating}
-          >
-            {generating ? <Loader2 className="size-4 animate-spin" /> : <RefreshCw className="size-4" />}
-            Force-run generateUserChecklist
-          </Button>
-        )}
-        {generateResult && (
-          <div className="bg-muted mb-3 space-y-1 rounded-lg p-3 text-xs">
-            {generateResult.success ? (
-              <p>
-                Ran successfully: generated={String(generateResult.result?.generated)}, count=
-                {generateResult.result?.count}
-              </p>
-            ) : (
-              <p className="text-destructive">Error: {generateResult.error}</p>
-            )}
-            {generateResult.debug && (
-              <>
-                <p>
-                  <span className="text-muted-foreground">Resolved template: </span>
-                  {generateResult.debug.templateId} (v{generateResult.debug.templateVersion})
-                </p>
-                <p>
-                  <span className="text-muted-foreground">Applicable items found: </span>
-                  {generateResult.debug.applicableItemsFound}
-                </p>
-                {generateResult.debug.sampleItem && (
-                  <p>
-                    <span className="text-muted-foreground">Sample item: </span>"{generateResult.debug.sampleItem.title}" —
-                    templateId={generateResult.debug.sampleItem.templateId}, active=
-                    {String(generateResult.debug.sampleItem.active)}, gender={generateResult.debug.sampleItem.gender},
-                    isForAllCollegeCategories={String(generateResult.debug.sampleItem.isForAllCollegeCategories)},
-                    isForAllCourses={String(generateResult.debug.sampleItem.isForAllCourses)}
-                  </p>
-                )}
-              </>
-            )}
-          </div>
-        )}
         {snapshot?.user &&
           (snapshot.user.found ? (
             <div className="space-y-1 text-xs">
@@ -231,7 +149,7 @@ export default function AdminChecklistHealthPage() {
                 {snapshot.user.gender ?? "(none)"}
               </p>
               <p>
-                <span className="text-muted-foreground">New checklist rows: </span>
+                <span className="text-muted-foreground">Materialized (touched) checklist rows: </span>
                 {snapshot.user.userChecklistCount}
               </p>
               <p>
