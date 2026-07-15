@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
-import { DEFAULT_NAV_VISIBILITY, navItemLabel } from "@/features/nav/nav-visibility";
+import { DEFAULT_NAV_VISIBILITY, mergeNavLayout, navItemLabel } from "@/features/nav/nav-visibility";
 import type { WidgetConfig } from "@/features/dashboard/widget-registry";
 
 export function NavEditorView() {
@@ -17,9 +17,7 @@ export function NavEditorView() {
     api
       .get<{ widgets: WidgetConfig[] | null }>("/api/nav/layout")
       .then((res) => {
-        if (res.widgets && res.widgets.length > 0) {
-          setItems(res.widgets);
-        }
+        setItems(mergeNavLayout(res.widgets));
       })
       .catch(() => {
         toast.error("Failed to load the current nav visibility");
