@@ -9,6 +9,8 @@ import { ChecklistItem } from "@/models/ChecklistItem";
 import { Category } from "@/models/Category";
 import { normalizeMobile } from "@/lib/phone";
 import { generateUserChecklist } from "@/services/userChecklistService";
+import { getOrCreateActiveTemplate } from "@/services/checklistTemplateService";
+import { findApplicableItems } from "@/services/defaultChecklistItemService";
 
 /** Read-only diagnostic snapshot of the checklist-generation taxonomy — lets an admin confirm
  * whether the self-healing seed (getOrCreateActiveTemplate / listActiveCollegeCategories) has
@@ -91,8 +93,36 @@ export async function forceRegenerateChecklist(mobile: string) {
   }
 
   try {
+    const template = await getOrCreateActiveTemplate();
+    const items = await findApplicableItems(
+      String(template._id),
+      user.collegeCategoryId ? String(user.collegeCategoryId) : null,
+      user.courseId ? String(user.courseId) : null,
+      user.gender ?? null,
+    );
+    const sampleItem = await DefaultChecklistItem.findOne({ templateId: template._id }).lean();
+
     const result = await generateUserChecklist(String(user._id));
-    return { success: true as const, result };
+
+    return {
+      success: true as const,
+      result,
+      debug: {
+        templateId: String(template._id),
+        templateVersion: template.version,
+        applicableItemsFound: items.length,
+        sampleItem: sampleItem
+          ? {
+              title: sampleItem.title,
+              templateId: String(sampleItem.templateId),
+              active: sampleItem.active,
+              gender: sampleItem.gender,
+              isForAllCollegeCategories: sampleItem.isForAllCollegeCategories,
+              isForAllCourses: sampleItem.isForAllCourses,
+            }
+          : null,
+      },
+    };
   } catch (error) {
     return { success: false as const, error: error instanceof Error ? error.message : String(error) };
   }
