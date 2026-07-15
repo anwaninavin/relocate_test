@@ -28,7 +28,7 @@ type StatusResponse =
 
 export function WaLoginForm() {
   const navigate = useNavigate();
-  const { checkMobile, loginWithToken } = useAuth();
+  const { checkMobile, login, loginWithToken } = useAuth();
 
   const [step, setStep] = useState<"mobile" | "action">("mobile");
   const [mobile, setMobile] = useState("");
@@ -37,6 +37,7 @@ export function WaLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isCheckingMobile, setIsCheckingMobile] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [waLink, setWaLink] = useState<string | null>(null);
   const [popupBlocked, setPopupBlocked] = useState(false);
   const pendingIdRef = useRef<string | null>(null);
@@ -130,9 +131,31 @@ export function WaLoginForm() {
     }
   }
 
+  async function handleDirectLogin(e: React.FormEvent) {
+    e.preventDefault();
+    setError(null);
+
+    if (!/^\d{4}$/.test(pin)) {
+      setError("Enter your 4-digit code");
+      return;
+    }
+
+    setIsLoggingIn(true);
+    try {
+      await login(mobile, pin);
+      toast.success("You're logged in!");
+      navigate(HOME_ROUTE, { replace: true });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Invalid code. Try again, or tap \"Get code\" below.");
+    } finally {
+      setIsLoggingIn(false);
+    }
+  }
+
   function handleBack() {
     setStep("mobile");
     setMode(null);
+    setPin("");
     setWaLink(null);
     setPopupBlocked(false);
     setError(null);
@@ -176,28 +199,78 @@ export function WaLoginForm() {
             Go
           </Button>
         </motion.form>
+      ) : mode === "resend" ? (
+        <motion.form
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          onSubmit={handleDirectLogin}
+          className="flex flex-col gap-4"
+        >
+          <div className="grid gap-2">
+            <Label htmlFor="wa-login-code">Enter your 4-digit code</Label>
+            <div className="relative">
+              <KeyRound className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
+              <Input
+                id="wa-login-code"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="1234"
+                className="pl-11 tracking-widest"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                required
+                autoFocus
+              />
+            </div>
+          </div>
+          {error && <p className="text-destructive text-sm">{error}</p>}
+          <Button type="submit" size="lg" disabled={isLoggingIn} className="mt-2">
+            {isLoggingIn ? <Loader2 className="size-4 animate-spin" /> : null}
+            Enter
+          </Button>
+          <button
+            type="button"
+            disabled={isRegistering}
+            onClick={handleClickToRegister}
+            className="text-foreground text-center text-sm font-medium underline underline-offset-4 disabled:opacity-50"
+          >
+            {isRegistering ? "Sending..." : "Click to Get Code"}
+          </button>
+          {popupBlocked && waLink && (
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground text-center text-xs underline underline-offset-4"
+            >
+              WhatsApp didn't open — tap here
+            </a>
+          )}
+          <Button type="button" variant="ghost" onClick={handleBack}>
+            Back
+          </Button>
+        </motion.form>
       ) : (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-4">
-          {mode === "register" && (
-            <div className="grid gap-2">
-              <Label htmlFor="wa-pin">Choose a 4-digit PIN</Label>
-              <div className="relative">
-                <KeyRound className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-                <Input
-                  id="wa-pin"
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="1234"
-                  className="pl-11 tracking-widest"
-                  maxLength={4}
-                  value={pin}
-                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                  required
-                  autoFocus
-                />
-              </div>
+          <div className="grid gap-2">
+            <Label htmlFor="wa-pin">Choose a 4-digit PIN</Label>
+            <div className="relative">
+              <KeyRound className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
+              <Input
+                id="wa-pin"
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="1234"
+                className="pl-11 tracking-widest"
+                maxLength={4}
+                value={pin}
+                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                required
+                autoFocus
+              />
             </div>
-          )}
+          </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
           <Button
             type="button"
@@ -207,7 +280,7 @@ export function WaLoginForm() {
             onClick={handleClickToRegister}
           >
             {isRegistering ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
-            {mode === "resend" ? "Click to Get Code" : "Click to Register"}
+            Click to Register
           </Button>
           {popupBlocked && waLink && (
             <a
