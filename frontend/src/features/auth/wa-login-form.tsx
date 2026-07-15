@@ -11,6 +11,7 @@ import { BrandName } from "@/components/shared/brand-name";
 import { useAuth } from "@/context/auth-context";
 import { api, ApiError } from "@/lib/api";
 import { normalizeMobile } from "@/lib/phone";
+import { HOME_ROUTE } from "@/lib/nav-items";
 import type { UserDTO } from "@/types";
 
 // Experimental — kept off the live registration flow. The bot's WhatsApp number this
@@ -27,36 +28,38 @@ type StatusResponse =
 
 export function WaLoginForm() {
   const navigate = useNavigate();
-  const { loginWithToken } = useAuth();
+  const { checkMobile, loginWithToken } = useAuth();
 
-  const [step, setStep] = useState<0 | 1>(0);
+  const [step, setStep] = useState<"mobile" | "action">("mobile");
   const [mobile, setMobile] = useState("");
   const [pin, setPin] = useState("");
+  const [mode, setMode] = useState<WaLoginMode | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCheckingMobile, setIsCheckingMobile] = useState(false);
+  const [isRegistering, setIsRegistering] = useState(false);
   const [waLink, setWaLink] = useState<string | null>(null);
-  const [mode, setMode] = useState<WaLoginMode>("register");
+  const [popupBlocked, setPopupBlocked] = useState(false);
   const pendingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (step !== 1 || !pendingIdRef.current) return;
+    if (!waLink || !pendingIdRef.current) return;
 
     const interval = setInterval(async () => {
       try {
-        const result = await api.get<StatusResponse>(
-          `/api/wa-register/status?pendingId=${pendingIdRef.current}`,
-        );
+        const result = await api.get<StatusResponse>(`/api/wa-register/status?pendingId=${pendingIdRef.current}`);
         if (result.status === "registered") {
           clearInterval(interval);
           loginWithToken(result.token, result.user);
-          toast.success(
-            result.mode === "resend" ? "Check WhatsApp — we've texted you your login code!" : "You're registered!",
-          );
-          navigate("/onboarding", { replace: true, state: { suggestedName: result.suggestedName ?? undefined } });
+          toast.success(result.mode === "resend" ? "You're logged in!" : "You're registered!");
+          navigate(result.mode === "resend" ? HOME_ROUTE : "/onboarding", {
+            replace: true,
+            state: { suggestedName: result.suggestedName ?? undefined },
+          });
         } else if (result.status === "expired") {
           clearInterval(interval);
-          setError("This registration attempt expired. Please start again.");
-          setStep(0);
+          setError("This attempt expired. Please start again.");
+          setStep("mobile");
+          setWaLink(null);
         }
       } catch {
         // Transient network hiccups during polling aren't worth surfacing — the next tick retries.
@@ -64,7 +67,7 @@ export function WaLoginForm() {
     }, POLL_INTERVAL_MS);
 
     return () => clearInterval(interval);
-  }, [step, loginWithToken, navigate]);
+  }, [waLink, loginWithToken, navigate]);
 
   async function handleGo(e: React.FormEvent) {
     e.preventDefault();
@@ -75,16 +78,38 @@ export function WaLoginForm() {
       setError("Enter a valid 10-digit Indian mobile number");
       return;
     }
-    if (!/^\d{4}$/.test(pin)) {
+
+    setIsCheckingMobile(true);
+    try {
+      const exists = await checkMobile(mobile);
+      setMode(exists ? "resend" : "register");
+      setStep("action");
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+    } finally {
+      setIsCheckingMobile(false);
+    }
+  }
+
+  async function handleClickToRegister() {
+    setError(null);
+
+    const normalized = normalizeMobile(mobile);
+    if (!normalized) {
+      setError("Enter a valid 10-digit Indian mobile number");
+      setStep("mobile");
+      return;
+    }
+    if (mode === "register" && !/^\d{4}$/.test(pin)) {
       setError("PIN must be exactly 4 digits");
       return;
     }
 
-    setIsSubmitting(true);
+    setIsRegistering(true);
     try {
       const result = await api.post<{ pendingId: string; mode: WaLoginMode }>("/api/wa-register/start", {
         mobile,
-        pin,
+        pin: mode === "register" ? pin : "0000",
       });
       pendingIdRef.current = result.pendingId;
       setMode(result.mode);
@@ -93,13 +118,24 @@ export function WaLoginForm() {
         result.mode === "resend"
           ? `PACKWITHME Send my code for ${normalized.slice(2)}`
           : `PACKWITHME Register me as ${normalized.slice(2)}, my PIN is ${pin}`;
-      setWaLink(`https://wa.me/${BOT_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`);
-      setStep(1);
+      const link = `https://wa.me/${BOT_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+      setWaLink(link);
+
+      const opened = window.open(link, "_blank", "noopener,noreferrer");
+      setPopupBlocked(!opened);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
     } finally {
-      setIsSubmitting(false);
+      setIsRegistering(false);
     }
+  }
+
+  function handleBack() {
+    setStep("mobile");
+    setMode(null);
+    setWaLink(null);
+    setPopupBlocked(false);
+    setError(null);
   }
 
   return (
@@ -109,19 +145,9 @@ export function WaLoginForm() {
         <h1 className="text-2xl">
           <BrandName />
         </h1>
-        <span className="bg-primary/10 text-primary rounded-full px-3 py-1 text-xs font-medium">
-          WhatsApp sign-up (test)
-        </span>
-        <p className="text-muted-foreground text-sm">
-          {step === 0
-            ? "Enter your mobile number and pick a 4-digit PIN, then confirm on WhatsApp."
-            : mode === "resend"
-              ? "This number's already registered — send the pre-filled message and we'll text your login code back to you."
-              : "One more step — send the pre-filled message from your own WhatsApp."}
-        </p>
       </div>
 
-      {step === 0 ? (
+      {step === "mobile" ? (
         <motion.form
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -144,49 +170,56 @@ export function WaLoginForm() {
               />
             </div>
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="wa-pin">Choose a 4-digit PIN</Label>
-            <div className="relative">
-              <KeyRound className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-              <Input
-                id="wa-pin"
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="1234"
-                className="pl-11 tracking-widest"
-                maxLength={4}
-                value={pin}
-                onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
-                required
-              />
-            </div>
-            <p className="text-muted-foreground text-xs">
-              You'll use this PIN to log in next time. Already registered? We'll ignore this and text your
-              existing code back to you instead.
-            </p>
-          </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
-          <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">
-            {isSubmitting ? <Loader2 className="size-4 animate-spin" /> : null}
+          <Button type="submit" size="lg" disabled={isCheckingMobile} className="mt-2">
+            {isCheckingMobile ? <Loader2 className="size-4 animate-spin" /> : null}
             Go
           </Button>
         </motion.form>
       ) : (
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col gap-4">
+          {mode === "register" && (
+            <div className="grid gap-2">
+              <Label htmlFor="wa-pin">Choose a 4-digit PIN</Label>
+              <div className="relative">
+                <KeyRound className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
+                <Input
+                  id="wa-pin"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="1234"
+                  className="pl-11 tracking-widest"
+                  maxLength={4}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))}
+                  required
+                  autoFocus
+                />
+              </div>
+            </div>
+          )}
           {error && <p className="text-destructive text-sm">{error}</p>}
-          <Button asChild size="lg" className="mt-2 bg-[#25D366] hover:bg-[#1ebe57]">
-            <a href={waLink ?? "#"} target="_blank" rel="noopener noreferrer">
-              <MessageCircle className="size-4" />
-              Send on WhatsApp
-            </a>
+          <Button
+            type="button"
+            size="lg"
+            disabled={isRegistering}
+            className="mt-2 bg-[#25D366] hover:bg-[#1ebe57]"
+            onClick={handleClickToRegister}
+          >
+            {isRegistering ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
+            Click to Register
           </Button>
-          <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-            <Loader2 className="size-4 animate-spin" />
-            {mode === "resend"
-              ? "Waiting for your WhatsApp message — we'll text your code back once you send it..."
-              : "Waiting for your WhatsApp message..."}
-          </div>
-          <Button type="button" variant="ghost" onClick={() => setStep(0)}>
+          {popupBlocked && waLink && (
+            <a
+              href={waLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-muted-foreground text-center text-xs underline underline-offset-4"
+            >
+              WhatsApp didn't open — tap here
+            </a>
+          )}
+          <Button type="button" variant="ghost" onClick={handleBack}>
             Back
           </Button>
         </motion.div>

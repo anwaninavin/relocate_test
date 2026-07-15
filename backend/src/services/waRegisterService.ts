@@ -12,6 +12,15 @@ const RESTART_COOLDOWN_MS = 15 * 1000;
 
 export class WaRegisterCooldownError extends Error {}
 
+/** One-tap "already logged in" link sent back over WhatsApp once a handshake completes.
+ * Reuses the same GET /api/wa-register/status the polling browser tab already calls —
+ * status is already "registered" by the time this link is sent, so clicking it just
+ * adopts the session and redirects, no separate token machinery needed. */
+function buildMagicLink(pendingId: string): string {
+  const base = (process.env.FRONTEND_URL || "https://packwithme.instify.in").replace(/\/$/, "");
+  return `${base}/wa-login/complete?pendingId=${pendingId}`;
+}
+
 /** Starts (or restarts) a pending /wa-login handshake and reports which mode the frontend
  * should use for the WhatsApp message: "register" (mobile has no account — the visitor's
  * typed PIN becomes their login code) or "resend" (mobile already has an account — the
@@ -118,6 +127,15 @@ export async function completeRegistrationFromWhatsApp(
   pending.suggestedName = profileName;
   await pending.save();
 
+  try {
+    await sendWhatsAppText(
+      normalizedVerified,
+      `*Registration done!*\nGo back to the login page, or tap the link below to continue:\n${buildMagicLink(pending._id.toString())}`,
+    );
+  } catch (error) {
+    console.error("Failed to send wa-login confirmation reply:", error);
+  }
+
   return true;
 }
 
@@ -159,7 +177,10 @@ export async function completeResendFromWhatsApp(verifiedMobile: string, typedMo
   await pending.save();
 
   try {
-    await sendWhatsAppText(normalizedVerified, `Your PACKWITHME login code is ${newPin}. Save it for next time!`);
+    await sendWhatsAppText(
+      normalizedVerified,
+      `Your PACKWITHME login code is ${newPin}. Save it for next time!\n\nOr tap the link below to jump straight back in:\n${buildMagicLink(pending._id.toString())}`,
+    );
   } catch (error) {
     console.error("Failed to send wa-login code-resend reply:", error);
   }

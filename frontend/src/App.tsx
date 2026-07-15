@@ -13,6 +13,7 @@ import { useAnalyticsPageViews } from "@/lib/analytics/use-page-view-tracking";
 const LoginPage = lazy(() => import("@/pages/login-page"));
 const RegisterPage = lazy(() => import("@/pages/register-page"));
 const WaLoginPage = lazy(() => import("@/pages/wa-login-page"));
+const WaLoginCompletePage = lazy(() => import("@/pages/wa-login-complete-page"));
 const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password-page"));
 const OnboardingPage = lazy(() => import("@/pages/onboarding-page"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -103,6 +104,10 @@ export default function App() {
                 </AuthOnlyRoute>
               }
             />
+            {/* Ungated: the WhatsApp bot's confirmation link must work regardless of
+                whatever session is already active in this browser — it adopts the new
+                session itself once the handshake behind it is done. */}
+            <Route path="/wa-login/complete" element={<WaLoginCompletePage />} />
             <Route
               path="/onboarding"
               element={

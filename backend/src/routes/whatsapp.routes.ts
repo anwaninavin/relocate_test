@@ -3,7 +3,6 @@ import crypto from "crypto";
 import { Router, type Request } from "express";
 
 import { completeRegistrationFromWhatsApp, completeResendFromWhatsApp } from "@/services/waRegisterService";
-import { sendWhatsAppText } from "@/lib/whatsapp";
 
 export const whatsappRouter = Router();
 
@@ -141,17 +140,7 @@ async function processMetabspMessage(payload: MetabspPayload): Promise<void> {
       const [, typedMobile, pin] = registerMatch;
       const profileName = extractProfileName(payload);
       console.log("wa-login registration attempt:", { from, typedMobile, payloadKeys: Object.keys(payload) });
-      const registered = await completeRegistrationFromWhatsApp(from, typedMobile, pin, profileName);
-      if (registered) {
-        try {
-          await sendWhatsAppText(
-            from,
-            "You're registered! Head back to the page where you clicked the WhatsApp button to continue.",
-          );
-        } catch (error) {
-          console.error("Failed to send wa-login confirmation reply:", error);
-        }
-      }
+      await completeRegistrationFromWhatsApp(from, typedMobile, pin, profileName);
       return;
     }
 
