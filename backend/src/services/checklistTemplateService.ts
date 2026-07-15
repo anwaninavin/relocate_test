@@ -33,14 +33,25 @@ async function ensureTemplateHasDefaultItems(templateId: string) {
 /** Idempotent bootstrap: every environment needs at least one active template with default
  * items before checklist generation can produce anything. Safe to call on every request that
  * needs it — only creates "Default Template" v1 the first time, and self-heals a template left
- * empty by a skipped/failed taxonomy import. */
+ * empty by a skipped/failed taxonomy import.
+ *
+ * Two near-simultaneous first-ever calls (no template exists yet) could previously each create
+ * their own "active" template, and `findOne({active:true}).sort({version:-1})` has no tiebreaker
+ * for same-version ties — so different requests could non-deterministically resolve to different
+ * duplicate templates, and items seeded under one wouldn't be visible to a call that landed on
+ * the other. Sorting by `_id` as a deterministic tiebreaker, and collapsing any duplicates found
+ * down to that one canonical template, closes that gap. */
 export async function getOrCreateActiveTemplate() {
   await connectDB();
 
-  const existing = await ChecklistTemplate.findOne({ active: true }).sort({ version: -1 }).lean();
-  if (existing) {
-    await ensureTemplateHasDefaultItems(String(existing._id));
-    return existing;
+  const activeTemplates = await ChecklistTemplate.find({ active: true }).sort({ version: -1, _id: 1 }).lean();
+  if (activeTemplates.length > 0) {
+    const [canonical, ...duplicates] = activeTemplates;
+    if (duplicates.length > 0) {
+      await ChecklistTemplate.updateMany({ _id: { $in: duplicates.map((t) => t._id) } }, { active: false });
+    }
+    await ensureTemplateHasDefaultItems(String(canonical._id));
+    return canonical;
   }
 
   const template = await ChecklistTemplate.create({
