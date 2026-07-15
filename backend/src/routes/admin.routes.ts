@@ -67,7 +67,7 @@ import {
 } from "@/services/defaultChecklistItemService";
 import { addSuggestedItemToDefault, getSuggestedItemUsers, listSuggestedItems } from "@/services/suggestedItemsService";
 import { getChecklistDashboardStats, getDefaultItemAnalytics } from "@/services/checklistAnalyticsService";
-import { getChecklistHealthSnapshot, forceRegenerateChecklist } from "@/services/checklistHealthService";
+import { getChecklistHealthSnapshot } from "@/services/checklistHealthService";
 import {
   addSuggestedToDefaultSchema,
   bulkIdsSchema,
@@ -480,7 +480,7 @@ adminRouter.post("/default-checklist-items", async (req, res) => {
     res.status(400).json({ error: result.error });
     return;
   }
-  res.json({ item: result.item, backfilledCount: result.backfilledCount });
+  res.json({ item: result.item });
 });
 
 adminRouter.patch("/default-checklist-items/:id", async (req, res) => {
@@ -495,7 +495,7 @@ adminRouter.patch("/default-checklist-items/:id", async (req, res) => {
     res.status(400).json({ error: result.error });
     return;
   }
-  res.json({ item: result.item, backfilledCount: result.backfilledCount });
+  res.json({ item: result.item });
 });
 
 adminRouter.delete("/default-checklist-items/:id", async (req, res) => {
@@ -585,9 +585,4 @@ adminRouter.get("/checklist-dashboard", async (_req, res) => {
 adminRouter.get("/checklist-health", async (req, res) => {
   const mobile = typeof req.query.mobile === "string" ? req.query.mobile : undefined;
   res.json(await getChecklistHealthSnapshot(mobile));
-});
-
-adminRouter.post("/checklist-health/generate", async (req, res) => {
-  const mobile = typeof req.body?.mobile === "string" ? req.body.mobile : "";
-  res.json(await forceRegenerateChecklist(mobile));
 });

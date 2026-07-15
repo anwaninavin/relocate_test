@@ -2,7 +2,7 @@ import { connectDB } from "@/db";
 import { Bag } from "@/models/Bag";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { BAG_COLOR_PRESETS } from "@/types";
-import { hasUserChecklist, listItemsForUser } from "@/services/userChecklistService";
+import { isLegacyChecklistUser, listItemsForUser } from "@/services/userChecklistService";
 
 function normalize(name: string) {
   return name.trim().toLowerCase();
@@ -21,10 +21,12 @@ async function ensureDefaultBag(userId: string) {
  * items currently assigned to it. Bags never store items themselves — only the
  * ChecklistItem.bagId reference is the source of truth. */
 async function getBagAssignedItems(userId: string) {
-  if (await hasUserChecklist(userId)) {
-    return listItemsForUser(userId).then((items) => items.filter((i) => i.bagId));
+  if (await isLegacyChecklistUser(userId)) {
+    return ChecklistItem.find({ userId, bagId: { $ne: null } }).lean();
   }
-  return ChecklistItem.find({ userId, bagId: { $ne: null } }).lean();
+  // A virtual (never-materialized) item can never have bagId set, so this filter naturally
+  // excludes all of them without needing to check isVirtual explicitly.
+  return listItemsForUser(userId).then((items) => items.filter((i) => i.bagId));
 }
 
 export async function listBagsWithCounts(userId: string) {

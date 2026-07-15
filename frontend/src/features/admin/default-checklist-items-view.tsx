@@ -91,15 +91,13 @@ export function DefaultChecklistItemsView({
         return;
       }
 
-      const { backfilledCount } = await api.post<{ backfilledCount?: number }>(
-        "/api/admin/default-checklist-items/bulk-set-active",
-        { ids: selectedIds, active: action === "activate" },
-      );
+      await api.post("/api/admin/default-checklist-items/bulk-set-active", {
+        ids: selectedIds,
+        active: action === "activate",
+      });
       setSelectedIds([]);
       emitRefresh();
-      toast.success(
-        `${selectedIds.length} item(s) updated${backfilledCount ? ` — added to ${backfilledCount} existing student(s)' checklists` : ""}`,
-      );
+      toast.success(`${selectedIds.length} item(s) updated`);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Bulk action failed");
     }

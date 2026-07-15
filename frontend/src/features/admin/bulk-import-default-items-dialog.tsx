@@ -45,17 +45,12 @@ export function BulkImportDefaultItemsDialog() {
     }
     setIsSubmitting(true);
     try {
-      const { imported, skipped, backfilledCount } = await api.post<{
+      const { imported, skipped } = await api.post<{
         imported: number;
         skipped: number;
-        backfilledCount?: number;
       }>("/api/admin/default-checklist-items/bulk-import", { rows });
       emitRefresh();
-      toast.success(
-        `Imported ${imported} item(s)${skipped > 0 ? `, skipped ${skipped} duplicate(s)` : ""}${
-          backfilledCount ? `, added to ${backfilledCount} existing student(s)' checklists` : ""
-        }`,
-      );
+      toast.success(`Imported ${imported} item(s)${skipped > 0 ? `, skipped ${skipped} duplicate(s)` : ""}`);
       setText("");
       setOpen(false);
     } catch (error) {

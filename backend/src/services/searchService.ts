@@ -1,6 +1,6 @@
 import { connectDB } from "@/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
-import { hasUserChecklist, listItemsForUser } from "@/services/userChecklistService";
+import { isLegacyChecklistUser, listItemsForUser } from "@/services/userChecklistService";
 import { Bag } from "@/models/Bag";
 import { BudgetEntry } from "@/models/BudgetEntry";
 import { Note } from "@/models/Note";
@@ -30,11 +30,11 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
   const regex = new RegExp(escapeRegex(query.trim()), "i");
 
   const searchChecklist = async () => {
-    if (await hasUserChecklist(userId)) {
-      const items = await listItemsForUser(userId);
-      return items.filter((i) => regex.test(i.item)).slice(0, 5);
+    if (await isLegacyChecklistUser(userId)) {
+      return ChecklistItem.find({ userId, item: regex }).limit(5).lean();
     }
-    return ChecklistItem.find({ userId, item: regex }).limit(5).lean();
+    const items = await listItemsForUser(userId);
+    return items.filter((i) => regex.test(i.item)).slice(0, 5);
   };
 
   const [checklist, bags, budget, notes, documents, contacts, wishlist, guide] = await Promise.all([

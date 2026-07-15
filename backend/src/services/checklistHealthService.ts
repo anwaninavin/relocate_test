@@ -8,14 +8,11 @@ import { UserChecklist } from "@/models/UserChecklist";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { Category } from "@/models/Category";
 import { normalizeMobile } from "@/lib/phone";
-import { generateUserChecklist } from "@/services/userChecklistService";
-import { getOrCreateActiveTemplate } from "@/services/checklistTemplateService";
-import { findApplicableItems } from "@/services/defaultChecklistItemService";
 
-/** Read-only diagnostic snapshot of the checklist-generation taxonomy — lets an admin confirm
+/** Read-only diagnostic snapshot of the checklist catalog/taxonomy — lets an admin confirm
  * whether the self-healing seed (getOrCreateActiveTemplate / listActiveCollegeCategories) has
  * actually produced data in this environment, without needing direct DB access. Optionally
- * inspects one user's own checklist state by mobile number. */
+ * inspects one user's own checklist state (materialized rows, legacy rows) by mobile number. */
 export async function getChecklistHealthSnapshot(mobile?: string) {
   await connectDB();
 
@@ -73,57 +70,4 @@ export async function getChecklistHealthSnapshot(mobile?: string) {
   }
 
   return snapshot;
-}
-
-/** Runs the real generateUserChecklist() against a specific account on demand, and reports
- * exactly what happened — including any error it hits — instead of the silent-failure behavior
- * the normal onboarding/checklist-page call sites have. Lets an admin test the actual generation
- * path against production data directly, without registering another throwaway account. */
-export async function forceRegenerateChecklist(mobile: string) {
-  await connectDB();
-
-  const normalized = normalizeMobile(mobile);
-  if (!normalized) {
-    return { success: false as const, error: "Invalid mobile number" };
-  }
-
-  const user = await User.findOne({ mobile: normalized }).lean();
-  if (!user) {
-    return { success: false as const, error: "No account found with that mobile number" };
-  }
-
-  try {
-    const template = await getOrCreateActiveTemplate();
-    const items = await findApplicableItems(
-      String(template._id),
-      user.collegeCategoryId ? String(user.collegeCategoryId) : null,
-      user.courseId ? String(user.courseId) : null,
-      user.gender ?? null,
-    );
-    const sampleItem = await DefaultChecklistItem.findOne({ templateId: template._id }).lean();
-
-    const result = await generateUserChecklist(String(user._id));
-
-    return {
-      success: true as const,
-      result,
-      debug: {
-        templateId: String(template._id),
-        templateVersion: template.version,
-        applicableItemsFound: items.length,
-        sampleItem: sampleItem
-          ? {
-              title: sampleItem.title,
-              templateId: String(sampleItem.templateId),
-              active: sampleItem.active,
-              gender: sampleItem.gender,
-              isForAllCollegeCategories: sampleItem.isForAllCollegeCategories,
-              isForAllCourses: sampleItem.isForAllCourses,
-            }
-          : null,
-      },
-    };
-  } catch (error) {
-    return { success: false as const, error: error instanceof Error ? error.message : String(error) };
-  }
 }

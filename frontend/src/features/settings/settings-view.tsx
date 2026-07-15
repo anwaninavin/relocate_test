@@ -6,7 +6,6 @@ import {
   Loader2,
   LogOut,
   Share,
-  Sparkles,
   SquarePlus,
   Wand2,
   type LucideIcon,
@@ -102,25 +101,7 @@ function InstallAppAction() {
 export function SettingsView({ categories }: { categories: string[] }) {
   const navigate = useNavigate();
   const { logout } = useAuth();
-  const [isLoadingStarter, setIsLoadingStarter] = useState(false);
   const [isMerging, setIsMerging] = useState(false);
-
-  async function handleLoadStarterChecklist() {
-    setIsLoadingStarter(true);
-    try {
-      const result = await api.post<{ count: number }>("/api/checklist/load-starter");
-      emitRefresh();
-      toast.success(
-        result.count > 0
-          ? `Added ${result.count} new item${result.count === 1 ? "" : "s"} from the starter checklist`
-          : "You already have every starter checklist item",
-      );
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Something went wrong");
-    } finally {
-      setIsLoadingStarter(false);
-    }
-  }
 
   async function handleMergeDuplicates() {
     setIsMerging(true);
@@ -177,17 +158,6 @@ export function SettingsView({ categories }: { categories: string[] }) {
           action={
             <Button variant="outline" size="sm" asChild>
               <Link to="/checklist?bulkEdit=1">Open</Link>
-            </Button>
-          }
-        />
-        <SettingsRow
-          icon={Sparkles}
-          label="Load starter checklist"
-          description="Add any missing items from the default packing list"
-          action={
-            <Button variant="outline" size="sm" onClick={handleLoadStarterChecklist} disabled={isLoadingStarter}>
-              {isLoadingStarter && <Loader2 className="size-4 animate-spin" />}
-              Load
             </Button>
           }
         />

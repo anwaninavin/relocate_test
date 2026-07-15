@@ -2,14 +2,16 @@ import { connectDB } from "@/db";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { Note } from "@/models/Note";
 import { getCategorySummaries, getOverallProgress } from "@/services/checklistService";
-import { hasUserChecklist, listItemsForUser } from "@/services/userChecklistService";
+import { isLegacyChecklistUser, listItemsForUser } from "@/services/userChecklistService";
 import { getBudgetSummary } from "@/services/budgetService";
 import { WishlistItem } from "@/models/WishlistItem";
 import { BudgetEntry } from "@/models/BudgetEntry";
 
 async function getRecentChecklistActivity(userId: string) {
-  if (await hasUserChecklist(userId)) {
-    const items = await listItemsForUser(userId);
+  if (!(await isLegacyChecklistUser(userId))) {
+    // Untouched catalog suggestions aren't something the user did — exclude them, or "upcoming
+    // tasks"/"recent activity" would just be the entire starter catalog for a fresh account.
+    const items = (await listItemsForUser(userId)).filter((i) => !i.isVirtual);
     const upcomingTasks = [...items]
       .filter((i) => !i.completed)
       .sort((a, b) => {

@@ -3,7 +3,7 @@ import { Category } from "@/models/Category";
 import { ChecklistItem } from "@/models/ChecklistItem";
 import { User } from "@/models/User";
 import { DEFAULT_CHECKLIST_CATEGORIES } from "@/types";
-import { getDistinctCategoriesForUser, hasUserChecklist } from "@/services/userChecklistService";
+import { getDistinctCategoriesForUser, isLegacyChecklistUser } from "@/services/userChecklistService";
 
 function normalize(name: string) {
   return name.trim().toLowerCase();
@@ -23,10 +23,11 @@ export async function ensureDefaultCategories(userId: string) {
   const existingCount = await Category.countDocuments({ userId });
   if (existingCount > 0) return;
 
-  // DB-driven users: their checklist folders come entirely from whatever categories the
-  // generation algorithm actually assigned them (already scoped to their college
-  // category/course) — no hardcoded category list involved.
-  if (await hasUserChecklist(userId)) {
+  // New-architecture users: their checklist folders come entirely from whatever categories are
+  // currently applicable to them (live catalog, scoped to college category/course/gender) —
+  // no hardcoded category list involved. Legacy users (real ChecklistItem rows) keep the old
+  // hardcoded-list behavior below, unchanged.
+  if (!(await isLegacyChecklistUser(userId))) {
     const names = new Set<string>(await getDistinctCategoriesForUser(userId));
     const docs = Array.from(names)
       .filter((name) => name && name.trim())
