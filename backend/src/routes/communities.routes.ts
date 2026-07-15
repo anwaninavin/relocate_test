@@ -2,11 +2,12 @@ import { Router } from "express";
 
 import { requireAuth } from "@/middleware/auth";
 import {
+  canModerate,
   createCustomCommunity,
   discoverCommunities,
   getCommunityBySlug,
   getMembership,
-  joinCommunity,
+  joinCommunityAsSelf,
   leaveCommunity,
   listMembers,
   listMyCommunities,
@@ -62,16 +63,24 @@ communitiesRouter.get("/:slug", async (req, res) => {
     res.status(404).json({ error: "Community not found" });
     return;
   }
-  const [membership, channels] = await Promise.all([
-    getMembership(req.user!._id.toString(), community._id.toString()),
-    listChannels(community._id.toString()),
-  ]);
+  const membership = await getMembership(req.user!._id.toString(), community._id.toString());
+  // Private/invite-only communities don't leak their existence (channel names, description)
+  // to non-members — only a public community, or one you're already a member of, is visible.
+  if (community.visibility !== "public" && !membership) {
+    res.status(404).json({ error: "Community not found" });
+    return;
+  }
+  const channels = await listChannels(community._id.toString());
   res.json({ community, myRole: membership?.role ?? null, channels });
 });
 
 communitiesRouter.post("/:id/join", async (req, res) => {
-  const membership = await joinCommunity(req.user!._id.toString(), req.params.id);
-  res.json({ membership });
+  const result = await joinCommunityAsSelf(req.user!._id.toString(), req.params.id);
+  if (!result.success) {
+    res.status(403).json({ error: result.error });
+    return;
+  }
+  res.json({ membership: result.membership });
 });
 
 communitiesRouter.post("/:id/leave", async (req, res) => {
@@ -133,7 +142,7 @@ communitiesRouter.post("/:id/channels", async (req, res) => {
     return;
   }
   const actorMembership = await getMembership(req.user!._id.toString(), req.params.id);
-  if (!actorMembership || !["owner", "admin", "moderator"].includes(actorMembership.role)) {
+  if (!canModerate(actorMembership?.role)) {
     res.status(403).json({ error: "Not authorized" });
     return;
   }
@@ -147,7 +156,7 @@ communitiesRouter.post("/:id/channels", async (req, res) => {
 
 communitiesRouter.delete("/:id/channels/:channelId", async (req, res) => {
   const actorMembership = await getMembership(req.user!._id.toString(), req.params.id);
-  if (!actorMembership || !["owner", "admin", "moderator"].includes(actorMembership.role)) {
+  if (!canModerate(actorMembership?.role)) {
     res.status(403).json({ error: "Not authorized" });
     return;
   }

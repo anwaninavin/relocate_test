@@ -78,7 +78,11 @@ export async function ensureCommunity(
   }
 }
 
-/** Idempotently adds a membership and bumps the denormalized member count only on first join. */
+/** Idempotently adds a membership and bumps the denormalized member count only on first join.
+ * Internal-only — callers that already know joining is appropriate (auto-join into a public
+ * system community, a creator becoming their own community's owner). Anything reachable from
+ * a student's own request must go through `joinCommunityAsSelf` instead, which enforces
+ * visibility. */
 export async function joinCommunity(userId: string, communityId: string, role: CommunityRole = "member") {
   await connectDB();
   const existing = await CommunityMember.findOne({ communityId, userId });
@@ -87,6 +91,21 @@ export async function joinCommunity(userId: string, communityId: string, role: C
   const membership = await CommunityMember.create({ communityId, userId, role, joinedAt: new Date() });
   await Community.findByIdAndUpdate(communityId, { $inc: { memberCount: 1 } });
   return membership;
+}
+
+/** What the "Join" button actually calls — unlike `joinCommunity`, this enforces that
+ * private/invite-only communities can't be self-joined just by knowing their id/slug. There's
+ * no invite-token flow yet, so those visibilities can currently only be populated by an
+ * owner/admin adding members directly; self-join is limited to "public". */
+export async function joinCommunityAsSelf(userId: string, communityId: string) {
+  await connectDB();
+  const community = await Community.findById(communityId).lean();
+  if (!community || !community.active) return { success: false as const, error: "Community not found" };
+  if (community.visibility !== "public") {
+    return { success: false as const, error: "This community is invite-only" };
+  }
+  const membership = await joinCommunity(userId, communityId);
+  return { success: true as const, membership };
 }
 
 export async function leaveCommunity(userId: string, communityId: string) {
@@ -215,12 +234,13 @@ export async function discoverCommunities(
   if (filters.type) query.type = filters.type;
   if (filters.q) query.$text = { $search: filters.q };
 
-  // Sorting by the $meta textScore requires it to also be projected — MongoDB rejects the
-  // sort otherwise. Only relevant for a text search; the plain "most members first" branch
-  // needs no projection.
+  // Deliberately not sorting text search hits by $meta textScore: doing that correctly
+  // requires projecting `score` alongside every other field (a restrictive projection here
+  // would silently strip name/icon/memberCount/etc from the response), and for a "search
+  // communities by name" box, most-members-first is a perfectly good ranking anyway.
   const [communities, total] = await Promise.all([
-    Community.find(query, filters.q ? { score: { $meta: "textScore" } } : undefined)
-      .sort(filters.q ? { score: { $meta: "textScore" } } : { memberCount: -1 })
+    Community.find(query)
+      .sort({ memberCount: -1 })
       .skip((filters.page - 1) * filters.pageSize)
       .limit(filters.pageSize)
       .lean(),
@@ -279,11 +299,22 @@ export async function listMembers(communityId: string, page: number, pageSize: n
       .sort({ role: 1, joinedAt: 1 })
       .skip((page - 1) * pageSize)
       .limit(pageSize)
-      .populate("userId", "username displayName avatar verified")
+      .populate("userId", "username displayName avatar college campus city bio interests verified")
       .lean(),
     CommunityMember.countDocuments({ communityId }),
   ]);
-  return { members, total };
+  // Run the populated user through the same public-profile serializer as everywhere else —
+  // otherwise the frontend gets a raw Mongoose shape (`_id`, no `id`) instead of the
+  // PublicUserDTO it expects, and every member-management action silently targets "undefined".
+  return {
+    members: members.map((m) => ({
+      userId: serializePublicUser(m.userId as unknown as Parameters<typeof serializePublicUser>[0]),
+      role: m.role,
+      muted: m.muted,
+      banned: m.banned,
+    })),
+    total,
+  };
 }
 
 /** Role changes are gated to owner/admin, and nobody but the owner can touch the owner role
@@ -321,6 +352,11 @@ export async function setMemberModeration(
   const target = await CommunityMember.findOne({ communityId, userId: targetUserId });
   if (!target) return { success: false as const, error: "Member not found" };
   if (target.role === "owner") return { success: false as const, error: "Can't moderate the owner" };
+  // Same hierarchy as updateMemberRole: a moderator can act on regular members, but muting/
+  // banning an admin (or a fellow moderator) needs admin-or-owner, not just "any moderator".
+  if ((target.role === "admin" || target.role === "moderator") && actorRole === "moderator") {
+    return { success: false as const, error: "Only an admin or the owner can do that" };
+  }
 
   if (patch.muted !== undefined) target.muted = patch.muted;
   if (patch.banned !== undefined) target.banned = patch.banned;

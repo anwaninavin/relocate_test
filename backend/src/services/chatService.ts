@@ -9,6 +9,7 @@ import { Conversation } from "@/models/Conversation";
 import { ReadState } from "@/models/ReadState";
 import { User } from "@/models/User";
 import { sanitizeMessageBody, extractMentionedUsernames } from "@/lib/textFilter";
+import { escapeRegex } from "@/lib/regex";
 import { serializePublicUser } from "@/services/communityService";
 import type { MessageScopeType } from "@/types";
 import type { HydratedDocument } from "mongoose";
@@ -18,9 +19,15 @@ const ANON_NOUNS = [
   "Nomad", "Voyager", "Maverick", "Breeze", "Star", "Explorer",
 ];
 
+/** Deterministic per (scope, author) so the same anonymous poster reads consistently within
+ * one thread — but with only 16 nouns, two different students would collide onto an
+ * identical-looking alias in anything but a tiny thread, which is misleading (readers assume
+ * distinct aliases are distinct people). Folding in a 3-digit number from a second hash byte
+ * cuts collisions ~100x while staying just as deterministic. */
 function anonymousAliasFor(scopeId: string, authorId: string): string {
   const hash = createHash("sha256").update(`${scopeId}:${authorId}`).digest();
-  return `Anonymous ${ANON_NOUNS[hash[0] % ANON_NOUNS.length]}`;
+  const suffix = hash[1] % 1000;
+  return `Anonymous ${ANON_NOUNS[hash[0] % ANON_NOUNS.length]} ${suffix}`;
 }
 
 type ScopeAuthResult =
@@ -182,7 +189,12 @@ export async function editMessage(messageId: string, userId: string, body: strin
 export async function canModerateMessage(messageId: string, userId: string): Promise<boolean> {
   await connectDB();
   const message = await Message.findById(messageId).lean();
-  if (!message || message.scopeType !== "channel") return false;
+  if (!message) return false;
+  return canModerateGivenMessage(message, userId);
+}
+
+async function canModerateGivenMessage(message: { scopeType: string; scopeId: Types.ObjectId }, userId: string): Promise<boolean> {
+  if (message.scopeType !== "channel") return false;
   const channel = await Channel.findById(message.scopeId).lean();
   if (!channel) return false;
   const membership = await CommunityMember.findOne({ communityId: channel.communityId, userId }).lean();
@@ -193,8 +205,9 @@ export async function deleteMessage(messageId: string, userId: string) {
   await connectDB();
   const message = await Message.findOne({ _id: messageId, deletedAt: null });
   if (!message) return { success: false as const, error: "Message not found" };
-  const canModerate = message.authorId.toString() !== userId ? await canModerateMessage(messageId, userId) : true;
-  if (message.authorId.toString() !== userId && !canModerate) {
+
+  const isAuthor = message.authorId.toString() === userId;
+  if (!isAuthor && !(await canModerateGivenMessage(message, userId))) {
     return { success: false as const, error: "Not authorized" };
   }
 
@@ -209,6 +222,9 @@ export async function reactToMessage(messageId: string, userId: string, emoji: s
   await connectDB();
   const message = await Message.findOne({ _id: messageId, deletedAt: null });
   if (!message) return { success: false as const, error: "Message not found" };
+
+  const access = await assertScopeAccess(message.scopeType as MessageScopeType, message.scopeId.toString(), userId);
+  if (!access.ok) return { success: false as const, error: access.error };
 
   const existingReaction = message.reactions.find((r) => r.emoji === emoji);
   const alreadyReacted = existingReaction?.userIds.some((id) => id.toString() === userId);
@@ -240,17 +256,23 @@ export async function pinMessage(messageId: string, pinned: boolean) {
   return { success: true as const };
 }
 
-export async function listPinnedMessages(channelId: string) {
+export async function listPinnedMessages(channelId: string, userId: string) {
   await connectDB();
+  const access = await assertScopeAccess("channel", channelId, userId);
+  if (!access.ok) return { success: false as const, error: access.error };
+
   const channel = await Channel.findById(channelId).lean();
-  if (!channel || !channel.pinnedMessageIds?.length) return [];
+  if (!channel || !channel.pinnedMessageIds?.length) return { success: true as const, messages: [] };
   const messages = await Message.find({ _id: { $in: channel.pinnedMessageIds }, deletedAt: null }).lean();
   const authorIds = [...new Set(messages.filter((m) => !m.isAnonymous).map((m) => m.authorId.toString()))];
   const authors = await User.find({ _id: { $in: authorIds } })
     .select("username displayName avatar college campus city bio interests verified")
     .lean();
   const authorById = new Map(authors.map((a) => [a._id.toString(), a]));
-  return Promise.all(messages.map((m) => serializeMessage(m, m.isAnonymous ? null : authorById.get(m.authorId.toString()) ?? null)));
+  const serialized = await Promise.all(
+    messages.map((m) => serializeMessage(m, m.isAnonymous ? null : authorById.get(m.authorId.toString()) ?? null)),
+  );
+  return { success: true as const, messages: serialized };
 }
 
 export async function markRead(scopeType: MessageScopeType, scopeId: string, userId: string) {
@@ -268,10 +290,6 @@ export async function getUnreadCount(scopeType: MessageScopeType, scopeId: strin
   const readState = await ReadState.findOne({ userId, scopeType, scopeId }).lean();
   const since = readState?.lastReadAt ?? new Date(0);
   return Message.countDocuments({ scopeType, scopeId, createdAt: { $gt: since }, deletedAt: null, authorId: { $ne: userId } });
-}
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export async function searchMessages(scopeType: MessageScopeType, scopeId: string, userId: string, q: string) {

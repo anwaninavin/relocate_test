@@ -10,6 +10,7 @@ import { WishlistItem } from "@/models/WishlistItem";
 import { GuideArticle } from "@/models/GuideArticle";
 import { Community } from "@/models/Community";
 import { User } from "@/models/User";
+import { escapeRegex } from "@/lib/regex";
 
 export interface SearchResult {
   type: "checklist" | "bag" | "budget" | "note" | "document" | "contact" | "wishlist" | "guide" | "community" | "user";
@@ -19,10 +20,6 @@ export interface SearchResult {
   href: string;
   imageUrl?: string | null;
   completed?: boolean;
-}
-
-function escapeRegex(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 export async function globalSearch(userId: string, query: string): Promise<SearchResult[]> {

@@ -7,11 +7,6 @@ export async function listChannels(communityId: string) {
   return Channel.find({ communityId, archived: false }).sort({ order: 1, createdAt: 1 }).lean();
 }
 
-export async function getChannel(communityId: string, channelId: string) {
-  await connectDB();
-  return Channel.findOne({ _id: channelId, communityId, archived: false });
-}
-
 export async function createChannel(
   communityId: string,
   input: { name: string; topic?: string; allowAnonymous?: boolean },

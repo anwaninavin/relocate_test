@@ -15,6 +15,7 @@ import {
   reactToMessage,
   sendMessage,
 } from "@/services/chatService";
+import { Conversation } from "@/models/Conversation";
 import type { MessageScopeType } from "@/types";
 
 interface AuthedSocket extends Socket {
@@ -134,9 +135,13 @@ export function initSocketServer(httpServer: HttpServer) {
 
         io.to(roomName(payload.scopeType, payload.scopeId)).emit("message:new", result.message);
         if (payload.scopeType === "conversation") {
-          // Deliver to each member's personal room too, so an inbox list open on another
-          // screen (not currently viewing this conversation) still updates in real time.
-          io.to(roomName(payload.scopeType, payload.scopeId)).emit("conversation:updated", { conversationId: payload.scopeId });
+          // Each member's own `user:<id>` room (joined on connect, see below) — not the
+          // conversation room — so an inbox list open on another screen (which hasn't
+          // joined this specific conversation's room) still updates in real time.
+          const conversation = await Conversation.findById(payload.scopeId).select("memberIds").lean();
+          for (const memberId of conversation?.memberIds ?? []) {
+            io.to(`user:${memberId.toString()}`).emit("conversation:updated", { conversationId: payload.scopeId });
+          }
         }
         ack?.({ success: true, message: result.message });
       },

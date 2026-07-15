@@ -31,6 +31,7 @@ export function useChatScope(scopeType: MessageScopeType, scopeId: string | null
     let cancelled = false;
     setLoading(true);
     setMessages([]);
+    setTypingUserIds([]);
 
     listMessages(scopeType, scopeId)
       .then(({ messages }) => {

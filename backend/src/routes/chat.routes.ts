@@ -94,8 +94,12 @@ chatRouter.get("/:scopeType/:scopeId/unread-count", async (req, res) => {
 });
 
 chatRouter.get("/channels/:channelId/pinned", async (req, res) => {
-  const messages = await listPinnedMessages(req.params.channelId);
-  res.json({ messages });
+  const result = await listPinnedMessages(req.params.channelId, req.user!._id.toString());
+  if (!result.success) {
+    res.status(403).json({ error: result.error });
+    return;
+  }
+  res.json({ messages: result.messages });
 });
 
 chatRouter.patch("/messages/:messageId", async (req, res) => {

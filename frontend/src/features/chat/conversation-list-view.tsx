@@ -11,17 +11,32 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { NewDmDialog } from "@/features/chat/new-dm-dialog";
 import { listConversations } from "@/features/community/community-api";
 import { ApiError } from "@/lib/api";
+import { getSocket } from "@/lib/socket";
 import type { ConversationDTO } from "@/types";
 
 export function ConversationListView() {
   const [conversations, setConversations] = useState<ConversationDTO[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function fetchConversations() {
     listConversations()
       .then(({ conversations }) => setConversations(conversations))
       .catch((error) => toast.error(error instanceof ApiError ? error.message : "Failed to load messages"))
       .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    fetchConversations();
+
+    const socket = getSocket();
+    if (!socket) return;
+    // Fired for every DM/group this user belongs to (see backend lib/socket.ts) — refetch
+    // rather than patch in place since a new conversation might not be in the list yet.
+    const onUpdated = () => fetchConversations();
+    socket.on("conversation:updated", onUpdated);
+    return () => {
+      socket.off("conversation:updated", onUpdated);
+    };
   }, []);
 
   return (
