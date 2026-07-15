@@ -39,16 +39,29 @@ interface HealthSnapshot {
   user?: UserSnapshot;
 }
 
-/** Read-only diagnostic view of the checklist self-heal seeds, so an admin can confirm whether
- * DefaultChecklistItem/CollegeCategory actually have data in production — from a phone, using
- * the same authenticated session as the rest of the admin panel — without needing DB access or
- * browser devtools. */
 interface GenerateResult {
   success: boolean;
   error?: string;
   result?: { generated: boolean; count: number };
+  debug?: {
+    templateId: string;
+    templateVersion: number;
+    applicableItemsFound: number;
+    sampleItem: {
+      title: string;
+      templateId: string;
+      active: boolean;
+      gender: string;
+      isForAllCollegeCategories: boolean;
+      isForAllCourses: boolean;
+    } | null;
+  };
 }
 
+/** Read-only diagnostic view of the checklist self-heal seeds, so an admin can confirm whether
+ * DefaultChecklistItem/CollegeCategory actually have data in production — from a phone, using
+ * the same authenticated session as the rest of the admin panel — without needing DB access or
+ * browser devtools. */
 export default function AdminChecklistHealthPage() {
   const [snapshot, setSnapshot] = useState<HealthSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -166,7 +179,7 @@ export default function AdminChecklistHealthPage() {
           </Button>
         )}
         {generateResult && (
-          <div className="bg-muted mb-3 rounded-lg p-3 text-xs">
+          <div className="bg-muted mb-3 space-y-1 rounded-lg p-3 text-xs">
             {generateResult.success ? (
               <p>
                 Ran successfully: generated={String(generateResult.result?.generated)}, count=
@@ -174,6 +187,27 @@ export default function AdminChecklistHealthPage() {
               </p>
             ) : (
               <p className="text-destructive">Error: {generateResult.error}</p>
+            )}
+            {generateResult.debug && (
+              <>
+                <p>
+                  <span className="text-muted-foreground">Resolved template: </span>
+                  {generateResult.debug.templateId} (v{generateResult.debug.templateVersion})
+                </p>
+                <p>
+                  <span className="text-muted-foreground">Applicable items found: </span>
+                  {generateResult.debug.applicableItemsFound}
+                </p>
+                {generateResult.debug.sampleItem && (
+                  <p>
+                    <span className="text-muted-foreground">Sample item: </span>"{generateResult.debug.sampleItem.title}" —
+                    templateId={generateResult.debug.sampleItem.templateId}, active=
+                    {String(generateResult.debug.sampleItem.active)}, gender={generateResult.debug.sampleItem.gender},
+                    isForAllCollegeCategories={String(generateResult.debug.sampleItem.isForAllCollegeCategories)},
+                    isForAllCourses={String(generateResult.debug.sampleItem.isForAllCourses)}
+                  </p>
+                )}
+              </>
             )}
           </div>
         )}
