@@ -49,6 +49,7 @@ const AdminCoursesPage = lazy(() => import("@/pages/admin-courses-page"));
 const AdminChecklistTemplatesPage = lazy(() => import("@/pages/admin-checklist-templates-page"));
 const AdminDefaultChecklistPage = lazy(() => import("@/pages/admin-default-checklist-page"));
 const AdminSuggestedItemsPage = lazy(() => import("@/pages/admin-suggested-items-page"));
+const AdminTempUsersPage = lazy(() => import("@/pages/admin-temp-users-page"));
 const AdminChecklistHealthPage = lazy(() => import("@/pages/admin-checklist-health-page"));
 const DiscoverPage = lazy(() => import("@/pages/discover-page"));
 const BookingsPage = lazy(() => import("@/pages/bookings-page"));
@@ -270,6 +271,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminSuggestedItemsPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/pending-registrations"
+              element={
+                <AdminRoute>
+                  <AdminTempUsersPage />
                 </AdminRoute>
               }
             />

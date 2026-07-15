@@ -16,6 +16,7 @@ const TABS = [
   { href: "/admin/default-checklist", label: "Default Checklist" },
   { href: "/admin/checklist-health", label: "Checklist Health" },
   { href: "/admin/suggested-items", label: "Suggested Items" },
+  { href: "/admin/pending-registrations", label: "Pending WA Signups" },
   { href: "/admin/layout", label: "Dashboard Layout" },
   { href: "/admin/nav", label: "Nav Items" },
   { href: "/admin/home-screen", label: "Home Screen" },

@@ -6,9 +6,14 @@ import { hashPin, verifyPin, generateShortPin } from "@/lib/pin";
 import { signAuthToken } from "@/lib/jwt";
 import { serializeUser } from "@/lib/serialize";
 import { sendWhatsAppText } from "@/lib/whatsapp";
+import { upsertTempUser, removeTempUser } from "@/services/tempUserService";
 
 const PENDING_TTL_MS = 30 * 60 * 1000;
 const RESTART_COOLDOWN_MS = 15 * 1000;
+/** How long the one-tap WhatsApp link (and the underlying pending record) stays valid
+ * once a handshake completes — separate from PENDING_TTL_MS, which only bounds how long
+ * we wait for the WhatsApp message to arrive in the first place. */
+const MAGIC_LINK_TTL_MS = 10 * 60 * 1000;
 
 export class WaRegisterCooldownError extends Error {}
 
@@ -32,6 +37,12 @@ export async function startPendingRegistration(mobile: string, pin: string) {
 
   const existingUser = await User.findOne({ mobile }).lean();
   const mode = existingUser ? ("resend" as const) : ("register" as const);
+
+  // Safety net: a mobile number with no account yet gets tracked so admin staff can follow
+  // up if the visitor never finishes the WhatsApp step. Cleared once registration succeeds.
+  if (!existingUser) {
+    await upsertTempUser(mobile);
+  }
 
   const recent = await WaPendingRegistration.findOne({ mobile }).sort({ createdAt: -1 });
   if (recent && recent.status === "pending" && Date.now() - recent.createdAt.getTime() < RESTART_COOLDOWN_MS) {
@@ -120,11 +131,18 @@ export async function completeRegistrationFromWhatsApp(
     return false;
   }
 
-  const user = await User.create({ mobile: normalizedVerified, role: "student", loginPinHash: pending.pinHash });
+  const user = await User.create({
+    mobile: normalizedVerified,
+    role: "student",
+    loginPinHash: pending.pinHash,
+    waLoginPin: pin,
+  });
+  await removeTempUser(normalizedVerified);
 
   pending.status = "registered";
   pending.resultUserId = user._id;
   pending.suggestedName = profileName;
+  pending.expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MS);
   await pending.save();
 
   try {
@@ -168,18 +186,26 @@ export async function completeResendFromWhatsApp(verifiedMobile: string, typedMo
     return false;
   }
 
-  const newPin = generateShortPin();
-  user.loginPinHash = await hashPin(newPin);
-  await user.save();
+  // Reuse the code already on file rather than rotating it on every request — only
+  // generate (and save) a fresh one for accounts that never had a /wa-login code saved
+  // (admin-provisioned or OTP-registered accounts).
+  let pin = user.waLoginPin;
+  if (!pin) {
+    pin = generateShortPin();
+    user.loginPinHash = await hashPin(pin);
+    user.waLoginPin = pin;
+    await user.save();
+  }
 
   pending.status = "registered";
   pending.resultUserId = user._id;
+  pending.expiresAt = new Date(Date.now() + MAGIC_LINK_TTL_MS);
   await pending.save();
 
   try {
     await sendWhatsAppText(
       normalizedVerified,
-      `Your PACKWITHME login code is ${newPin}. Save it for next time!\n\nOr tap the link below to jump straight back in:\n${buildMagicLink(pending._id.toString())}`,
+      `Your PACKWITHME login code is ${pin}. Save it for next time!\n\nOr tap the link below to jump straight back in:\n${buildMagicLink(pending._id.toString())}`,
     );
   } catch (error) {
     console.error("Failed to send wa-login code-resend reply:", error);
