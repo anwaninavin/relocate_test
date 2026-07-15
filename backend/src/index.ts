@@ -5,6 +5,7 @@ import express from "express";
 import helmet from "helmet";
 
 import { connectDB } from "@/db";
+import { ensureCitiesSeeded } from "@/services/cityService";
 import { analyticsContext } from "@/middleware/analyticsContext";
 import { authRouter } from "@/routes/auth.routes";
 import { profileRouter } from "@/routes/profile.routes";
@@ -137,6 +138,7 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 const PORT = Number(process.env.PORT) || 4000;
 
 connectDB()
+  .then(() => ensureCitiesSeeded())
   .then(() => {
     app.listen(PORT, () => {
       console.log(`Backend listening on port ${PORT}`);
