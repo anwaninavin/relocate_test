@@ -18,9 +18,11 @@ import type { UserDTO } from "@/types";
 const BOT_WHATSAPP_NUMBER = "919370195000";
 const POLL_INTERVAL_MS = 3000;
 
+type WaLoginMode = "register" | "resend";
+
 type StatusResponse =
   | { status: "pending" }
-  | { status: "registered"; token: string; user: UserDTO; suggestedName: string | null }
+  | { status: "registered"; token: string; user: UserDTO; suggestedName: string | null; mode: WaLoginMode }
   | { status: "expired" };
 
 export function WaLoginForm() {
@@ -33,6 +35,7 @@ export function WaLoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [waLink, setWaLink] = useState<string | null>(null);
+  const [mode, setMode] = useState<WaLoginMode>("register");
   const pendingIdRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -46,7 +49,9 @@ export function WaLoginForm() {
         if (result.status === "registered") {
           clearInterval(interval);
           loginWithToken(result.token, result.user);
-          toast.success("You're registered!");
+          toast.success(
+            result.mode === "resend" ? "Check WhatsApp — we've texted you your login code!" : "You're registered!",
+          );
           navigate("/onboarding", { replace: true, state: { suggestedName: result.suggestedName ?? undefined } });
         } else if (result.status === "expired") {
           clearInterval(interval);
@@ -77,10 +82,17 @@ export function WaLoginForm() {
 
     setIsSubmitting(true);
     try {
-      const result = await api.post<{ pendingId: string }>("/api/wa-register/start", { mobile, pin });
+      const result = await api.post<{ pendingId: string; mode: WaLoginMode }>("/api/wa-register/start", {
+        mobile,
+        pin,
+      });
       pendingIdRef.current = result.pendingId;
+      setMode(result.mode);
 
-      const message = `PACKWITHME Register me as ${normalized.slice(2)}, my PIN is ${pin}`;
+      const message =
+        result.mode === "resend"
+          ? `PACKWITHME Send my code for ${normalized.slice(2)}`
+          : `PACKWITHME Register me as ${normalized.slice(2)}, my PIN is ${pin}`;
       setWaLink(`https://wa.me/${BOT_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`);
       setStep(1);
     } catch (err) {
@@ -103,7 +115,9 @@ export function WaLoginForm() {
         <p className="text-muted-foreground text-sm">
           {step === 0
             ? "Enter your mobile number and pick a 4-digit PIN, then confirm on WhatsApp."
-            : "One more step — send the pre-filled message from your own WhatsApp."}
+            : mode === "resend"
+              ? "This number's already registered — send the pre-filled message and we'll text your login code back to you."
+              : "One more step — send the pre-filled message from your own WhatsApp."}
         </p>
       </div>
 
@@ -146,7 +160,10 @@ export function WaLoginForm() {
                 required
               />
             </div>
-            <p className="text-muted-foreground text-xs">You'll use this PIN to log in next time.</p>
+            <p className="text-muted-foreground text-xs">
+              You'll use this PIN to log in next time. Already registered? We'll ignore this and text your
+              existing code back to you instead.
+            </p>
           </div>
           {error && <p className="text-destructive text-sm">{error}</p>}
           <Button type="submit" size="lg" disabled={isSubmitting} className="mt-2">
@@ -165,7 +182,9 @@ export function WaLoginForm() {
           </Button>
           <div className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
             <Loader2 className="size-4 animate-spin" />
-            Waiting for your WhatsApp message...
+            {mode === "resend"
+              ? "Waiting for your WhatsApp message — we'll text your code back once you send it..."
+              : "Waiting for your WhatsApp message..."}
           </div>
           <Button type="button" variant="ghost" onClick={() => setStep(0)}>
             Back

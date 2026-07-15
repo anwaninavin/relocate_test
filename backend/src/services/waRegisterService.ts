@@ -2,24 +2,27 @@ import { connectDB } from "@/db";
 import { User } from "@/models/User";
 import { WaPendingRegistration } from "@/models/WaPendingRegistration";
 import { normalizeMobile } from "@/lib/phone";
-import { hashPin, verifyPin } from "@/lib/pin";
+import { hashPin, verifyPin, generateShortPin } from "@/lib/pin";
 import { signAuthToken } from "@/lib/jwt";
 import { serializeUser } from "@/lib/serialize";
+import { sendWhatsAppText } from "@/lib/whatsapp";
 
 const PENDING_TTL_MS = 30 * 60 * 1000;
 const RESTART_COOLDOWN_MS = 15 * 1000;
 
 export class WaRegisterCooldownError extends Error {}
 
-/** Starts (or restarts) a pending /wa-login registration handshake. Does not touch the User
- * collection — the account is only created once the matching WhatsApp message arrives. */
+/** Starts (or restarts) a pending /wa-login handshake and reports which mode the frontend
+ * should use for the WhatsApp message: "register" (mobile has no account — the visitor's
+ * typed PIN becomes their login code) or "resend" (mobile already has an account — the
+ * typed PIN is ignored, and completing the handshake instead reissues that account's login
+ * code over WhatsApp). Neither mode touches the User collection here — only once the
+ * matching WhatsApp message arrives. */
 export async function startPendingRegistration(mobile: string, pin: string) {
   await connectDB();
 
   const existingUser = await User.findOne({ mobile }).lean();
-  if (existingUser) {
-    return { success: false as const, error: "An account with this mobile number already exists. Try logging in instead." };
-  }
+  const mode = existingUser ? ("resend" as const) : ("register" as const);
 
   const recent = await WaPendingRegistration.findOne({ mobile }).sort({ createdAt: -1 });
   if (recent && recent.status === "pending" && Date.now() - recent.createdAt.getTime() < RESTART_COOLDOWN_MS) {
@@ -32,11 +35,12 @@ export async function startPendingRegistration(mobile: string, pin: string) {
   const pending = await WaPendingRegistration.create({
     mobile,
     pinHash,
+    mode,
     status: "pending",
     expiresAt: new Date(Date.now() + PENDING_TTL_MS),
   });
 
-  return { success: true as const, pendingId: pending._id.toString() };
+  return { success: true as const, pendingId: pending._id.toString(), mode };
 }
 
 export async function getRegistrationStatus(pendingId: string) {
@@ -62,6 +66,7 @@ export async function getRegistrationStatus(pendingId: string) {
     token,
     user: serializeUser(user),
     suggestedName: pending.suggestedName ?? null,
+    mode: pending.mode,
   };
 }
 
@@ -92,9 +97,11 @@ export async function completeRegistrationFromWhatsApp(
     return false;
   }
 
-  const pending = await WaPendingRegistration.findOne({ mobile: normalizedVerified, status: "pending" }).sort({
-    createdAt: -1,
-  });
+  const pending = await WaPendingRegistration.findOne({
+    mobile: normalizedVerified,
+    mode: "register",
+    status: "pending",
+  }).sort({ createdAt: -1 });
   if (!pending || pending.expiresAt.getTime() < Date.now()) {
     return false;
   }
@@ -110,6 +117,52 @@ export async function completeRegistrationFromWhatsApp(
   pending.resultUserId = user._id;
   pending.suggestedName = profileName;
   await pending.save();
+
+  return true;
+}
+
+/**
+ * Completes a "send my code" handshake from an inbound WhatsApp message: reissues a fresh
+ * 4-digit login code for an *existing* account and WhatsApps it back to the verified sender.
+ * Same identity rule as registration — `verifiedMobile` (the actual WhatsApp sender) must
+ * match `typedMobile` (parsed from the message text) before anything happens.
+ */
+export async function completeResendFromWhatsApp(verifiedMobile: string, typedMobile: string): Promise<boolean> {
+  await connectDB();
+
+  const normalizedVerified = normalizeMobile(verifiedMobile);
+  const normalizedTyped = normalizeMobile(typedMobile);
+  if (!normalizedVerified || !normalizedTyped || normalizedVerified !== normalizedTyped) {
+    return false;
+  }
+
+  const user = await User.findOne({ mobile: normalizedVerified });
+  if (!user) {
+    return false;
+  }
+
+  const pending = await WaPendingRegistration.findOne({
+    mobile: normalizedVerified,
+    mode: "resend",
+    status: "pending",
+  }).sort({ createdAt: -1 });
+  if (!pending || pending.expiresAt.getTime() < Date.now()) {
+    return false;
+  }
+
+  const newPin = generateShortPin();
+  user.loginPinHash = await hashPin(newPin);
+  await user.save();
+
+  pending.status = "registered";
+  pending.resultUserId = user._id;
+  await pending.save();
+
+  try {
+    await sendWhatsAppText(normalizedVerified, `Your PACKWITHME login code is ${newPin}. Save it for next time!`);
+  } catch (error) {
+    console.error("Failed to send wa-login code-resend reply:", error);
+  }
 
   return true;
 }
