@@ -64,6 +64,10 @@ export const uiLayoutSchema = z.object({
       z.object({
         id: z.string().trim().min(1),
         visible: z.boolean(),
+        // Nav-layout-only fields — dashboard/home-card layouts never send these, so they're
+        // optional here rather than splitting into a separate schema per page.
+        placement: z.enum(["bottom", "overflow"]).optional(),
+        order: z.number().int().min(0).optional(),
       }),
     )
     .min(1),

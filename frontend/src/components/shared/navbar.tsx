@@ -3,14 +3,14 @@ import { Link } from "react-router-dom";
 import { BrandName } from "@/components/shared/brand-name";
 import { OverflowMenu } from "@/components/shared/overflow-menu";
 import { GlobalSearch } from "@/features/search/global-search";
-import { HOME_ROUTE } from "@/lib/nav-items";
+import { HOME_ROUTE, type NavItem } from "@/lib/nav-items";
 
 interface NavbarProps {
   isAdmin: boolean;
-  hiddenNavHrefs?: Set<string>;
+  overflowItems: NavItem[];
 }
 
-export function Navbar({ isAdmin, hiddenNavHrefs }: NavbarProps) {
+export function Navbar({ isAdmin, overflowItems }: NavbarProps) {
   return (
     <header className="sticky top-0 z-30 px-4 py-3 lg:px-8">
       {/* Blur lives on its own layer, not the sticky element itself — Safari detaches
@@ -29,7 +29,7 @@ export function Navbar({ isAdmin, hiddenNavHrefs }: NavbarProps) {
             <GlobalSearch />
           </div>
           <div className="lg:hidden">
-            <OverflowMenu isAdmin={isAdmin} hiddenHrefs={hiddenNavHrefs} />
+            <OverflowMenu isAdmin={isAdmin} items={overflowItems} />
           </div>
         </div>
       </div>

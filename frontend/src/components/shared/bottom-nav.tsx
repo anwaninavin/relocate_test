@@ -1,15 +1,17 @@
 import { Link, useLocation } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
-import { BOTTOM_NAV_ITEMS } from "@/lib/nav-items";
+import type { NavItem } from "@/lib/nav-items";
 
-export function BottomNav({ hiddenNavHrefs }: { hiddenNavHrefs?: Set<string> }) {
+export function BottomNav({ items }: { items: NavItem[] }) {
   const { pathname } = useLocation();
-  const [left, right] = [BOTTOM_NAV_ITEMS.slice(0, 2), BOTTOM_NAV_ITEMS.slice(2)];
-  const visibleLeft = left.filter((item) => !hiddenNavHrefs?.has(item.href));
-  const visibleRight = right.filter((item) => !hiddenNavHrefs?.has(item.href));
+  // Split evenly around the center FAB gap regardless of count (admin can configure fewer
+  // than the max 4 slots) — first half left, remainder right.
+  const half = Math.ceil(items.length / 2);
+  const left = items.slice(0, half);
+  const right = items.slice(half);
 
-  function renderItem(item: (typeof BOTTOM_NAV_ITEMS)[number]) {
+  function renderItem(item: NavItem) {
     const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
     const Icon = item.icon;
     return (
@@ -36,9 +38,9 @@ export function BottomNav({ hiddenNavHrefs }: { hiddenNavHrefs?: Set<string> }) 
        * `position: fixed` from the viewport when `backdrop-filter` is applied directly to it. */}
       <div className="absolute inset-0 -z-10 backdrop-blur-md" aria-hidden="true" />
       <div className="flex items-stretch justify-between px-1 pt-2">
-        {visibleLeft.map(renderItem)}
+        {left.map(renderItem)}
         <div className="w-12 shrink-0" aria-hidden="true" />
-        {visibleRight.map(renderItem)}
+        {right.map(renderItem)}
       </div>
     </nav>
   );

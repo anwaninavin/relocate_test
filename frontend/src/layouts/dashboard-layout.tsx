@@ -6,24 +6,24 @@ import { Navbar } from "@/components/shared/navbar";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { FabMenu } from "@/components/shared/fab-menu";
 import { PWAInstallPrompt } from "@/components/shared/pwa-install-prompt";
-import { useHiddenNavHrefs } from "@/features/nav/use-nav-visibility";
+import { useNavLayout } from "@/features/nav/use-nav-layout";
 
 export function DashboardLayout() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const hiddenNavHrefs = useHiddenNavHrefs();
+  const { bottomItems, overflowItems, allOrderedItems, hiddenHrefs } = useNavLayout();
 
   return (
     <div className="bg-background relative flex min-h-dvh overflow-x-clip">
-      <Sidebar isAdmin={isAdmin} hiddenHrefs={hiddenNavHrefs} />
+      <Sidebar isAdmin={isAdmin} items={allOrderedItems} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar isAdmin={isAdmin} hiddenNavHrefs={hiddenNavHrefs} />
+        <Navbar isAdmin={isAdmin} overflowItems={overflowItems} />
         <main className="flex-1 px-4 pt-4 pb-24 lg:px-8 lg:pb-8">
           <Outlet />
         </main>
       </div>
-      <BottomNav hiddenNavHrefs={hiddenNavHrefs} />
-      <FabMenu hiddenNavHrefs={hiddenNavHrefs} />
+      <BottomNav items={bottomItems} />
+      <FabMenu hiddenNavHrefs={hiddenHrefs} />
       <PWAInstallPrompt />
     </div>
   );

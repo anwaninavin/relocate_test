@@ -8,21 +8,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ADMIN_NAV_ITEM, OVERFLOW_NAV_ITEMS, PROFILE_NAV_ITEM, SETTINGS_NAV_ITEM } from "@/lib/nav-items";
+import { ADMIN_NAV_ITEM, SETTINGS_NAV_ITEM, type NavItem } from "@/lib/nav-items";
 
-export function OverflowMenu({
-  isAdmin,
-  hiddenHrefs,
-}: {
-  isAdmin: boolean;
-  hiddenHrefs?: Set<string>;
-}) {
-  const items = [
-    ...OVERFLOW_NAV_ITEMS.filter((item) => !hiddenHrefs?.has(item.href)),
-    PROFILE_NAV_ITEM,
-    SETTINGS_NAV_ITEM,
-    ...(isAdmin ? [ADMIN_NAV_ITEM] : []),
-  ];
+export function OverflowMenu({ isAdmin, items }: { isAdmin: boolean; items: NavItem[] }) {
+  const allItems = [...items, SETTINGS_NAV_ITEM, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
 
   return (
     <DropdownMenu>
@@ -32,7 +21,7 @@ export function OverflowMenu({
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {items.map((item) => {
+        {allItems.map((item) => {
           const Icon = item.icon;
           return (
             <DropdownMenuItem key={item.href} asChild>

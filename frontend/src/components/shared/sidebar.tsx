@@ -1,24 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
-import {
-  ADMIN_NAV_ITEM,
-  HOME_ROUTE,
-  PRIMARY_NAV_ITEMS,
-  PROFILE_NAV_ITEM,
-  SETTINGS_NAV_ITEM,
-} from "@/lib/nav-items";
+import { ADMIN_NAV_ITEM, HOME_ROUTE, SETTINGS_NAV_ITEM, type NavItem } from "@/lib/nav-items";
 import { BrandName } from "@/components/shared/brand-name";
 
-export function Sidebar({ isAdmin, hiddenHrefs }: { isAdmin: boolean; hiddenHrefs?: Set<string> }) {
+export function Sidebar({ isAdmin, items }: { isAdmin: boolean; items: NavItem[] }) {
   const { pathname } = useLocation();
 
-  const items = [
-    ...PRIMARY_NAV_ITEMS.filter((item) => !hiddenHrefs?.has(item.href)),
-    PROFILE_NAV_ITEM,
-    SETTINGS_NAV_ITEM,
-    ...(isAdmin ? [ADMIN_NAV_ITEM] : []),
-  ];
+  const allItems = [...items, SETTINGS_NAV_ITEM, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
 
   return (
     <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r px-4 py-6 lg:flex">
@@ -28,7 +17,7 @@ export function Sidebar({ isAdmin, hiddenHrefs }: { isAdmin: boolean; hiddenHref
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto">
-        {items.map((item) => {
+        {allItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
           return (

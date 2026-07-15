@@ -66,18 +66,9 @@ export const SETTINGS_NAV_ITEM: NavItem = {
   icon: Settings,
 };
 
-/** Bottom tab bar: Home, Checklist, [FAB in the middle], Community, Discover. Hostel Guide
- * and Profile moved into the overflow ("more") menu to make room for Community/Discover —
- * see OverflowMenu, which adds PROFILE_NAV_ITEM back in explicitly since it isn't part of
- * PRIMARY_NAV_ITEMS. */
-export const BOTTOM_NAV_ITEMS: NavItem[] = [
-  PRIMARY_NAV_ITEMS.find((i) => i.href === "/wa-login/home")!,
-  PRIMARY_NAV_ITEMS.find((i) => i.href === "/checklist")!,
-  PRIMARY_NAV_ITEMS.find((i) => i.href === "/community")!,
-  PRIMARY_NAV_ITEMS.find((i) => i.href === "/discover")!,
-];
-
-/** Everything not already reachable from the bottom tab bar. */
-export const OVERFLOW_NAV_ITEMS: NavItem[] = PRIMARY_NAV_ITEMS.filter(
-  (item) => !BOTTOM_NAV_ITEMS.some((bottomItem) => bottomItem.href === item.href),
-);
+/** Every nav item an admin can independently show/hide, place in the bottom tab bar vs the
+ * "more" (3-dot) overflow menu, and reorder — see features/nav/nav-layout.ts for the
+ * admin-configurable layout built from this list. Settings/Admin are deliberately not part
+ * of this set: they're system entries, always pinned at the end of the overflow menu (and
+ * the desktop sidebar), not a "feature" an admin would hide or reposition. */
+export const CONFIGURABLE_NAV_ITEMS: NavItem[] = [...PRIMARY_NAV_ITEMS, PROFILE_NAV_ITEM];

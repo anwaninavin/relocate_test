@@ -4,6 +4,10 @@ import { UiLayout } from "@/models/UiLayout";
 export interface WidgetConfig {
   id: string;
   visible: boolean;
+  /** Nav-layout-only (see NavLayoutEntry on the frontend) — ignored by dashboard/home-card
+   * layouts, which share this same storage shape. */
+  placement?: "bottom" | "overflow" | null;
+  order?: number | null;
 }
 
 const DASHBOARD_PAGE = "dashboard";
