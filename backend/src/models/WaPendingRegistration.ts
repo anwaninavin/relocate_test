@@ -7,8 +7,13 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
 const WaPendingRegistrationSchema = new Schema(
   {
     mobile: { type: String, required: true, index: true },
-    /** bcrypt hash of the 4-digit PIN the visitor chose on the web form. */
+    /** bcrypt hash of the 4-digit PIN the visitor chose on the web form. Only meaningful for
+     * mode "register" — mode "resend" ignores it and issues a freshly generated code instead. */
     pinHash: { type: String, required: true },
+    /** "register" — mobile has no account yet, the visitor's typed PIN becomes the login code.
+     * "resend" — mobile already has an account; completing the handshake regenerates its login
+     * code and WhatsApps the new code back instead of creating anything. */
+    mode: { type: String, enum: ["register", "resend"], default: "register" },
     status: { type: String, enum: ["pending", "registered"], default: "pending", index: true },
     resultUserId: { type: Schema.Types.ObjectId, ref: "User", default: null },
     /** WhatsApp profile display name, captured when the registration message arrives —

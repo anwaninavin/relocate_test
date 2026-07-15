@@ -17,11 +17,7 @@ waRegisterRouter.post("/start", async (req, res) => {
 
   try {
     const result = await startPendingRegistration(parsed.data.mobile, parsed.data.pin);
-    if (!result.success) {
-      res.status(400).json({ error: result.error });
-      return;
-    }
-    res.json({ pendingId: result.pendingId });
+    res.json({ pendingId: result.pendingId, mode: result.mode });
   } catch (error) {
     if (error instanceof WaRegisterCooldownError) {
       res.status(429).json({ error: error.message });

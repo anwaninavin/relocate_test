@@ -2,7 +2,7 @@ import crypto from "crypto";
 
 import { Router, type Request } from "express";
 
-import { completeRegistrationFromWhatsApp } from "@/services/waRegisterService";
+import { completeRegistrationFromWhatsApp, completeResendFromWhatsApp } from "@/services/waRegisterService";
 import { sendWhatsAppText } from "@/lib/whatsapp";
 
 export const whatsappRouter = Router();
@@ -76,6 +76,11 @@ function verifySignature(req: Request): boolean {
  * independent of any active pack-with-me session. */
 const REGISTER_MESSAGE_REGEX = /register me as\s*[:\-]?\s*(\+?\d{10,13})\s*,?\s*(?:and\s*)?my pin is\s*[:\-]?\s*(\d{4})/i;
 
+/** Matches the /wa-login "already registered" branch's message, e.g.
+ * "Send my code for 9876543210" — sent instead of the register message when the visitor
+ * typed a mobile number that already has an account. */
+const RESEND_MESSAGE_REGEX = /send my code for\s*[:\-]?\s*(\+?\d{10,13})/i;
+
 /** Best-effort extraction of the sender's WhatsApp profile display name. Metabsp's exact
  * field for this hasn't been confirmed against a live payload yet — this tries the likely
  * candidates and falls back to null (registration still succeeds; only the onboarding-page
@@ -147,6 +152,15 @@ async function processMetabspMessage(payload: MetabspPayload): Promise<void> {
           console.error("Failed to send wa-login confirmation reply:", error);
         }
       }
+      return;
+    }
+
+    // /wa-login "send my code" (already-registered branch): same independence from the
+    // HOSTEL gate/session state as registration above.
+    const resendMatch = text.match(RESEND_MESSAGE_REGEX);
+    if (resendMatch) {
+      const [, typedMobile] = resendMatch;
+      await completeResendFromWhatsApp(from, typedMobile);
       return;
     }
 
