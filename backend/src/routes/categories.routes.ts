@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import {
   createCategorySchema,
@@ -13,7 +13,7 @@ import {
 } from "@/services/categoryService";
 import { requireAuth } from "@/middleware/auth";
 
-export const categoriesRouter = Router();
+export const categoriesRouter = createAsyncRouter();
 
 categoriesRouter.use(requireAuth);
 

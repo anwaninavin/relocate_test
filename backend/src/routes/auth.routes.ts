@@ -1,4 +1,5 @@
-import { Router, type Request } from "express";
+import type { Request } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import {
   checkMobileSchema,
@@ -10,13 +11,13 @@ import {
 } from "@/validations/auth";
 import { authenticateWithPin, RateLimitedError } from "@/services/authService";
 import { completeOnboarding, getUserByMobile, registerUserWithOtp, resetPinWithOtp } from "@/services/userService";
-import { requestOtp, verifyOtp, OtpCooldownError } from "@/services/otpService";
+import { requestOtp, verifyOtp, OtpCooldownError, OtpDailyLimitError } from "@/services/otpService";
 import { signAuthToken } from "@/lib/jwt";
 import { serializeUser } from "@/lib/serialize";
 import { requireAuth } from "@/middleware/auth";
 import { logEventAsync } from "@/services/eventService";
 
-export const authRouter = Router();
+export const authRouter = createAsyncRouter();
 
 /** Pulls the visitor/session ids the frontend's analytics client attaches to every request
  * (see frontend lib/analytics/client.ts) so server-emitted auth events land in the same
@@ -50,7 +51,7 @@ authRouter.post("/login", async (req, res) => {
     }
 
     logEventAsync({ eventName: "login_success", userId: user._id.toString(), ...ctx });
-    const token = signAuthToken(user._id.toString());
+    const token = signAuthToken(user._id.toString(), user.tokenVersion ?? 0);
     res.json({ token, user: serializeUser(user) });
   } catch (error) {
     if (error instanceof RateLimitedError) {
@@ -95,7 +96,7 @@ authRouter.post("/register/request-otp", async (req, res) => {
     logEventAsync({ eventName: "otp_requested", ...eventContext(req), metadata: { purpose: "register" } });
     res.json(result);
   } catch (error) {
-    if (error instanceof OtpCooldownError) {
+    if (error instanceof OtpCooldownError || error instanceof OtpDailyLimitError) {
       res.status(429).json({ error: error.message });
       return;
     }
@@ -132,7 +133,7 @@ authRouter.post("/register/verify", async (req, res) => {
   // checklist depends on it (e.g. Fashion Design Tools items are Designing-only), and
   // ProtectedRoute blocks the checklist page until onboarding is complete anyway.
 
-  const token = signAuthToken(result.user._id.toString());
+  const token = signAuthToken(result.user._id.toString(), result.user.tokenVersion ?? 0);
   res.json({ token, user: serializeUser(result.user) });
 });
 
@@ -154,7 +155,7 @@ authRouter.post("/forgot-password/request-otp", async (req, res) => {
     logEventAsync({ eventName: "otp_requested", ...eventContext(req), metadata: { purpose: "reset" } });
     res.json(result);
   } catch (error) {
-    if (error instanceof OtpCooldownError) {
+    if (error instanceof OtpCooldownError || error instanceof OtpDailyLimitError) {
       res.status(429).json({ error: error.message });
       return;
     }
@@ -186,7 +187,7 @@ authRouter.post("/forgot-password/reset", async (req, res) => {
   }
 
   logEventAsync({ eventName: "login_success", userId: result.user._id.toString(), ...ctx, metadata: { via: "reset" } });
-  const token = signAuthToken(result.user._id.toString());
+  const token = signAuthToken(result.user._id.toString(), result.user.tokenVersion ?? 0);
   res.json({ token, user: serializeUser(result.user) });
 });
 
@@ -206,6 +207,6 @@ authRouter.post("/onboarding", requireAuth, async (req, res) => {
   // the catalog filtered by the student's college category/course/gender, and a real row only
   // gets written the moment they actually touch an item. See userChecklistService.ts.
 
-  const token = signAuthToken(req.user!._id.toString());
+  const token = signAuthToken(req.user!._id.toString(), req.user!.tokenVersion ?? 0);
   res.json({ token, user: { ...serializeUser(req.user!), ...updated, needsOnboarding: false } });
 });

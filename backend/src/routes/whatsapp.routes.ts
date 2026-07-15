@@ -1,10 +1,11 @@
 import crypto from "crypto";
 
-import { Router, type Request } from "express";
+import type { Request } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { completeRegistrationFromWhatsApp, completeResendFromWhatsApp } from "@/services/waRegisterService";
 
-export const whatsappRouter = Router();
+export const whatsappRouter = createAsyncRouter();
 
 /** The one entry keyword this app owns on the shared WhatsApp number.
  * Metabsp fans the same number out to unrelated projects, so we respond ONLY

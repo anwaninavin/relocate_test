@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import { getPublicProfileByUsername } from "@/services/communityService";
@@ -7,7 +7,7 @@ import { isValidUsernameFormat } from "@/lib/username";
 import { usernameUpdateSchema, publicProfileUpdateSchema } from "@/validations/community";
 import { serializeUser } from "@/lib/serialize";
 
-export const usersRouter = Router();
+export const usersRouter = createAsyncRouter();
 
 usersRouter.use(requireAuth);
 

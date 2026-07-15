@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 import { z } from "zod";
 
 import { requireAuth } from "@/middleware/auth";
 import { listPlaces, getPlaceById, toggleFavoritePlace, listFavoritePlaces } from "@/services/placeService";
 import { PLACE_CATEGORIES } from "@/types";
 
-export const placesRouter = Router();
+export const placesRouter = createAsyncRouter();
 
 placesRouter.use(requireAuth);
 

@@ -29,6 +29,11 @@ export const updateMemberRoleSchema = z.object({
   role: z.enum(["admin", "moderator", "verified", "member"]),
 });
 
+export const moderateMemberSchema = z.object({
+  muted: z.boolean().optional(),
+  banned: z.boolean().optional(),
+});
+
 export const usernameUpdateSchema = z.object({
   username: z
     .string()

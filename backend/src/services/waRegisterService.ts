@@ -1,8 +1,11 @@
+import crypto from "crypto";
+
 import { connectDB } from "@/db";
 import { User } from "@/models/User";
 import { WaPendingRegistration } from "@/models/WaPendingRegistration";
 import { normalizeMobile } from "@/lib/phone";
 import { hashPin, verifyPin, generateShortPin } from "@/lib/pin";
+import { encryptPin, decryptPinSafe } from "@/lib/pinEncryption";
 import { generateUniqueUsername } from "@/lib/username";
 import { signAuthToken } from "@/lib/jwt";
 import { serializeUser } from "@/lib/serialize";
@@ -21,10 +24,16 @@ export class WaRegisterCooldownError extends Error {}
 /** One-tap "already logged in" link sent back over WhatsApp once a handshake completes.
  * Reuses the same GET /api/wa-register/status the polling browser tab already calls —
  * status is already "registered" by the time this link is sent, so clicking it just
- * adopts the session and redirects, no separate token machinery needed. */
-function buildMagicLink(pendingId: string): string {
+ * adopts the session and redirects, no separate token machinery needed.
+ *
+ * Takes the high-entropy `pollToken`, never the document's own Mongo ObjectId — ObjectIds
+ * generated close in time by the same process are enumerable (shared random component, small
+ * incrementing counter), so using one here would let an attacker who wins a race against a
+ * real registration guess their way to a live auth token via the unauthenticated status
+ * endpoint below. */
+function buildMagicLink(pollToken: string): string {
   const base = (process.env.FRONTEND_URL || "https://packwithme.instify.in").replace(/\/$/, "");
-  return `${base}/wa-login/complete?pendingId=${pendingId}`;
+  return `${base}/wa-login/complete?pendingId=${pollToken}`;
 }
 
 /** Starts (or restarts) a pending /wa-login handshake and reports which mode the frontend
@@ -53,21 +62,25 @@ export async function startPendingRegistration(mobile: string, pin: string) {
   await WaPendingRegistration.deleteMany({ mobile });
 
   const pinHash = await hashPin(pin);
+  const pollToken = crypto.randomBytes(32).toString("hex");
   const pending = await WaPendingRegistration.create({
     mobile,
+    pollToken,
     pinHash,
     mode,
     status: "pending",
     expiresAt: new Date(Date.now() + PENDING_TTL_MS),
   });
 
-  return { success: true as const, pendingId: pending._id.toString(), mode };
+  // The API's "pendingId" field is the high-entropy pollToken, not pending._id — see the
+  // comment on WaPendingRegistrationSchema.pollToken for why the raw ObjectId is unsafe here.
+  return { success: true as const, pendingId: pollToken, mode };
 }
 
-export async function getRegistrationStatus(pendingId: string) {
+export async function getRegistrationStatus(pollToken: string) {
   await connectDB();
 
-  const pending = await WaPendingRegistration.findById(pendingId);
+  const pending = await WaPendingRegistration.findOne({ pollToken });
   if (!pending) {
     return { status: "expired" as const };
   }
@@ -81,7 +94,7 @@ export async function getRegistrationStatus(pendingId: string) {
     return { status: "expired" as const };
   }
 
-  const token = signAuthToken(user._id.toString());
+  const token = signAuthToken(user._id.toString(), user.tokenVersion ?? 0);
   return {
     status: "registered" as const,
     token,
@@ -137,7 +150,7 @@ export async function completeRegistrationFromWhatsApp(
     mobile: normalizedVerified,
     role: "student",
     loginPinHash: pending.pinHash,
-    waLoginPin: pin,
+    waLoginPin: encryptPin(pin),
     username,
     displayName: username,
   });
@@ -152,7 +165,7 @@ export async function completeRegistrationFromWhatsApp(
   try {
     await sendWhatsAppText(
       normalizedVerified,
-      `*Registration done!*\nGo back to the login page, or tap the link below to continue:\n${buildMagicLink(pending._id.toString())}`,
+      `*Registration done!*\nGo back to the login page, or tap the link below to continue:\n${buildMagicLink(pending.pollToken)}`,
     );
   } catch (error) {
     console.error("Failed to send wa-login confirmation reply:", error);
@@ -193,11 +206,11 @@ export async function completeResendFromWhatsApp(verifiedMobile: string, typedMo
   // Reuse the code already on file rather than rotating it on every request — only
   // generate (and save) a fresh one for accounts that never had a /wa-login code saved
   // (admin-provisioned or OTP-registered accounts).
-  let pin = user.waLoginPin;
+  let pin = user.waLoginPin ? decryptPinSafe(user.waLoginPin) : null;
   if (!pin) {
     pin = generateShortPin();
     user.loginPinHash = await hashPin(pin);
-    user.waLoginPin = pin;
+    user.waLoginPin = encryptPin(pin);
     await user.save();
   }
 
@@ -209,7 +222,7 @@ export async function completeResendFromWhatsApp(verifiedMobile: string, typedMo
   try {
     await sendWhatsAppText(
       normalizedVerified,
-      `Your PACKWITHME login code is ${pin}. Save it for next time!\n\nOr tap the link below to jump straight back in:\n${buildMagicLink(pending._id.toString())}`,
+      `Your PACKWITHME login code is ${pin}. Save it for next time!\n\nOr tap the link below to jump straight back in:\n${buildMagicLink(pending.pollToken)}`,
     );
   } catch (error) {
     console.error("Failed to send wa-login code-resend reply:", error);

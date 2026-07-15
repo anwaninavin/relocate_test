@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import { createGroupConversation, findOrCreateDirectConversation, listConversations } from "@/services/conversationService";
-import { createConversationSchema } from "@/validations/chat";
+import { createConversationSchema, createDirectConversationSchema } from "@/validations/chat";
 
-export const conversationsRouter = Router();
+export const conversationsRouter = createAsyncRouter();
 
 conversationsRouter.use(requireAuth);
 
@@ -14,12 +14,12 @@ conversationsRouter.get("/", async (req, res) => {
 });
 
 conversationsRouter.post("/dm", async (req, res) => {
-  const targetUserId = String(req.body.userId ?? "");
-  if (!targetUserId) {
-    res.status(400).json({ error: "userId is required" });
+  const parsed = createDirectConversationSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
-  const result = await findOrCreateDirectConversation(req.user!._id.toString(), targetUserId);
+  const result = await findOrCreateDirectConversation(req.user!._id.toString(), parsed.data.userId);
   if (!result.success) {
     res.status(400).json({ error: result.error });
     return;

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import {
@@ -19,13 +19,14 @@ import { checkRateLimit } from "@/lib/rateLimiter";
 import {
   editMessageSchema,
   listMessagesQuerySchema,
+  pinMessageSchema,
   reactSchema,
   searchMessagesQuerySchema,
   sendMessageSchema,
 } from "@/validations/chat";
 import type { MessageScopeType } from "@/types";
 
-export const chatRouter = Router();
+export const chatRouter = createAsyncRouter();
 
 chatRouter.use(requireAuth);
 
@@ -139,7 +140,15 @@ chatRouter.post("/messages/:messageId/react", async (req, res) => {
   res.json(result);
 });
 
-chatRouter.post("/messages/:messageId/pin", async (req, res) => {
+// PUT with an explicit `pinned` state, not a POST toggle — a toggle isn't idempotent, so a
+// client retry on a flaky connection (mobile networks) could double-toggle and undo the very
+// state change the user asked for.
+chatRouter.put("/messages/:messageId/pin", async (req, res) => {
+  const parsed = pinMessageSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
   const message = await Message.findById(req.params.messageId).lean();
   if (!message) {
     res.status(404).json({ error: "Message not found" });
@@ -150,6 +159,6 @@ chatRouter.post("/messages/:messageId/pin", async (req, res) => {
     res.status(403).json({ error: "Not authorized" });
     return;
   }
-  const result = await pinMessage(req.params.messageId, !message.pinned);
+  const result = await pinMessage(req.params.messageId, parsed.data.pinned);
   res.json(result);
 });

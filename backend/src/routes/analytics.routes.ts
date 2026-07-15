@@ -1,4 +1,5 @@
-import { Router, type Request } from "express";
+import type { Request } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAdmin, requireAuth, optionalAuth } from "@/middleware/auth";
 import { logEventAsync } from "@/services/eventService";
@@ -21,7 +22,7 @@ import { getRealtimeSnapshot } from "@/services/realtimeAnalyticsService";
 import { collectEventsSchema, dateRangeQuerySchema } from "@/validations/analytics";
 import { resolveDateRange } from "@/lib/dateRange";
 
-export const analyticsRouter = Router();
+export const analyticsRouter = createAsyncRouter();
 
 // --- Ingestion -------------------------------------------------------------------------
 // Public: anonymous visitors (pre-login, pre-registration) must be trackable too. userId is

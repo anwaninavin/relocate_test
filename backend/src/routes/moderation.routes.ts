@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAdmin, requireAuth } from "@/middleware/auth";
 import { createReport, listReports, resolveReport, traceAnonymousAuthor } from "@/services/moderationService";
@@ -6,7 +6,7 @@ import { blockUser, unblockUser } from "@/services/connectionService";
 import { checkRateLimit } from "@/lib/rateLimiter";
 import { createReportSchema, resolveReportSchema } from "@/validations/moderation";
 
-export const moderationRouter = Router();
+export const moderationRouter = createAsyncRouter();
 
 moderationRouter.use(requireAuth);
 

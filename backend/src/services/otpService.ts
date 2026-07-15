@@ -3,16 +3,38 @@ import bcrypt from "bcryptjs";
 
 import { connectDB } from "@/db";
 import { OtpVerification } from "@/models/OtpVerification";
+import { OtpSendLog } from "@/models/OtpSendLog";
 import { sendWhatsAppOtp } from "@/lib/whatsapp";
 
 const OTP_TTL_MS = 10 * 60 * 1000;
 const RESEND_COOLDOWN_MS = 60 * 1000;
 const MAX_VERIFY_ATTEMPTS = 5;
 const BCRYPT_ROUNDS = 10;
+/** Independent of the 60s resend cooldown — caps total sends per mobile per day so an
+ * attacker who knows/enumerates a victim's number can't harass them indefinitely over
+ * WhatsApp or run up the (paid) WhatsApp Cloud API bill by resending every 60 seconds. */
+const DAILY_OTP_CAP = 8;
 
 export type OtpPurpose = "register" | "reset";
 
 export class OtpCooldownError extends Error {}
+export class OtpDailyLimitError extends Error {}
+
+function todayKey(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/** Atomically increments today's send count for this mobile+purpose and returns the new
+ * total — upsert avoids a separate read-then-write race between concurrent requests. */
+async function incrementDailySendCount(mobile: string, purpose: OtpPurpose): Promise<number> {
+  const date = todayKey();
+  const log = await OtpSendLog.findOneAndUpdate(
+    { mobile, purpose, date },
+    { $inc: { count: 1 }, $setOnInsert: { expiresAt: new Date(Date.now() + 25 * 60 * 60 * 1000) } },
+    { upsert: true, new: true },
+  );
+  return log.count;
+}
 
 function generateOtp(): string {
   return randomInt(100000, 1000000).toString();
@@ -27,6 +49,11 @@ export async function requestOtp(mobile: string, purpose: OtpPurpose) {
   const recent = await OtpVerification.findOne({ mobile, purpose }).sort({ createdAt: -1 });
   if (recent && Date.now() - recent.createdAt.getTime() < RESEND_COOLDOWN_MS) {
     throw new OtpCooldownError("Please wait a moment before requesting another code");
+  }
+
+  const sendCount = await incrementDailySendCount(mobile, purpose);
+  if (sendCount > DAILY_OTP_CAP) {
+    throw new OtpDailyLimitError("Too many code requests for this number today. Please try again tomorrow.");
   }
 
   await OtpVerification.deleteMany({ mobile, purpose });

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/services/directoryContactService";
 import { directoryContactSchema, directoryContactQuerySchema, reportContactSchema } from "@/validations/directoryContacts";
 
-export const directoryContactsRouter = Router();
+export const directoryContactsRouter = createAsyncRouter();
 
 directoryContactsRouter.use(requireAuth);
 
@@ -48,6 +48,10 @@ directoryContactsRouter.post("/:id/report", async (req, res) => {
 });
 
 directoryContactsRouter.delete("/:id", async (req, res) => {
-  await deleteOwnDirectoryContact(req.user!._id.toString(), req.params.id);
+  const result = await deleteOwnDirectoryContact(req.user!._id.toString(), req.params.id);
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: "Contact not found" });
+    return;
+  }
   res.json({ success: true });
 });

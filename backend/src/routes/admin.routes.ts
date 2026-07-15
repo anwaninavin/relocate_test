@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { CHECKLIST_GENDER_OPTIONS } from "@/types";
 import { requireAdmin, requireAuth } from "@/middleware/auth";
@@ -84,7 +84,7 @@ import {
   defaultChecklistItemUpdateSchema,
 } from "@/validations/checklistAdmin";
 
-export const adminRouter = Router();
+export const adminRouter = createAsyncRouter();
 
 adminRouter.use(requireAuth, requireAdmin);
 

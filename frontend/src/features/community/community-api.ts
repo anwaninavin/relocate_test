@@ -79,8 +79,8 @@ export function listPinnedMessages(channelId: string) {
   return api.get<{ messages: MessageDTO[] }>(`/api/chat/channels/${channelId}/pinned`);
 }
 
-export function togglePinMessage(messageId: string) {
-  return api.post(`/api/chat/messages/${messageId}/pin`);
+export function setPinMessage(messageId: string, pinned: boolean) {
+  return api.put(`/api/chat/messages/${messageId}/pin`, { pinned });
 }
 
 export function listConversations() {

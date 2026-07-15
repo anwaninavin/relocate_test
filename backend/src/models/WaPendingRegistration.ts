@@ -7,6 +7,11 @@ import { Schema, model, models, type InferSchemaType, type Model } from "mongoos
 const WaPendingRegistrationSchema = new Schema(
   {
     mobile: { type: String, required: true, index: true },
+    /** High-entropy random token (never a guessable value like the document's own Mongo
+     * ObjectId) handed to the browser tab and embedded in the WhatsApp magic link — this is
+     * what actually authorizes reading the registration result via GET /wa-register/status,
+     * since that endpoint is otherwise unauthenticated. */
+    pollToken: { type: String, required: true, unique: true, index: true },
     /** bcrypt hash of the 4-digit PIN the visitor chose on the web form. Only meaningful for
      * mode "register" — mode "resend" ignores it and issues a freshly generated code instead. */
     pinHash: { type: String, required: true },

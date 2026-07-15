@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { createBagSchema, updateBagSchema } from "@/validations/bag";
 import {
@@ -11,7 +11,7 @@ import {
 import { requireAuth } from "@/middleware/auth";
 import { BAG_COLOR_PRESETS } from "@/types";
 
-export const bagRouter = Router();
+export const bagRouter = createAsyncRouter();
 
 bagRouter.use(requireAuth);
 

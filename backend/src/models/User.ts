@@ -28,12 +28,22 @@ const UserSchema = new Schema(
     optedOutOfBroadcast: { type: Boolean, default: false },
     /** bcrypt hash of an admin-issued 7-digit login code. Never store or return the plain code. */
     loginPinHash: { type: String, default: null },
-    /** Plaintext 4-digit PIN chosen via the /wa-login self-registration flow — kept only so a
-     * "send my code" WhatsApp request can resend the same code instead of rotating it every
-     * time. Null for accounts that never went through that flow (admin-provisioned, OTP
-     * self-registration); those get a freshly generated 4-digit code on first request, which
-     * is then saved here too. Deliberately plaintext, not hashed — the whole point is reading
-     * it back. loginPinHash remains the actual bcrypt-hashed credential used to authenticate. */
+    /** Bumped whenever a previously-issued JWT should stop being accepted (PIN reset/regenerate)
+     * — embedded in the token payload at sign time (lib/jwt.ts) and compared on every
+     * requireAuth/optionalAuth check (middleware/auth.ts). Tokens signed before this field
+     * existed carry no version claim, which is treated as 0 (this field's default), so
+     * already-issued tokens keep working after this change deploys rather than mass-logging-out
+     * every active session. */
+    tokenVersion: { type: Number, default: 0 },
+    /** AES-256-GCM-encrypted (see lib/pinEncryption.ts) 4-digit PIN chosen via the /wa-login
+     * self-registration flow — kept only so a "send my code" WhatsApp request can resend the
+     * same code instead of rotating it every time. Null for accounts that never went through
+     * that flow (admin-provisioned, OTP self-registration); those get a freshly generated
+     * 4-digit code on first request, which is then saved here too. Encrypted rather than
+     * plaintext because the whole point is reading it back (unlike loginPinHash, which is the
+     * actual bcrypt-hashed credential used to authenticate and never needs to be reversed) —
+     * a database dump/backup leak should not hand out ready-to-use login codes. Rows written
+     * before this field was encrypted are read via decryptPinSafe's plaintext fallback. */
     waLoginPin: { type: String, default: null },
     /** Timestamps of recent mobile+PIN login attempts, for rate-limiting. Trimmed to the
      * current window on each check — kept on User instead of a separate collection since the

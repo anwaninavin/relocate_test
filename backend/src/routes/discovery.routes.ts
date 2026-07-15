@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import { getMyTravelProfile, upsertMyTravelProfile } from "@/services/travelProfileService";
@@ -15,7 +15,7 @@ import {
 } from "@/services/connectionService";
 import { travelProfileSchema, discoveryQuerySchema, sendConnectionSchema, respondConnectionSchema, blockUserSchema } from "@/validations/discovery";
 
-export const discoveryRouter = Router();
+export const discoveryRouter = createAsyncRouter();
 
 discoveryRouter.use(requireAuth);
 

@@ -142,12 +142,18 @@ export async function registerUserWithOtp(mobile: string, verifiedOtpCode: strin
 }
 
 /** Sets a new login code for an existing account once the mobile's OTP has been verified.
- * Defaults to the verified OTP code itself, or uses the caller-supplied `customPin` instead. */
+ * Defaults to the verified OTP code itself, or uses the caller-supplied `customPin` instead.
+ * Bumps tokenVersion so any JWT issued before this reset stops being accepted immediately —
+ * otherwise a token that leaked before the reset would remain valid for its full 30-day TTL. */
 export async function resetPinWithOtp(mobile: string, verifiedOtpCode: string, customPin?: string) {
   await connectDB();
 
   const loginPinHash = await hashPin(customPin ?? verifiedOtpCode);
-  const user = await User.findOneAndUpdate({ mobile }, { loginPinHash }, { returnDocument: "after" });
+  const user = await User.findOneAndUpdate(
+    { mobile },
+    { loginPinHash, $inc: { tokenVersion: 1 } },
+    { returnDocument: "after" },
+  );
   if (!user) {
     return { success: false as const, error: "No account found with this mobile number" };
   }
@@ -155,13 +161,19 @@ export async function resetPinWithOtp(mobile: string, verifiedOtpCode: string, c
   return { success: true as const, user };
 }
 
+/** Same tokenVersion-bump reasoning as resetPinWithOtp — an admin regenerating a user's code
+ * is exactly the moment any of that user's existing sessions should stop being trusted. */
 export async function regeneratePin(userId: string) {
   await connectDB();
 
   const pin = generatePin();
   const loginPinHash = await hashPin(pin);
 
-  const user = await User.findByIdAndUpdate(userId, { loginPinHash }, { returnDocument: "after" }).lean();
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { loginPinHash, $inc: { tokenVersion: 1 } },
+    { returnDocument: "after" },
+  ).lean();
   if (!user) {
     return { success: false as const, error: "User not found" };
   }

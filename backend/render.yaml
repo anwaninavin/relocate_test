@@ -11,6 +11,14 @@ services:
         sync: false
       - key: JWT_SECRET
         sync: false
+      # Required at boot as of this change (backend/src/lib/env.ts) — the app will refuse to
+      # start without these two set. Generate with `openssl rand -base64 32` (IP_HASH_SALT) and
+      # `openssl rand -hex 32` (PIN_ENCRYPTION_KEY); set both in Render's dashboard before
+      # deploying this change.
+      - key: IP_HASH_SALT
+        sync: false
+      - key: PIN_ENCRYPTION_KEY
+        sync: false
       - key: CORS_ORIGIN
         sync: false
       - key: FRONTEND_URL

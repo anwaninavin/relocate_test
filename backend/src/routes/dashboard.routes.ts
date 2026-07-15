@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { getDashboardData } from "@/services/dashboardService";
 import { getDashboardLayout } from "@/services/uiLayoutService";
 import { requireAuth } from "@/middleware/auth";
 
-export const dashboardRouter = Router();
+export const dashboardRouter = createAsyncRouter();
 
 dashboardRouter.get("/", requireAuth, async (req, res) => {
   const data = await getDashboardData(req.user!._id.toString());

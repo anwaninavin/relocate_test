@@ -1,14 +1,22 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { waRegisterStartSchema, waRegisterStatusSchema } from "@/validations/waRegister";
 import { getRegistrationStatus, startPendingRegistration, WaRegisterCooldownError } from "@/services/waRegisterService";
+import { checkRateLimit } from "@/lib/rateLimiter";
 
 /** Standalone router for the experimental /wa-login self-registration page — kept separate
  * from authRouter so this in-progress flow can't affect the production login/register
  * endpoints. See waRegisterService for the actual handshake logic. */
-export const waRegisterRouter = Router();
+export const waRegisterRouter = createAsyncRouter();
 
 waRegisterRouter.post("/start", async (req, res) => {
+  // Both routes here are unauthenticated by design (that's the whole point of self-
+  // registration) — key the limiter on IP instead of a user id.
+  if (!checkRateLimit(`wa-start:${req.ip}`, 10, 60 * 60 * 1000)) {
+    res.status(429).json({ error: "Too many attempts. Please try again later." });
+    return;
+  }
+
   const parsed = waRegisterStartSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
@@ -28,6 +36,13 @@ waRegisterRouter.post("/start", async (req, res) => {
 });
 
 waRegisterRouter.get("/status", async (req, res) => {
+  // The pollToken itself is now the actual authorization (crypto-random, unguessable) — this
+  // limiter is defense in depth against brute-forcing it, not the primary control.
+  if (!checkRateLimit(`wa-status:${req.ip}`, 30, 60 * 1000)) {
+    res.status(429).json({ error: "Too many attempts. Please try again later." });
+    return;
+  }
+
   const parsed = waRegisterStatusSchema.safeParse(req.query);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });

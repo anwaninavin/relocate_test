@@ -11,7 +11,9 @@ export const waRegisterStartSchema = z.object({
 });
 
 export const waRegisterStatusSchema = z.object({
-  pendingId: z.string().trim().regex(/^[a-f0-9]{24}$/i, "Invalid pendingId"),
+  // A crypto.randomBytes(32) hex token, not a Mongo ObjectId — see WaPendingRegistration's
+  // pollToken field for why the raw document id must never be used here.
+  pendingId: z.string().trim().regex(/^[a-f0-9]{64}$/i, "Invalid pendingId"),
 });
 
 export type WaRegisterStartInput = z.infer<typeof waRegisterStartSchema>;

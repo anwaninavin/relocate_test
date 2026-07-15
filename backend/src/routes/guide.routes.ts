@@ -1,8 +1,8 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { getGuideArticleBySlug, listGuideArticles } from "@/services/guideService";
 
-export const guideRouter = Router();
+export const guideRouter = createAsyncRouter();
 
 guideRouter.get("/", async (_req, res) => {
   const articles = await listGuideArticles();

@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { wishlistItemSchema, wishlistItemUpdateSchema } from "@/validations/wishlist";
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/services/wishlistService";
 import { requireAuth } from "@/middleware/auth";
 
-export const wishlistRouter = Router();
+export const wishlistRouter = createAsyncRouter();
 
 wishlistRouter.use(requireAuth);
 
@@ -35,10 +35,18 @@ wishlistRouter.patch("/:id", async (req, res) => {
     return;
   }
   const item = await updateWishlistItem(req.user!._id.toString(), parsed.data);
+  if (!item) {
+    res.status(404).json({ error: "Wishlist item not found" });
+    return;
+  }
   res.json({ item });
 });
 
 wishlistRouter.delete("/:id", async (req, res) => {
-  await deleteWishlistItem(req.user!._id.toString(), req.params.id);
+  const result = await deleteWishlistItem(req.user!._id.toString(), req.params.id);
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: "Wishlist item not found" });
+    return;
+  }
   res.json({ success: true });
 });
