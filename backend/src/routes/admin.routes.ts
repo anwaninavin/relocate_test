@@ -68,6 +68,7 @@ import {
 import { addSuggestedItemToDefault, getSuggestedItemUsers, listSuggestedItems } from "@/services/suggestedItemsService";
 import { getChecklistDashboardStats, getDefaultItemAnalytics } from "@/services/checklistAnalyticsService";
 import { getChecklistHealthSnapshot } from "@/services/checklistHealthService";
+import { deleteTempUserById, listTempUsers } from "@/services/tempUserService";
 import {
   addSuggestedToDefaultSchema,
   bulkIdsSchema,
@@ -585,4 +586,22 @@ adminRouter.get("/checklist-dashboard", async (_req, res) => {
 adminRouter.get("/checklist-health", async (req, res) => {
   const mobile = typeof req.query.mobile === "string" ? req.query.mobile : undefined;
   res.json(await getChecklistHealthSnapshot(mobile));
+});
+
+// --- /wa-login safety net: mobile numbers that started but never finished registration ---
+
+adminRouter.get("/temp-users", async (_req, res) => {
+  const tempUsers = await listTempUsers();
+  res.json({
+    tempUsers: tempUsers.map((t) => ({
+      id: t._id.toString(),
+      mobile: t.mobile,
+      createdAt: (t as unknown as { createdAt: Date }).createdAt.toISOString(),
+    })),
+  });
+});
+
+adminRouter.delete("/temp-users/:id", async (req, res) => {
+  await deleteTempUserById(req.params.id);
+  res.json({ success: true });
 });

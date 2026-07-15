@@ -207,7 +207,7 @@ export function WaLoginForm() {
             onClick={handleClickToRegister}
           >
             {isRegistering ? <Loader2 className="size-4 animate-spin" /> : <MessageCircle className="size-4" />}
-            Click to Register
+            {mode === "resend" ? "Click to Get Code" : "Click to Register"}
           </Button>
           {popupBlocked && waLink && (
             <a

@@ -24,6 +24,13 @@ const UserSchema = new Schema(
     optedOutOfBroadcast: { type: Boolean, default: false },
     /** bcrypt hash of an admin-issued 7-digit login code. Never store or return the plain code. */
     loginPinHash: { type: String, default: null },
+    /** Plaintext 4-digit PIN chosen via the /wa-login self-registration flow — kept only so a
+     * "send my code" WhatsApp request can resend the same code instead of rotating it every
+     * time. Null for accounts that never went through that flow (admin-provisioned, OTP
+     * self-registration); those get a freshly generated 4-digit code on first request, which
+     * is then saved here too. Deliberately plaintext, not hashed — the whole point is reading
+     * it back. loginPinHash remains the actual bcrypt-hashed credential used to authenticate. */
+    waLoginPin: { type: String, default: null },
     /** Timestamps of recent mobile+PIN login attempts, for rate-limiting. Trimmed to the
      * current window on each check — kept on User instead of a separate collection since the
      * Atlas cluster is at its collection cap. */
