@@ -67,6 +67,7 @@ import {
 } from "@/services/defaultChecklistItemService";
 import { addSuggestedItemToDefault, getSuggestedItemUsers, listSuggestedItems } from "@/services/suggestedItemsService";
 import { getChecklistDashboardStats, getDefaultItemAnalytics } from "@/services/checklistAnalyticsService";
+import { getChecklistHealthSnapshot } from "@/services/checklistHealthService";
 import {
   addSuggestedToDefaultSchema,
   bulkIdsSchema,
@@ -577,4 +578,11 @@ adminRouter.post("/suggested-items/add-to-default", async (req, res) => {
 
 adminRouter.get("/checklist-dashboard", async (_req, res) => {
   res.json({ stats: await getChecklistDashboardStats() });
+});
+
+// --- Checklist health (diagnostic snapshot of the self-healing seed + one user's state) ---
+
+adminRouter.get("/checklist-health", async (req, res) => {
+  const mobile = typeof req.query.mobile === "string" ? req.query.mobile : undefined;
+  res.json(await getChecklistHealthSnapshot(mobile));
 });
