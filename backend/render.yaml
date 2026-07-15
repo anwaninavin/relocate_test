@@ -13,6 +13,8 @@ services:
         sync: false
       - key: CORS_ORIGIN
         sync: false
+      - key: FRONTEND_URL
+        value: https://packwithme.instify.in
       - key: NODE_ENV
         value: production
       - key: WHATSAPP_ACCESS_TOKEN
