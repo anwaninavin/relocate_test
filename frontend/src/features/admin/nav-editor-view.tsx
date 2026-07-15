@@ -7,10 +7,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
 import {
+  DEFAULT_FAB_VISIBLE,
   DEFAULT_NAV_LAYOUT,
+  FAB_NAV_ID,
   MAX_BOTTOM_ITEMS,
   mergeNavLayout,
   navItemLabel,
+  resolveFabVisible,
   type NavLayoutEntry,
   type NavPlacement,
 } from "@/features/nav/nav-layout";
@@ -83,6 +86,7 @@ function NavItemRow({
 
 export function NavEditorView() {
   const [entries, setEntries] = useState<NavLayoutEntry[]>(DEFAULT_NAV_LAYOUT);
+  const [fabVisible, setFabVisible] = useState(DEFAULT_FAB_VISIBLE);
   const [isDirty, setIsDirty] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -91,6 +95,7 @@ export function NavEditorView() {
       .get<{ widgets: WidgetConfig[] | null }>("/api/nav/layout")
       .then((res) => {
         setEntries(mergeNavLayout(res.widgets));
+        setFabVisible(resolveFabVisible(res.widgets));
       })
       .catch(() => {
         toast.error("Failed to load the current nav layout");
@@ -122,7 +127,9 @@ export function NavEditorView() {
   async function handleSave() {
     setIsSaving(true);
     try {
-      await api.put("/api/admin/nav-layout", { widgets: entries });
+      await api.put("/api/admin/nav-layout", {
+        widgets: [...entries, { id: FAB_NAV_ID, visible: fabVisible }],
+      });
       toast.success("Nav layout saved");
       setIsDirty(false);
     } catch (error) {
@@ -171,6 +178,24 @@ export function NavEditorView() {
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold">More (⋮) menu</h3>
           <div className="flex flex-col gap-2">{renderGroup(overflowEntries)}</div>
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <h3 className="text-sm font-semibold">Floating quick-add button</h3>
+          <div className={`bg-card flex items-center gap-3 rounded-xl border px-3 py-2.5 ${fabVisible ? "" : "opacity-50"}`}>
+            <span className="flex-1 text-sm font-medium">Quick-add ("+") button</span>
+            <button
+              type="button"
+              onClick={() => {
+                setFabVisible((v) => !v);
+                setIsDirty(true);
+              }}
+              className="text-muted-foreground hover:text-foreground shrink-0"
+              aria-label={fabVisible ? "Hide quick-add button" : "Show quick-add button"}
+            >
+              {fabVisible ? <Eye className="size-5" /> : <EyeOff className="size-5" />}
+            </button>
+          </div>
         </div>
 
         <Button onClick={handleSave} disabled={!isDirty || isSaving} className="self-start">

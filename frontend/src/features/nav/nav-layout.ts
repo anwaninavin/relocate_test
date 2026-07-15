@@ -62,6 +62,19 @@ interface SavedNavWidget {
   order?: number | null;
 }
 
+/** The floating quick-add ("+") button isn't a route — it doesn't belong in
+ * CONFIGURABLE_NAV_ITEMS/the bottom-bar-vs-overflow system, it just needs a visible/hidden
+ * toggle. Stored as one extra entry in the same saved `widgets` array (everything else here
+ * ignores ids it doesn't recognize) rather than adding a whole separate admin endpoint for a
+ * single boolean. */
+export const FAB_NAV_ID = "fab";
+export const DEFAULT_FAB_VISIBLE = true;
+
+export function resolveFabVisible(saved: SavedNavWidget[] | null | undefined): boolean {
+  const entry = saved?.find((w) => w.id === FAB_NAV_ID);
+  return entry ? entry.visible : DEFAULT_FAB_VISIBLE;
+}
+
 /** Merges an admin-saved nav layout onto the current CONFIGURABLE_NAV_ITEMS set: known ids
  * keep their saved visibility/placement/order, falling back to the default placement/order
  * for a saved entry that predates this feature (only had `visible`). Any nav item that exists
@@ -95,6 +108,7 @@ export interface ResolvedNavLayout {
    * has no bottom-bar/overflow-menu distinction, just one ordered list. */
   allOrderedItems: NavItem[];
   hiddenHrefs: Set<string>;
+  fabVisible: boolean;
 }
 
 function toNavItem(entry: NavLayoutEntry): NavItem | null {
@@ -121,5 +135,11 @@ export function resolveNavLayout(saved: SavedNavWidget[] | null | undefined): Re
   const bottomItems = bottomEntries.map(toNavItem).filter((i): i is NavItem => i !== null);
   const overflowItems = [...spillover, ...declaredOverflow].map(toNavItem).filter((i): i is NavItem => i !== null);
 
-  return { bottomItems, overflowItems, allOrderedItems: [...bottomItems, ...overflowItems], hiddenHrefs };
+  return {
+    bottomItems,
+    overflowItems,
+    allOrderedItems: [...bottomItems, ...overflowItems],
+    hiddenHrefs,
+    fabVisible: resolveFabVisible(saved),
+  };
 }

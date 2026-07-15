@@ -11,7 +11,7 @@ import { useNavLayout } from "@/features/nav/use-nav-layout";
 export function DashboardLayout() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const { bottomItems, overflowItems, allOrderedItems, hiddenHrefs } = useNavLayout();
+  const { bottomItems, overflowItems, allOrderedItems, hiddenHrefs, fabVisible } = useNavLayout();
 
   return (
     <div className="bg-background relative flex min-h-dvh overflow-x-clip">
@@ -23,7 +23,7 @@ export function DashboardLayout() {
         </main>
       </div>
       <BottomNav items={bottomItems} />
-      <FabMenu hiddenNavHrefs={hiddenHrefs} />
+      {fabVisible && <FabMenu hiddenNavHrefs={hiddenHrefs} />}
       <PWAInstallPrompt />
     </div>
   );
