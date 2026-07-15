@@ -1,6 +1,8 @@
+import mongoose from "mongoose";
+
 import { connectDB } from "@/db";
 import { Community, type CommunityDocument } from "@/models/Community";
-import { CommunityMember } from "@/models/CommunityMember";
+import { CommunityMember, type CommunityMemberDocument } from "@/models/CommunityMember";
 import { Channel } from "@/models/Channel";
 import { Course } from "@/models/Course";
 import { User } from "@/models/User";
@@ -88,9 +90,21 @@ export async function joinCommunity(userId: string, communityId: string, role: C
   const existing = await CommunityMember.findOne({ communityId, userId });
   if (existing) return existing;
 
-  const membership = await CommunityMember.create({ communityId, userId, role, joinedAt: new Date() });
-  await Community.findByIdAndUpdate(communityId, { $inc: { memberCount: 1 } });
-  return membership;
+  // Both writes happen atomically — without a transaction, a crash between them (deploy
+  // restart, OOM kill) permanently drifts memberCount from the true membership count, and
+  // discoverCommunities sorts by memberCount, so drift visibly misranks communities over time.
+  const session = await mongoose.startSession();
+  try {
+    let membership!: HydratedDocument<CommunityMemberDocument>;
+    await session.withTransaction(async () => {
+      const created = await CommunityMember.create([{ communityId, userId, role, joinedAt: new Date() }], { session });
+      membership = created[0];
+      await Community.findByIdAndUpdate(communityId, { $inc: { memberCount: 1 } }, { session });
+    });
+    return membership;
+  } finally {
+    await session.endSession();
+  }
 }
 
 /** What the "Join" button actually calls — unlike `joinCommunity`, this enforces that
@@ -110,11 +124,18 @@ export async function joinCommunityAsSelf(userId: string, communityId: string) {
 
 export async function leaveCommunity(userId: string, communityId: string) {
   await connectDB();
-  const removed = await CommunityMember.findOneAndDelete({ communityId, userId });
-  if (removed) {
-    await Community.findByIdAndUpdate(communityId, { $inc: { memberCount: -1 } });
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      const removed = await CommunityMember.findOneAndDelete({ communityId, userId }, { session });
+      if (removed) {
+        await Community.findByIdAndUpdate(communityId, { $inc: { memberCount: -1 } }, { session });
+      }
+    });
+    return { success: true as const };
+  } finally {
+    await session.endSession();
   }
-  return { success: true as const };
 }
 
 /** Auto-join, run right after onboarding/profile update: joins the student to every
@@ -178,20 +199,28 @@ export async function ensureAutoJoinCommunities(user: AutoJoinableUser) {
     { type: "lost_found", name: "Lost & Found", description: "Lost something on campus? Found something? Post it here." },
   ];
 
-  for (const g of globalCommunities) {
-    const community = await ensureCommunity(g.type, "global", g.name, { description: g.description });
-    joins.push(joinCommunity(userId, community._id.toString()));
-  }
+  // Each community below has an independent scopeKey — nothing here depends on another
+  // iteration's result, so these run in parallel instead of one round-trip chain at a time.
+  // ensureCommunity already handles the case where two callers race to create the same
+  // community concurrently (falls back to re-reading what the other one created).
+  await Promise.all(
+    globalCommunities.map(async (g) => {
+      const community = await ensureCommunity(g.type, "global", g.name, { description: g.description });
+      joins.push(joinCommunity(userId, community._id.toString()));
+    }),
+  );
 
-  for (const interest of user.interests ?? []) {
-    const key = slugify(interest);
-    if (!key) continue;
-    const community = await ensureCommunity("interest", key, interest, {
-      description: `For students into ${interest}.`,
-      isOfficial: false,
-    });
-    joins.push(joinCommunity(userId, community._id.toString()));
-  }
+  await Promise.all(
+    (user.interests ?? []).map(async (interest) => {
+      const key = slugify(interest);
+      if (!key) return;
+      const community = await ensureCommunity("interest", key, interest, {
+        description: `For students into ${interest}.`,
+        isOfficial: false,
+      });
+      joins.push(joinCommunity(userId, community._id.toString()));
+    }),
+  );
 
   await Promise.all(joins);
 }

@@ -1,3 +1,5 @@
+import { Types } from "mongoose";
+
 import { connectDB } from "@/db";
 import { Conversation } from "@/models/Conversation";
 import { ReadState } from "@/models/ReadState";
@@ -60,18 +62,31 @@ export async function listConversations(userId: string) {
   const readStates = await ReadState.find({ userId, scopeType: "conversation" }).lean();
   const readByConversation = new Map(readStates.map((r) => [r.scopeId.toString(), r.lastReadAt]));
 
-  const unreadCounts = await Promise.all(
-    conversations.map((c) => {
-      const lastRead = readByConversation.get(c._id.toString()) ?? new Date(0);
-      return Message.countDocuments({
-        scopeType: "conversation",
-        scopeId: c._id,
-        createdAt: { $gt: lastRead },
-        authorId: { $ne: userId },
-        deletedAt: null,
-      });
-    }),
-  );
+  // One aggregation instead of one countDocuments() per conversation (up to 100 round trips
+  // per inbox load otherwise) — each conversation has its own lastRead cutoff, so the $match
+  // is an $or of per-conversation {scopeId, createdAt} conditions rather than one shared filter.
+  const userObjectId = new Types.ObjectId(userId);
+  const unreadCountByConversation = new Map<string, number>();
+  if (conversations.length > 0) {
+    const unreadCountRows = await Message.aggregate<{ _id: Types.ObjectId; count: number }>([
+      {
+        $match: {
+          scopeType: "conversation",
+          authorId: { $ne: userObjectId },
+          deletedAt: null,
+          $or: conversations.map((c) => ({
+            scopeId: c._id,
+            createdAt: { $gt: readByConversation.get(c._id.toString()) ?? new Date(0) },
+          })),
+        },
+      },
+      { $group: { _id: "$scopeId", count: { $sum: 1 } } },
+    ]);
+    for (const row of unreadCountRows) {
+      unreadCountByConversation.set(row._id.toString(), row.count);
+    }
+  }
+  const unreadCounts = conversations.map((c) => unreadCountByConversation.get(c._id.toString()) ?? 0);
 
   return conversations.map((c, i) => {
     const others = (c.memberIds as unknown as Array<{ _id: unknown }>).filter((m) => String(m._id) !== userId);

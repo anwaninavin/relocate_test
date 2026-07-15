@@ -27,6 +27,11 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
   await connectDB();
 
   const regex = new RegExp(escapeRegex(query.trim()), "i");
+  // User is the one unbounded, global collection searched here (everything else above is
+  // either scoped to one user's own naturally-small data, or a small admin-managed catalog) —
+  // a non-anchored substring match can't use the username index and becomes a full collection
+  // scan as the user base grows. Prefix-anchoring lets Mongo serve this as an index range scan.
+  const usernamePrefixRegex = new RegExp(`^${escapeRegex(query.trim())}`, "i");
 
   const searchChecklist = async () => {
     if (await isLegacyChecklistUser(userId)) {
@@ -53,7 +58,7 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
     Community.find({ active: true, visibility: "public", name: regex }).limit(5).lean(),
     // Username only — never matches on real name/mobile, keeping the "communicate by
     // username only" privacy rule intact even inside global search.
-    User.find({ username: regex }).select("username displayName avatar verified").limit(5).lean(),
+    User.find({ username: usernamePrefixRegex }).select("username displayName avatar verified").limit(5).lean(),
   ]);
 
   const bagIds = [...new Set(checklist.map((c) => c.bagId).filter(Boolean).map(String))];

@@ -3,6 +3,7 @@ import { AnalyticsEvent } from "@/models/AnalyticsEvent";
 import type { DateRange } from "@/lib/dateRange";
 import { daysAgo, startOfDay, startOfMonth, startOfWeek } from "@/lib/dateRange";
 import { getOnlineCount } from "@/services/eventService";
+import { distinctValues } from "@/lib/distinctValues";
 
 interface SessionSummary {
   _id: string;
@@ -29,7 +30,7 @@ export async function getVisitorOverview(range: DateRange) {
   await connectDB();
   const match = { timestamp: { $gte: range.start, $lte: range.end } };
 
-  const activeVisitorIds = await AnalyticsEvent.distinct("visitorId", match);
+  const activeVisitorIds = await distinctValues<string>(AnalyticsEvent, "visitorId", match);
   if (activeVisitorIds.length === 0) {
     return { totalVisitors: 0, uniqueVisitors: 0, newVisitors: 0, returningVisitors: 0 };
   }
@@ -65,10 +66,10 @@ export async function getActivitySnapshot() {
   const monthStart = startOfMonth(now);
 
   const [today, yesterday, thisWeek, thisMonth] = await Promise.all([
-    AnalyticsEvent.distinct("visitorId", { timestamp: { $gte: todayStart } }),
-    AnalyticsEvent.distinct("visitorId", { timestamp: { $gte: yesterdayStart, $lt: todayStart } }),
-    AnalyticsEvent.distinct("visitorId", { timestamp: { $gte: weekStart } }),
-    AnalyticsEvent.distinct("visitorId", { timestamp: { $gte: monthStart } }),
+    distinctValues(AnalyticsEvent, "visitorId", { timestamp: { $gte: todayStart } }),
+    distinctValues(AnalyticsEvent, "visitorId", { timestamp: { $gte: yesterdayStart, $lt: todayStart } }),
+    distinctValues(AnalyticsEvent, "visitorId", { timestamp: { $gte: weekStart } }),
+    distinctValues(AnalyticsEvent, "visitorId", { timestamp: { $gte: monthStart } }),
   ]);
 
   return {
@@ -161,9 +162,15 @@ export async function getPageEngagement(range: DateRange) {
       { $match: { ...match, eventName: "scroll_checkpoint" } },
       { $group: { _id: "$page", avgPercent: { $avg: "$metadata.percent" } } },
     ]).allowDiskUse(true),
+    // Time-on-page needs each session's ordered page sequence in Node (a pairwise consecutive-
+    // timestamp diff, not a simple grouped sum) — capped the same way checklistAnalyticsService's
+    // $sample-based cohort stat is, so a wide date range can't pull millions of raw rows into
+    // one process's memory. Trades an exact answer over an unbounded scan for an exact answer
+    // over a large bounded sample.
     AnalyticsEvent.find({ ...match, eventName: "page_view" })
       .select("sessionId page timestamp")
       .sort({ sessionId: 1, timestamp: 1 })
+      .limit(50_000)
       .lean(),
   ]);
 
@@ -315,7 +322,7 @@ export async function getReferralAnalytics(range: DateRange) {
         },
       },
     ]).allowDiskUse(true),
-    AnalyticsEvent.distinct("visitorId", { ...match, eventName: "registration_success" }),
+    distinctValues(AnalyticsEvent, "visitorId", { ...match, eventName: "registration_success" }),
   ]);
 
   const convertedSet = new Set(conversions);
