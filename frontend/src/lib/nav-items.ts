@@ -17,7 +17,7 @@ import {
   Users,
   Ticket,
   Compass,
-  Users2,
+  Globe2,
   MessageCircle,
 } from "lucide-react";
 
@@ -32,7 +32,7 @@ export interface NavItem {
 export const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: "/wa-login/home", label: "Home", icon: Home },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/community", label: "Community", icon: Users2 },
+  { href: "/community", label: "Community", icon: Globe2 },
   { href: "/chat", label: "Messages", icon: MessageCircle },
   { href: "/checklist", label: "Checklist", icon: ListChecks },
   { href: "/bags", label: "Bags", icon: Luggage },
