@@ -6,9 +6,9 @@ import { toast } from "sonner";
 import { HandDrawnCheckbox } from "@/features/checklist/hand-drawn-checkbox";
 import { ItemFormDialog } from "@/features/checklist/item-form-dialog";
 import { ItemDetailSheet } from "@/features/checklist/item-detail-sheet";
-import { QuickRenameDialog } from "@/features/checklist/quick-rename-dialog";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
+import type { ChecklistPlanType } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
 /** Fades in only during the ancestor page's exit transition — variant state ("enter" /
@@ -23,14 +23,15 @@ export function NotebookPage({
   category,
   allCategories,
   items,
+  planTypeFilter,
   onItemsChange,
 }: {
   category: string;
   allCategories: string[];
   items: ChecklistItemDTO[];
+  planTypeFilter: ChecklistPlanType | null;
   onItemsChange: (updater: (prev: ChecklistItemDTO[]) => ChecklistItemDTO[]) => void;
 }) {
-  const [renameItem, setRenameItem] = useState<ChecklistItemDTO | null>(null);
   const [detailItem, setDetailItem] = useState<ChecklistItemDTO | null>(null);
   const [addOpen, setAddOpen] = useState(false);
 
@@ -55,18 +56,21 @@ export function NotebookPage({
     }
   }
 
-  async function handleDuplicate(id: string) {
+  async function handlePlanTypeChange(item: ChecklistItemDTO, planType: ChecklistPlanType | null) {
+    onItemsChange((prev) => prev.map((i) => (i.id === item.id ? { ...i, planType } : i)));
+    setDetailItem((prev) => (prev && prev.id === item.id ? { ...prev, planType } : prev));
     try {
-      await api.post("/api/checklist/bulk-action", { ids: [id], action: "duplicate" });
+      await api.patch(`/api/checklist/${item.id}`, { planType });
       emitRefresh();
-      toast.success("Item duplicated");
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to duplicate item");
+      toast.error(error instanceof ApiError ? error.message : "Failed to update item");
     }
   }
 
-  const pending = items.filter((i) => !i.completed);
-  const completed = items.filter((i) => i.completed);
+  const visibleItems = planTypeFilter ? items.filter((i) => i.planType === planTypeFilter) : items;
+  const pending = visibleItems.filter((i) => !i.completed);
+  const completed = visibleItems.filter((i) => i.completed);
+  const planTypeLabel = planTypeFilter === "pack" ? "pack it" : "plan it";
 
   return (
     <div className="exam-paper relative flex h-full min-h-[70vh] flex-col overflow-hidden rounded-[20px] border border-[#e9ddc9] p-5 shadow-[0_2px_14px_rgba(58,46,42,0.14)] sm:min-h-[560px] sm:p-8 lg:min-h-[calc(100dvh-230px)] lg:p-10">
@@ -87,17 +91,20 @@ export function NotebookPage({
         {category}
       </h2>
       <p className="relative z-10 mt-1.5 text-sm text-[#8a7a6a] lg:text-base">
-        {items.length === 0 ? "nothing added yet" : `${completed.length}/${items.length} packed`}
+        {visibleItems.length === 0 ? "nothing added yet" : `${completed.length}/${visibleItems.length} packed`}
       </p>
 
       <LayoutGroup>
-        <div className="relative z-10 mt-4 flex-1 space-y-0.5 overflow-y-auto lg:mt-8 lg:space-y-1">
-          {items.length === 0 ? (
+        <div
+          className="relative z-10 mt-4 flex-1 space-y-0.5 overflow-y-auto lg:mt-8 lg:space-y-1"
+          style={{ touchAction: "pan-y" }}
+        >
+          {visibleItems.length === 0 ? (
             <p
               className="mt-10 text-center text-xl text-[#8a7a6a] lg:text-2xl"
               style={{ fontFamily: "var(--font-caveat-notebook)" }}
             >
-              add your first item below ✨
+              {planTypeFilter ? `nothing to ${planTypeLabel} here ✨` : "add your first item below ✨"}
             </p>
           ) : pending.length === 0 ? (
             <p
@@ -123,7 +130,7 @@ export function NotebookPage({
                   <button
                     type="button"
                     onClick={() => setDetailItem(item)}
-                    className="min-w-0 flex-1 truncate text-left text-lg text-[#3a2e2a] sm:text-xl lg:text-2xl"
+                    className="block max-w-full truncate text-left text-lg text-[#3a2e2a] sm:text-xl lg:text-2xl"
                     style={{ fontFamily: "var(--font-caveat-notebook)" }}
                   >
                     {item.item}
@@ -166,15 +173,6 @@ export function NotebookPage({
         )}
       </LayoutGroup>
 
-      {renameItem && (
-        <QuickRenameDialog
-          id={renameItem.id}
-          currentName={renameItem.item}
-          open={renameItem !== null}
-          onOpenChange={(open) => !open && setRenameItem(null)}
-        />
-      )}
-
       <ItemFormDialog
         categories={allCategories}
         category={category}
@@ -187,13 +185,10 @@ export function NotebookPage({
 
       <ItemDetailSheet
         item={detailItem}
-        category={category}
-        allCategories={allCategories}
         open={detailItem !== null}
         onOpenChange={(open) => !open && setDetailItem(null)}
-        onRename={(item) => setRenameItem(item)}
-        onDuplicate={(id) => handleDuplicate(id)}
-        onDelete={(id) => handleDelete(id)}
+        onDelete={handleDelete}
+        onPlanTypeChange={handlePlanTypeChange}
       />
     </div>
   );

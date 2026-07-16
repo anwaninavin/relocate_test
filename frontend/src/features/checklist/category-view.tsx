@@ -21,10 +21,9 @@ import { PageHeader } from "@/components/shared/page-header";
 import { getCategoryIcon } from "@/lib/checklist-icons";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
-import type { ChecklistCategory, ChecklistPriority } from "@/types";
+import type { ChecklistCategory, ChecklistPlanType, ChecklistPriority } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 import { ItemDetailSheet } from "@/features/checklist/item-detail-sheet";
-import { QuickRenameDialog } from "@/features/checklist/quick-rename-dialog";
 
 type PriorityFilter = "all" | ChecklistPriority;
 type StatusFilter = "all" | "completed" | "incomplete";
@@ -50,7 +49,6 @@ const PRIORITY_WEIGHT: Record<ChecklistPriority, number> = {
 
 export function CategoryView({
   category,
-  allCategories,
   initialItems,
   embedded = false,
   hideToolbar = false,
@@ -59,7 +57,6 @@ export function CategoryView({
   onToggleSelected,
 }: {
   category: ChecklistCategory;
-  allCategories: string[];
   initialItems: ChecklistItemDTO[];
   embedded?: boolean;
   hideToolbar?: boolean;
@@ -75,7 +72,6 @@ export function CategoryView({
   const [localSelectMode, setLocalSelectMode] = useState(false);
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
   const [detailItem, setDetailItem] = useState<ChecklistItemDTO | null>(null);
-  const [renameItem, setRenameItem] = useState<ChecklistItemDTO | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
   const isControlled = controlledSelectMode !== undefined;
@@ -139,13 +135,14 @@ export function CategoryView({
     }
   }
 
-  async function handleDuplicate(id: string) {
+  async function handlePlanTypeChange(item: ChecklistItemDTO, planType: ChecklistPlanType | null) {
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, planType } : i)));
+    setDetailItem((prev) => (prev && prev.id === item.id ? { ...prev, planType } : prev));
     try {
-      await api.post("/api/checklist/bulk-action", { ids: [id], action: "duplicate" });
+      await api.patch(`/api/checklist/${item.id}`, { planType });
       emitRefresh();
-      toast.success("Item duplicated");
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to duplicate item");
+      toast.error(error instanceof ApiError ? error.message : "Failed to update item");
     }
   }
 
@@ -287,39 +284,32 @@ export function CategoryView({
                     <Checkbox checked={item.completed} onCheckedChange={() => toggleCompleted(item)} />
                   )}
 
-                  <button
-                    type="button"
-                    onClick={() => setDetailItem(item)}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  <span
+                    className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${PRIORITY_CHIP_CLASS[item.priority]}`}
+                    title={`${item.priority} priority`}
                   >
-                    <span
-                      className={`flex size-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ${PRIORITY_CHIP_CLASS[item.priority]}`}
-                      title={`${item.priority} priority`}
-                    >
-                      {PRIORITY_LETTER[item.priority]}
-                    </span>
+                    {PRIORITY_LETTER[item.priority]}
+                  </span>
 
-                    <div className="min-w-0 flex-1">
-                      <p className={item.completed ? "text-muted-foreground truncate line-through" : "truncate font-medium"}>
-                        {item.item}
-                      </p>
-                      {item.price != null && <p className="text-muted-foreground text-xs">₹{item.price}</p>}
-                    </div>
-                  </button>
+                  <div className="min-w-0 flex-1">
+                    <button
+                      type="button"
+                      onClick={() => setDetailItem(item)}
+                      className={
+                        item.completed
+                          ? "text-muted-foreground block max-w-full truncate text-left line-through"
+                          : "block max-w-full truncate text-left font-medium"
+                      }
+                    >
+                      {item.item}
+                    </button>
+                    {item.price != null && <p className="text-muted-foreground text-xs">₹{item.price}</p>}
+                  </div>
                 </motion.div>
               ))}
             </div>
           )}
         </>
-      )}
-
-      {renameItem && (
-        <QuickRenameDialog
-          id={renameItem.id}
-          currentName={renameItem.item}
-          open={renameItem !== null}
-          onOpenChange={(open) => !open && setRenameItem(null)}
-        />
       )}
 
       {!isControlled && selectMode && selectedIds.length > 0 && (
@@ -361,13 +351,10 @@ export function CategoryView({
 
       <ItemDetailSheet
         item={detailItem}
-        category={category}
-        allCategories={allCategories}
         open={detailItem !== null}
         onOpenChange={(open) => !open && setDetailItem(null)}
-        onRename={(item) => setRenameItem(item)}
-        onDuplicate={handleDuplicate}
         onDelete={handleDelete}
+        onPlanTypeChange={handlePlanTypeChange}
       />
     </div>
   );
