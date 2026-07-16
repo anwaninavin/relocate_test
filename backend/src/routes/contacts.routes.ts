@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { emergencyContactSchema, emergencyContactUpdateSchema } from "@/validations/contact";
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/services/contactService";
 import { requireAuth } from "@/middleware/auth";
 
-export const contactsRouter = Router();
+export const contactsRouter = createAsyncRouter();
 
 contactsRouter.use(requireAuth);
 
@@ -35,10 +35,18 @@ contactsRouter.patch("/:id", async (req, res) => {
     return;
   }
   const contact = await updateContact(req.user!._id.toString(), parsed.data);
+  if (!contact) {
+    res.status(404).json({ error: "Contact not found" });
+    return;
+  }
   res.json({ contact });
 });
 
 contactsRouter.delete("/:id", async (req, res) => {
-  await deleteContact(req.user!._id.toString(), req.params.id);
+  const result = await deleteContact(req.user!._id.toString(), req.params.id);
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: "Contact not found" });
+    return;
+  }
   res.json({ success: true });
 });

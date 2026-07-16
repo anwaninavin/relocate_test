@@ -1,9 +1,9 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import { listActiveCollegeCategories } from "@/services/collegeCategoryService";
 
-export const collegeCategoriesRouter = Router();
+export const collegeCategoriesRouter = createAsyncRouter();
 
 collegeCategoriesRouter.use(requireAuth);
 

@@ -5,6 +5,7 @@ import { ChecklistItem } from "@/models/ChecklistItem";
 import { UserChecklist } from "@/models/UserChecklist";
 import type { DateRange } from "@/lib/dateRange";
 import { startOfDay } from "@/lib/dateRange";
+import { distinctValues } from "@/lib/distinctValues";
 
 /** Top-level business/conversion dashboard. This app has no purchase/checkout flow, so
  * "login to purchase %" is mapped to "login to activation %" — activation defined as adding
@@ -28,16 +29,26 @@ export async function getBusinessAnalytics(range: DateRange) {
     // operational write path.
     User.countDocuments().read("secondaryPreferred"),
     User.countDocuments({ createdAt: { $gte: today } }).read("secondaryPreferred"),
-    AnalyticsEvent.distinct("visitorId", match),
-    AnalyticsEvent.distinct("visitorId", { ...match, eventName: "registration_success" }),
-    AnalyticsEvent.distinct("userId", { ...match, eventName: "login_success", userId: { $ne: null } }),
-    ChecklistItem.distinct("userId", { createdAt: { $gte: range.start, $lte: range.end } }).read("secondaryPreferred"),
+    distinctValues(AnalyticsEvent, "visitorId", match),
+    distinctValues(AnalyticsEvent, "visitorId", { ...match, eventName: "registration_success" }),
+    distinctValues(AnalyticsEvent, "userId", { ...match, eventName: "login_success", userId: { $ne: null } }),
+    distinctValues(
+      ChecklistItem,
+      "userId",
+      { createdAt: { $gte: range.start, $lte: range.end } },
+      "secondaryPreferred",
+    ),
     // DB-driven (post-migration) users get their checklist auto-generated at onboarding —
     // same "added a checklist" activation signal as the legacy ChecklistItem row above.
-    UserChecklist.distinct("userId", { createdAt: { $gte: range.start, $lte: range.end } }).read("secondaryPreferred"),
+    distinctValues(
+      UserChecklist,
+      "userId",
+      { createdAt: { $gte: range.start, $lte: range.end } },
+      "secondaryPreferred",
+    ),
   ]);
 
-  const activeUserIds = await AnalyticsEvent.distinct("userId", { ...match, userId: { $ne: null } });
+  const activeUserIds = await distinctValues(AnalyticsEvent, "userId", { ...match, userId: { $ne: null } });
   const inactiveUsers = Math.max(0, registeredUsers - activeUserIds.length);
 
   const visitorToRegistrationRate =

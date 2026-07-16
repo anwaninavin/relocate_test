@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { profileUpdateSchema, notificationSettingsSchema } from "@/validations/profile";
 import { setNotificationPreference, updateProfile } from "@/services/userService";
 import { requireAuth } from "@/middleware/auth";
 import { toPlain } from "@/lib/serialize";
 
-export const profileRouter = Router();
+export const profileRouter = createAsyncRouter();
 
 profileRouter.use(requireAuth);
 

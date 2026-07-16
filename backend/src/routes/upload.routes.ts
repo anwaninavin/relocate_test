@@ -1,11 +1,11 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { uploadImageSchema, uploadFileSchema } from "@/validations/upload";
 import { uploadImage, uploadChatFile } from "@/services/uploadService";
 import { requireAuth } from "@/middleware/auth";
 import { checkRateLimit } from "@/lib/rateLimiter";
 
-export const uploadRouter = Router();
+export const uploadRouter = createAsyncRouter();
 
 uploadRouter.use(requireAuth);
 

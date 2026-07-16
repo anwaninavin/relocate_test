@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { documentItemSchema, documentItemUpdateSchema } from "@/validations/document";
 import {
@@ -9,7 +9,7 @@ import {
 } from "@/services/documentService";
 import { requireAuth } from "@/middleware/auth";
 
-export const documentsRouter = Router();
+export const documentsRouter = createAsyncRouter();
 
 documentsRouter.use(requireAuth);
 
@@ -35,10 +35,18 @@ documentsRouter.patch("/:id", async (req, res) => {
     return;
   }
   const document = await updateDocument(req.user!._id.toString(), parsed.data);
+  if (!document) {
+    res.status(404).json({ error: "Document not found" });
+    return;
+  }
   res.json({ document });
 });
 
 documentsRouter.delete("/:id", async (req, res) => {
-  await deleteDocument(req.user!._id.toString(), req.params.id);
+  const result = await deleteDocument(req.user!._id.toString(), req.params.id);
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: "Document not found" });
+    return;
+  }
   res.json({ success: true });
 });

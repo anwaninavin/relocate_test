@@ -15,6 +15,8 @@ const OtpVerificationSchema = new Schema(
 
 // TTL index: MongoDB deletes the doc once its own expiresAt value is in the past.
 OtpVerificationSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Matches the actual query shape in otpService.ts: findOne({mobile, purpose}).sort({createdAt:-1}).
+OtpVerificationSchema.index({ mobile: 1, purpose: 1, createdAt: -1 });
 
 export type OtpVerificationDocument = InferSchemaType<typeof OtpVerificationSchema>;
 

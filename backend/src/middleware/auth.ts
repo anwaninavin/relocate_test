@@ -27,7 +27,11 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const payload = verifyAuthToken(token);
     await connectDB();
     const user = await User.findById(payload.sub);
-    if (!user) {
+    // A missing `tv` claim (tokens signed before tokenVersion existed) is treated as 0, matching
+    // the field's default — this is what lets already-issued tokens keep working after deploy.
+    // A PIN reset/regenerate bumps User.tokenVersion, which immediately invalidates every token
+    // signed before that point, without waiting for the token's own 30-day expiry.
+    if (!user || (payload.tv ?? 0) !== (user.tokenVersion ?? 0)) {
       res.status(401).json({ error: "Not authenticated" });
       return;
     }
@@ -54,7 +58,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
     const payload = verifyAuthToken(token);
     await connectDB();
     const user = await User.findById(payload.sub);
-    if (user) req.user = user;
+    if (user && (payload.tv ?? 0) === (user.tokenVersion ?? 0)) req.user = user;
   } catch {
     // Invalid/expired token on a public endpoint — just proceed anonymously.
   }

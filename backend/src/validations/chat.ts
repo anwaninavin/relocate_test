@@ -26,6 +26,10 @@ export const reactSchema = z.object({
   emoji: z.string().trim().min(1).max(8),
 });
 
+export const pinMessageSchema = z.object({
+  pinned: z.boolean(),
+});
+
 export const listMessagesQuerySchema = z.object({
   before: z.string().trim().optional(),
   limit: z.coerce.number().int().min(1).max(100).optional().default(30),
@@ -34,6 +38,10 @@ export const listMessagesQuerySchema = z.object({
 export const createConversationSchema = z.object({
   memberIds: z.array(z.string().trim().min(1)).min(1).max(50),
   name: z.string().trim().max(80).optional(),
+});
+
+export const createDirectConversationSchema = z.object({
+  userId: z.string().trim().min(1),
 });
 
 export const searchMessagesQuerySchema = z.object({

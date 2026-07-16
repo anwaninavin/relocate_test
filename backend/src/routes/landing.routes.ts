@@ -1,8 +1,8 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { getLandingDesign } from "@/services/landingDesignService";
 
-export const landingRouter = Router();
+export const landingRouter = createAsyncRouter();
 
 // Public — the home screen is shown to signed-out visitors, so this must not require auth.
 // No caching: this changes whenever an admin saves the Home Screen editor, and a stale

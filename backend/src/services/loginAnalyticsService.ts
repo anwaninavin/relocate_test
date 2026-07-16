@@ -3,6 +3,7 @@ import { AnalyticsEvent } from "@/models/AnalyticsEvent";
 import { User } from "@/models/User";
 import type { DateRange } from "@/lib/dateRange";
 import { daysAgo, startOfMonth, startOfWeek } from "@/lib/dateRange";
+import { distinctValues } from "@/lib/distinctValues";
 
 export async function getLoginAnalytics(range: DateRange) {
   await connectDB();
@@ -30,13 +31,13 @@ export async function getLoginAnalytics(range: DateRange) {
 
   const now = new Date();
   const [dau, wau, mau, totalRegistered] = await Promise.all([
-    AnalyticsEvent.distinct("userId", { eventName: "login_success", timestamp: { $gte: daysAgo(1, now) }, userId: { $ne: null } }),
-    AnalyticsEvent.distinct("userId", { eventName: "login_success", timestamp: { $gte: startOfWeek(now) }, userId: { $ne: null } }),
-    AnalyticsEvent.distinct("userId", { eventName: "login_success", timestamp: { $gte: startOfMonth(now) }, userId: { $ne: null } }),
+    distinctValues(AnalyticsEvent, "userId", { eventName: "login_success", timestamp: { $gte: daysAgo(1, now) }, userId: { $ne: null } }),
+    distinctValues(AnalyticsEvent, "userId", { eventName: "login_success", timestamp: { $gte: startOfWeek(now) }, userId: { $ne: null } }),
+    distinctValues(AnalyticsEvent, "userId", { eventName: "login_success", timestamp: { $gte: startOfMonth(now) }, userId: { $ne: null } }),
     User.countDocuments(),
   ]);
 
-  const recentlyLoggedInUserIds = await AnalyticsEvent.distinct("userId", {
+  const recentlyLoggedInUserIds = await distinctValues(AnalyticsEvent, "userId", {
     eventName: "login_success",
     timestamp: { $gte: daysAgo(30, now) },
     userId: { $ne: null },

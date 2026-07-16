@@ -1,6 +1,7 @@
 import { connectDB } from "@/db";
 import { AnalyticsEvent } from "@/models/AnalyticsEvent";
 import type { DateRange } from "@/lib/dateRange";
+import { distinctValues } from "@/lib/distinctValues";
 
 /**
  * The funnel as actually implemented by this app's real registration flow (not the generic
@@ -89,7 +90,7 @@ export async function getRegistrationFunnel(range: DateRange) {
   const OTP_TIMEOUT_MS = 10 * 60 * 1000; // matches otpService.OTP_TTL_MS
   let otpTimeoutCount = 0;
   const otpFailedVisitors = new Set(
-    await AnalyticsEvent.distinct("visitorId", {
+    await distinctValues(AnalyticsEvent, "visitorId", {
       eventName: "otp_failed",
       "metadata.purpose": "register",
       timestamp: { $gte: range.start, $lte: range.end },

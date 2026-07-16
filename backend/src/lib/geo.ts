@@ -3,7 +3,9 @@ import crypto from "node:crypto";
 import geoip from "geoip-lite";
 import type { Request } from "express";
 
-const IP_HASH_SALT = process.env.IP_HASH_SALT || "pack-with-me-analytics";
+// No hardcoded fallback — assertRequiredEnv() (called at process startup, see index.ts)
+// guarantees this is set before any request handler can reach hashIp().
+const IP_HASH_SALT = process.env.IP_HASH_SALT as string;
 
 /** One-way, salted hash of an IP — never store or log the raw address. Deterministic per IP
  * so repeat visits from the same address can still be correlated without recovering it. */

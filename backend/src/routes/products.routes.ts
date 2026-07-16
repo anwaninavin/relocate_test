@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 import { z } from "zod";
 
 import { DEFAULT_CHECKLIST_CATEGORIES } from "@/types";
 import { getProductById, listProducts } from "@/services/productService";
 
-export const productsRouter = Router();
+export const productsRouter = createAsyncRouter();
 
 const productsQuerySchema = z.object({
   category: z.enum(DEFAULT_CHECKLIST_CATEGORIES).optional(),

@@ -7,6 +7,7 @@ import helmet from "helmet";
 import mongoose from "mongoose";
 import rateLimit from "express-rate-limit";
 
+import { assertRequiredEnv } from "@/lib/env";
 import { connectDB } from "@/db";
 import { ensureCitiesSeeded } from "@/services/cityService";
 import { ensureGlobalCommunitiesSeeded } from "@/services/communityService";
@@ -47,6 +48,22 @@ import { conversationsRouter } from "@/routes/conversations.routes";
 import { moderationRouter } from "@/routes/moderation.routes";
 import { usersRouter } from "@/routes/users.routes";
 
+// Last-resort safety net: every route handler in this app is now wrapped by createAsyncRouter
+// (see lib/asyncRouter.ts) so rejected promises reach the error middleware instead of becoming
+// unhandled rejections — but this still guards against anything outside that path (a timer
+// callback, a socket handler, a future call site that bypasses the wrapper) so a stray error
+// logs instead of silently crashing the whole process for every connected user.
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection:", reason);
+});
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught exception:", error);
+});
+
+// Fail loud and fast if a required secret is missing, instead of booting successfully,
+// passing health checks, and only failing confusingly on the first request that touches it.
+assertRequiredEnv();
+
 const app = express();
 
 // Render puts one reverse proxy in front of this service, so req.ip (and express-rate-limit's
@@ -74,23 +91,46 @@ const allowedOrigins = (process.env.CORS_ORIGIN ?? "")
   .map((origin) => origin.trim())
   .filter(Boolean);
 
+const isProduction = process.env.NODE_ENV === "production";
+
+// An empty CORS_ORIGIN must fail CLOSED in production (deny cross-origin requests until it's
+// set) rather than fail OPEN (allow every origin) — a missing env var should never silently
+// become "any website can call this API with credentials". Local dev keeps the permissive
+// fallback so `npm run dev` works without needing CORS_ORIGIN set at all.
+if (isProduction && allowedOrigins.length === 0) {
+  console.error(
+    "WARNING: CORS_ORIGIN is not set in production. Cross-origin requests (including from " +
+      "the deployed frontend) will be BLOCKED until this env var is configured on Render. " +
+      "Set it to your frontend's exact URL, e.g. https://your-frontend.vercel.app",
+  );
+}
+
 // Vercel deploys a brand-new preview URL for every branch/PR push (hostel-jsk8-git-<branch>-
 // <team>.vercel.app, plus a random-hash variant per deployment) — there's no way to keep a
 // static CORS_ORIGIN env var in sync with those, so any preview of this specific Vercel project
 // is allowed in addition to the explicit allowlist. Without this, every API call from a preview
 // deploy (registration, onboarding, checklist, everything) fails with a CORS error.
+//
+// KNOWN RESIDUAL RISK (audit-report/08-Security.md F-SEC-01): this regex matches ANY Vercel
+// project named `hostel-jsk8*`, not just yours — someone could register their own Vercel
+// project under that prefix and get CORS-trusted. Tightening it to
+// `^https:\/\/hostel-jsk8(-git-[a-z0-9-]+)?-<YOUR-VERCEL-TEAM-SLUG>\.vercel\.app$` closes this,
+// but requires your actual Vercel team slug (Vercel dashboard → Settings → General) — left
+// as-is here rather than guessed, since a wrong slug would silently break every preview deploy.
 const VERCEL_PREVIEW_ORIGIN = /^https:\/\/hostel-jsk8(-[a-z0-9-]+)?\.vercel\.app$/;
 
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow same-origin/non-browser requests (no Origin header) and any configured origin.
-      if (
-        !origin ||
-        allowedOrigins.length === 0 ||
-        allowedOrigins.includes(origin) ||
-        VERCEL_PREVIEW_ORIGIN.test(origin)
-      ) {
+      // Allow same-origin/non-browser requests (no Origin header) always. In non-production,
+      // also allow everything when CORS_ORIGIN isn't set, matching the previous dev-friendly
+      // behavior. In production, an empty allowlist means "allow nothing cross-origin" — see
+      // the startup warning above.
+      if (!origin || (!isProduction && allowedOrigins.length === 0)) {
+        callback(null, true);
+        return;
+      }
+      if (allowedOrigins.includes(origin) || VERCEL_PREVIEW_ORIGIN.test(origin)) {
         callback(null, true);
         return;
       }
@@ -99,17 +139,27 @@ app.use(
     credentials: true,
   }),
 );
-// Raised from Express's 100kb default: the admin home-screen editor saves uploaded
-// stickers inline as base64 data URIs, which can be a few MB per save.
 // `verify` stashes the raw request bytes on `req.rawBody` — needed by the Metabsp
 // webhook to check its HMAC signature against the exact bytes that were signed,
 // since re-serializing the parsed JSON is not guaranteed to be byte-identical.
+function rawBodyVerify(req: express.Request, _res: express.Response, buf: Buffer) {
+  (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
+}
+
+// validations/upload.ts's uploadFileSchema allows chat file attachments up to 25MB — mount a
+// larger-limit parser scoped to just this path ahead of the general one below, so those
+// requests aren't rejected by the smaller default before Zod even gets to validate them.
+app.use(
+  "/api/uploads",
+  express.json({ limit: "30mb", verify: rawBodyVerify }),
+);
+
+// Raised from Express's 100kb default: the admin home-screen editor saves uploaded
+// stickers inline as base64 data URIs, which can be a few MB per save.
 app.use(
   express.json({
     limit: "10mb",
-    verify: (req, _res, buf) => {
-      (req as express.Request & { rawBody?: Buffer }).rawBody = buf;
-    },
+    verify: rawBodyVerify,
   }),
 );
 

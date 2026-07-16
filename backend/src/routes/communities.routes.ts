@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import {
@@ -19,12 +19,13 @@ import {
   createChannelSchema,
   createCommunitySchema,
   listCommunitiesQuerySchema,
+  moderateMemberSchema,
   updateMemberRoleSchema,
 } from "@/validations/community";
 import { checkRateLimit } from "@/lib/rateLimiter";
 import type { CommunityRole } from "@/types";
 
-export const communitiesRouter = Router();
+export const communitiesRouter = createAsyncRouter();
 
 communitiesRouter.use(requireAuth);
 
@@ -116,12 +117,17 @@ communitiesRouter.patch("/:id/members/:userId/role", async (req, res) => {
 });
 
 communitiesRouter.patch("/:id/members/:userId/moderation", async (req, res) => {
+  const parsed = moderateMemberSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
   const actorMembership = await getMembership(req.user!._id.toString(), req.params.id);
   const result = await setMemberModeration(
     (actorMembership?.role ?? "member") as CommunityRole,
     req.params.id,
     req.params.userId,
-    { muted: req.body.muted, banned: req.body.banned },
+    parsed.data,
   );
   if (!result.success) {
     res.status(403).json({ error: result.error });

@@ -20,9 +20,12 @@ export async function createDirectoryContact(userId: string, input: DirectoryCon
 
 export async function reportDirectoryContact(userId: string, contactId: string, reason: string) {
   await connectDB();
+  // $slice caps the embedded array at the most recent 100 reports — nothing else bounds how
+  // many times this can be called against one contact, and an unbounded embedded array is a
+  // (small but real) path toward a pathologically large document.
   const contact = await DirectoryContact.findByIdAndUpdate(
     contactId,
-    { $push: { reports: { userId, reason, createdAt: new Date() } } },
+    { $push: { reports: { $each: [{ userId, reason, createdAt: new Date() }], $slice: -100 } } },
     { returnDocument: "after" },
   ).lean();
   if (!contact) return { success: false as const, error: "Contact not found" };

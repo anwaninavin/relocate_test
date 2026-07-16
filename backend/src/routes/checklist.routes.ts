@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import {
   bulkActionSchema,
@@ -21,7 +21,7 @@ import {
 } from "@/services/checklistService";
 import { requireAuth } from "@/middleware/auth";
 
-export const checklistRouter = Router();
+export const checklistRouter = createAsyncRouter();
 
 checklistRouter.use(requireAuth);
 

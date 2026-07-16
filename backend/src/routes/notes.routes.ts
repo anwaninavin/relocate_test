@@ -1,10 +1,10 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { noteSchema, noteUpdateSchema } from "@/validations/note";
 import { createNote, deleteNote, listNotes, updateNote } from "@/services/noteService";
 import { requireAuth } from "@/middleware/auth";
 
-export const notesRouter = Router();
+export const notesRouter = createAsyncRouter();
 
 notesRouter.use(requireAuth);
 
@@ -30,10 +30,18 @@ notesRouter.patch("/:id", async (req, res) => {
     return;
   }
   const note = await updateNote(req.user!._id.toString(), parsed.data);
+  if (!note) {
+    res.status(404).json({ error: "Note not found" });
+    return;
+  }
   res.json({ note });
 });
 
 notesRouter.delete("/:id", async (req, res) => {
-  await deleteNote(req.user!._id.toString(), req.params.id);
+  const result = await deleteNote(req.user!._id.toString(), req.params.id);
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: "Note not found" });
+    return;
+  }
   res.json({ success: true });
 });

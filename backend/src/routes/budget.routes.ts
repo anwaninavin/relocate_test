@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { budgetEntrySchema, budgetEntryUpdateSchema } from "@/validations/budget";
 import {
@@ -10,7 +10,7 @@ import {
 } from "@/services/budgetService";
 import { requireAuth } from "@/middleware/auth";
 
-export const budgetRouter = Router();
+export const budgetRouter = createAsyncRouter();
 
 budgetRouter.use(requireAuth);
 
@@ -41,10 +41,18 @@ budgetRouter.patch("/:id", async (req, res) => {
     return;
   }
   const entry = await updateBudgetEntry(req.user!._id.toString(), parsed.data);
+  if (!entry) {
+    res.status(404).json({ error: "Budget entry not found" });
+    return;
+  }
   res.json({ entry });
 });
 
 budgetRouter.delete("/:id", async (req, res) => {
-  await deleteBudgetEntry(req.user!._id.toString(), req.params.id);
+  const result = await deleteBudgetEntry(req.user!._id.toString(), req.params.id);
+  if (result.deletedCount === 0) {
+    res.status(404).json({ error: "Budget entry not found" });
+    return;
+  }
   res.json({ success: true });
 });

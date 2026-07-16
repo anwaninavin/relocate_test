@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { createAsyncRouter } from "@/lib/asyncRouter";
 
 import { requireAuth } from "@/middleware/auth";
 import {
@@ -13,7 +13,7 @@ import {
 } from "@/services/bookingService";
 import { createBookingSchema, updateBookingSchema } from "@/validations/bookings";
 
-export const bookingsRouter = Router();
+export const bookingsRouter = createAsyncRouter();
 
 bookingsRouter.use(requireAuth);
 

@@ -32,6 +32,13 @@ export async function getPageLoadStats(range: DateRange) {
   };
 }
 
+// Transition/path counting below needs each session's ordered page sequence in Node (it's a
+// pairwise "what came after what" computation, not a simple grouped sum) — bounded the same
+// way checklistAnalyticsService's $sample-based cohort stat is: an exact answer over a capped
+// sample rather than an exact answer over an unbounded scan, so a wide date range can't pull
+// millions of raw rows into one process's memory.
+const MAX_PAGE_VIEW_SAMPLE = 50_000;
+
 /** Navigation flow: page-to-page transition counts (edges for a flow diagram), the most
  * common short journeys (first 4 pages of a session), and first/last page a visitor is ever
  * seen on within the range. */
@@ -44,6 +51,7 @@ export async function getNavigationFlow(range: DateRange) {
   })
     .select("sessionId page timestamp")
     .sort({ sessionId: 1, timestamp: 1 })
+    .limit(MAX_PAGE_VIEW_SAMPLE)
     .lean();
 
   const sessions = new Map<string, string[]>();
