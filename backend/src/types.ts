@@ -206,6 +206,13 @@ export type CommunityVisibility = (typeof COMMUNITY_VISIBILITY)[number];
 export const COMMUNITY_ROLES = ["owner", "admin", "moderator", "verified", "member", "guest"] as const;
 export type CommunityRole = (typeof COMMUNITY_ROLES)[number];
 
+/** "pending" communities were auto-created for a city/college/campus/course that had no
+ * community yet — they're joinable by the student who triggered the auto-create, but hidden
+ * from discovery for everyone else until a site admin approves them. "suspended" is a site-admin
+ * action on a misbehaving community, distinct from a hard delete (see Community.active). */
+export const COMMUNITY_STATUS = ["pending", "approved", "suspended"] as const;
+export type CommunityStatus = (typeof COMMUNITY_STATUS)[number];
+
 export const CHANNEL_TYPES = ["text", "announcement"] as const;
 export type ChannelType = (typeof CHANNEL_TYPES)[number];
 

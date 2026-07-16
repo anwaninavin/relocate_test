@@ -83,6 +83,28 @@ import {
   defaultChecklistItemSchema,
   defaultChecklistItemUpdateSchema,
 } from "@/validations/checklistAdmin";
+import {
+  adminAddMemberByMobile,
+  adminBulkAddMembers,
+  adminDeleteCommunity,
+  adminRestoreCommunity,
+  adminSetCommunityStatus,
+  adminUpdateCommunity,
+  listAllCommunitiesForAdmin,
+  listMembers,
+  removeMember,
+  setMemberModeration,
+  updateMemberRole,
+} from "@/services/communityService";
+import {
+  adminAddMemberSchema,
+  adminBulkAddMembersSchema,
+  adminListCommunitiesQuerySchema,
+  adminUpdateCommunitySchema,
+  moderateMemberSchema,
+  updateMemberRoleSchema,
+} from "@/validations/community";
+import type { CommunityRole } from "@/types";
 
 export const adminRouter = createAsyncRouter();
 
@@ -613,5 +635,143 @@ adminRouter.get("/temp-users", async (_req, res) => {
 
 adminRouter.delete("/temp-users/:id", async (req, res) => {
   await deleteTempUserById(req.params.id);
+  res.json({ success: true });
+});
+
+// --- Communities ---
+// A site admin manages every community — admin-created or student-created, already existing or
+// brand new — the same way its owner would: approve/suspend/delete it, edit its details, and
+// add/edit/remove its members. See communityService.ts's "Site-admin management" section.
+
+adminRouter.get("/communities", async (req, res) => {
+  const parsed = adminListCommunitiesQuerySchema.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid query" });
+    return;
+  }
+  const result = await listAllCommunitiesForAdmin(parsed.data);
+  res.json(result);
+});
+
+adminRouter.patch("/communities/:id", async (req, res) => {
+  const parsed = adminUpdateCommunitySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const result = await adminUpdateCommunity(req.params.id, parsed.data);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ community: result.community });
+});
+
+adminRouter.post("/communities/:id/approve", async (req, res) => {
+  const result = await adminSetCommunityStatus(req.params.id, "approved");
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ community: result.community });
+});
+
+adminRouter.post("/communities/:id/suspend", async (req, res) => {
+  const result = await adminSetCommunityStatus(req.params.id, "suspended");
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ community: result.community });
+});
+
+adminRouter.delete("/communities/:id", async (req, res) => {
+  const result = await adminDeleteCommunity(req.params.id);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ success: true });
+});
+
+adminRouter.post("/communities/:id/restore", async (req, res) => {
+  const result = await adminRestoreCommunity(req.params.id);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ community: result.community });
+});
+
+adminRouter.get("/communities/:id/members", async (req, res) => {
+  const page = Number(req.query.page ?? 1) || 1;
+  const pageSize = Math.min(Number(req.query.pageSize ?? 30) || 30, 100);
+  const result = await listMembers(req.params.id, page, pageSize);
+  res.json(result);
+});
+
+adminRouter.post("/communities/:id/members", async (req, res) => {
+  const parsed = adminAddMemberSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const result = await adminAddMemberByMobile(req.params.id, parsed.data.mobile, parsed.data.role);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ membership: result.membership });
+});
+
+adminRouter.post("/communities/:id/members/bulk-add", async (req, res) => {
+  const parsed = adminBulkAddMembersSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const { role, ...filter } = parsed.data;
+  const result = await adminBulkAddMembers(req.params.id, filter, role);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ matched: result.matched, added: result.added });
+});
+
+adminRouter.patch("/communities/:id/members/:userId/role", async (req, res) => {
+  const parsed = updateMemberRoleSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const result = await updateMemberRole("owner" as CommunityRole, req.params.id, req.params.userId, parsed.data.role, true);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ membership: result.membership });
+});
+
+adminRouter.patch("/communities/:id/members/:userId/moderation", async (req, res) => {
+  const parsed = moderateMemberSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const result = await setMemberModeration("owner" as CommunityRole, req.params.id, req.params.userId, parsed.data, true);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
+  res.json({ membership: result.membership });
+});
+
+adminRouter.delete("/communities/:id/members/:userId", async (req, res) => {
+  const result = await removeMember("owner" as CommunityRole, req.params.id, req.params.userId, true);
+  if (!result.success) {
+    res.status(400).json({ error: result.error });
+    return;
+  }
   res.json({ success: true });
 });

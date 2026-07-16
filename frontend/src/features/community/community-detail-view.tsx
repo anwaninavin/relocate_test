@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { ChatWindow } from "@/features/community/chat-window";
 import { MembersPanel } from "@/features/community/members-panel";
 import { getCommunity, createChannel } from "@/features/community/community-api";
+import { useAuth } from "@/context/auth-context";
 import { ApiError } from "@/lib/api";
 import type { ChannelDTO, CommunityDTO, CommunityRole } from "@/types";
 
@@ -59,6 +60,8 @@ function NewChannelDialog({ communityId, onCreated }: { communityId: string; onC
 }
 
 export function CommunityDetailView() {
+  const { user } = useAuth();
+  const isSiteAdmin = user?.role === "admin";
   const { slug } = useParams<{ slug: string }>();
   const [community, setCommunity] = useState<CommunityDTO | null>(null);
   const [myRole, setMyRole] = useState<CommunityRole | null>(null);
@@ -87,7 +90,9 @@ export function CommunityDetailView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]);
 
-  const canModerate = Boolean(myRole && ["owner", "admin", "moderator"].includes(myRole));
+  // Site admins get full moderation power on every community, not just the ones they've
+  // joined or created — mirrors the backend's isSiteAdmin bypass on the member routes.
+  const canModerate = isSiteAdmin || Boolean(myRole && ["owner", "admin", "moderator"].includes(myRole));
   const activeChannel = channels.find((c) => c._id === activeChannelId) ?? null;
 
   if (loading) {
@@ -120,7 +125,7 @@ export function CommunityDetailView() {
             <SheetHeader>
               <SheetTitle>Members</SheetTitle>
             </SheetHeader>
-            <MembersPanel communityId={community._id} canModerate={canModerate} />
+            <MembersPanel communityId={community._id} canModerate={canModerate} isSiteAdmin={isSiteAdmin} />
           </SheetContent>
         </Sheet>
       </div>
@@ -159,10 +164,16 @@ export function CommunityDetailView() {
         </div>
       )}
 
-      {myRole && (
+      {myRole ? (
         <Badge variant="secondary" className="w-fit capitalize">
           Your role: {myRole}
         </Badge>
+      ) : (
+        isSiteAdmin && (
+          <Badge variant="accent" className="w-fit">
+            Managing as site admin
+          </Badge>
+        )
       )}
     </div>
   );

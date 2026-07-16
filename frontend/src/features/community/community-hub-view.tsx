@@ -1,19 +1,23 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Search, Users2 } from "lucide-react";
+import { Search, ShieldCheck, Users2 } from "lucide-react";
 
 import { PageHeader } from "@/components/shared/page-header";
 import { EmptyState } from "@/components/shared/empty-state";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CommunityCard } from "@/features/community/community-card";
 import { CreateCommunityDialog } from "@/features/community/create-community-dialog";
 import { discoverCommunities, joinCommunity, leaveCommunity, listMyCommunities } from "@/features/community/community-api";
+import { useAuth } from "@/context/auth-context";
 import { ApiError } from "@/lib/api";
 import type { CommunityDTO } from "@/types";
 
 export function CommunityHubView() {
+  const { user } = useAuth();
   const [mine, setMine] = useState<CommunityDTO[]>([]);
   const [discover, setDiscover] = useState<CommunityDTO[]>([]);
   const [loadingMine, setLoadingMine] = useState(true);
@@ -77,7 +81,18 @@ export function CommunityHubView() {
       <PageHeader
         title="Community"
         description="Connect with students from your college, course, city, and interests"
-        action={<CreateCommunityDialog />}
+        action={
+          <div className="flex gap-2">
+            {user?.role === "admin" && (
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/admin/communities">
+                  <ShieldCheck className="size-4" /> Manage all
+                </Link>
+              </Button>
+            )}
+            <CreateCommunityDialog />
+          </div>
+        }
       />
 
       <Tabs defaultValue="mine">

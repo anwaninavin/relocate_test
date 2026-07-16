@@ -1,6 +1,6 @@
 import { Schema, model, models, type InferSchemaType, type Model } from "mongoose";
 
-import { COMMUNITY_ROLES, COMMUNITY_TYPES, COMMUNITY_VISIBILITY } from "@/types";
+import { COMMUNITY_ROLES, COMMUNITY_STATUS, COMMUNITY_TYPES, COMMUNITY_VISIBILITY } from "@/types";
 
 /** A community node in the Country > State > City > College > Campus > Course > Year hierarchy,
  * plus flat categories (marketplace/events/lost_found/interest/custom). Nothing here is
@@ -31,6 +31,9 @@ const CommunitySchema = new Schema(
     createdBy: { type: Schema.Types.ObjectId, ref: "User", default: null },
     defaultRole: { type: String, enum: COMMUNITY_ROLES, default: "member" },
     active: { type: Boolean, default: true, index: true },
+    /** Site-admin approval state. Missing on documents created before this field existed —
+     * always treat that the same as "approved" (they were already live), never as "pending". */
+    status: { type: String, enum: COMMUNITY_STATUS, default: "approved", index: true },
   },
   { timestamps: true },
 );
