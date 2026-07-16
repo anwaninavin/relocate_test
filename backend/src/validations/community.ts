@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { COMMUNITY_VISIBILITY } from "@/types";
+import { COMMUNITY_ROLES, COMMUNITY_STATUS, COMMUNITY_VISIBILITY } from "@/types";
 
 export const createCommunitySchema = z.object({
   name: z.string().trim().min(3, "Name is too short").max(120),
@@ -48,4 +48,36 @@ export const publicProfileUpdateSchema = z.object({
   interests: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
   campus: z.string().trim().max(120).optional().nullable(),
   year: z.string().trim().max(20).optional().nullable(),
+});
+
+// --- Site-admin community management -------------------------------------------------------
+
+export const adminListCommunitiesQuerySchema = z.object({
+  status: z.enum(COMMUNITY_STATUS).optional(),
+  q: z.string().trim().max(120).optional(),
+  page: z.coerce.number().int().min(1).optional().default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).optional().default(20),
+});
+
+export const adminUpdateCommunitySchema = z.object({
+  name: z.string().trim().min(3, "Name is too short").max(120).optional(),
+  description: z.string().trim().max(500).optional(),
+  icon: z.string().trim().max(8).optional().nullable(),
+  visibility: z.enum(COMMUNITY_VISIBILITY).optional(),
+  allowAnonymous: z.boolean().optional(),
+  isOfficial: z.boolean().optional(),
+});
+
+export const adminAddMemberSchema = z.object({
+  mobile: z.string().trim().min(1, "Mobile number is required"),
+  role: z.enum(COMMUNITY_ROLES).optional(),
+});
+
+export const adminBulkAddMembersSchema = z.object({
+  city: z.string().trim().max(80).optional(),
+  college: z.string().trim().max(120).optional(),
+  campus: z.string().trim().max(120).optional(),
+  courseId: z.string().trim().optional(),
+  all: z.boolean().optional(),
+  role: z.enum(COMMUNITY_ROLES).optional(),
 });

@@ -175,6 +175,7 @@ export type CommunityType =
 
 export type CommunityVisibility = "public" | "private" | "invite_only";
 export type CommunityRole = "owner" | "admin" | "moderator" | "verified" | "member" | "guest";
+export type CommunityStatus = "pending" | "approved" | "suspended";
 export type MessageScopeType = "channel" | "conversation";
 export type AttachmentType = "image" | "video" | "audio" | "document";
 
@@ -214,6 +215,9 @@ export interface CommunityDTO {
   isOfficial: boolean;
   allowAnonymous: boolean;
   memberCount: number;
+  status?: CommunityStatus;
+  active?: boolean;
+  createdAt?: string;
   myRole?: CommunityRole;
   joined?: boolean;
 }

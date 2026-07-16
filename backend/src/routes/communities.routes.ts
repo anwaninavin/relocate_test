@@ -11,6 +11,7 @@ import {
   leaveCommunity,
   listMembers,
   listMyCommunities,
+  removeMember,
   setMemberModeration,
   updateMemberRole,
 } from "@/services/communityService";
@@ -65,9 +66,14 @@ communitiesRouter.get("/:slug", async (req, res) => {
     return;
   }
   const membership = await getMembership(req.user!._id.toString(), community._id.toString());
+  const isSiteAdmin = req.user!.role === "admin";
   // Private/invite-only communities don't leak their existence (channel names, description)
   // to non-members — only a public community, or one you're already a member of, is visible.
-  if (community.visibility !== "public" && !membership) {
+  // Same idea for a "pending" (awaiting approval) or "suspended" community: the member who
+  // triggered its auto-creation (or was added by an admin) can still reach it, everyone else
+  // gets a 404 until a site admin approves it. Site admins can always see through both checks.
+  const hiddenStatus = Boolean(community.status && community.status !== "approved");
+  if (!isSiteAdmin && !membership && (community.visibility !== "public" || hiddenStatus)) {
     res.status(404).json({ error: "Community not found" });
     return;
   }
@@ -108,6 +114,7 @@ communitiesRouter.patch("/:id/members/:userId/role", async (req, res) => {
     req.params.id,
     req.params.userId,
     parsed.data.role,
+    req.user!.role === "admin",
   );
   if (!result.success) {
     res.status(403).json({ error: result.error });
@@ -128,12 +135,28 @@ communitiesRouter.patch("/:id/members/:userId/moderation", async (req, res) => {
     req.params.id,
     req.params.userId,
     parsed.data,
+    req.user!.role === "admin",
   );
   if (!result.success) {
     res.status(403).json({ error: result.error });
     return;
   }
   res.json({ membership: result.membership });
+});
+
+communitiesRouter.delete("/:id/members/:userId", async (req, res) => {
+  const actorMembership = await getMembership(req.user!._id.toString(), req.params.id);
+  const result = await removeMember(
+    (actorMembership?.role ?? "member") as CommunityRole,
+    req.params.id,
+    req.params.userId,
+    req.user!.role === "admin",
+  );
+  if (!result.success) {
+    res.status(403).json({ error: result.error });
+    return;
+  }
+  res.json({ success: true });
 });
 
 communitiesRouter.get("/:id/channels", async (req, res) => {

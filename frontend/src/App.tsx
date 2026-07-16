@@ -51,6 +51,7 @@ const AdminNavPage = lazy(() => import("@/pages/admin-nav-page"));
 const AdminHomeCardsPage = lazy(() => import("@/pages/admin-home-cards-page"));
 const AdminHomeScreenPage = lazy(() => import("@/pages/admin-home-screen-page"));
 const AdminCitiesPage = lazy(() => import("@/pages/admin-cities-page"));
+const AdminCommunitiesPage = lazy(() => import("@/pages/admin-communities-page"));
 const AdminPlacesPage = lazy(() => import("@/pages/admin-places-page"));
 const AdminContactsPage = lazy(() => import("@/pages/admin-contacts-page"));
 const AdminCollegeCategoriesPage = lazy(() => import("@/pages/admin-college-categories-page"));
@@ -235,6 +236,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminCitiesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/communities"
+              element={
+                <AdminRoute>
+                  <AdminCommunitiesPage />
                 </AdminRoute>
               }
             />

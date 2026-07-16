@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { MoreVertical } from "lucide-react";
-import { listMembers, setMemberModeration, updateMemberRole } from "@/features/community/community-api";
+import { listMembers, removeMember, setMemberModeration, updateMemberRole } from "@/features/community/community-api";
 import { ApiError } from "@/lib/api";
 import type { CommunityRole, PublicUserDTO } from "@/types";
 
@@ -25,7 +25,15 @@ interface MemberRow {
 
 const ASSIGNABLE_ROLES: CommunityRole[] = ["admin", "moderator", "verified", "member"];
 
-export function MembersPanel({ communityId, canModerate }: { communityId: string; canModerate: boolean }) {
+export function MembersPanel({
+  communityId,
+  canModerate,
+  isSiteAdmin = false,
+}: {
+  communityId: string;
+  canModerate: boolean;
+  isSiteAdmin?: boolean;
+}) {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -64,6 +72,15 @@ export function MembersPanel({ communityId, canModerate }: { communityId: string
     }
   }
 
+  async function handleRemove(userId: string) {
+    try {
+      await removeMember(communityId, userId);
+      fetchMembers();
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to remove member");
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex flex-col gap-2">
@@ -89,7 +106,7 @@ export function MembersPanel({ communityId, canModerate }: { communityId: string
           <Badge variant={m.role === "owner" ? "accent" : "outline"} className="capitalize">
             {m.role}
           </Badge>
-          {canModerate && m.role !== "owner" && (
+          {canModerate && (m.role !== "owner" || isSiteAdmin) && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon" className="size-7" aria-label="Member actions">
@@ -97,16 +114,25 @@ export function MembersPanel({ communityId, canModerate }: { communityId: string
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {ASSIGNABLE_ROLES.map((role) => (
-                  <DropdownMenuItem key={role} onClick={() => handleRoleChange(m.userId.id, role)}>
-                    Make {role}
-                  </DropdownMenuItem>
-                ))}
-                <DropdownMenuItem onClick={() => handleModeration(m.userId.id, { muted: !m.muted })}>
-                  {m.muted ? "Unmute" : "Mute"}
-                </DropdownMenuItem>
-                <DropdownMenuItem variant="destructive" onClick={() => handleModeration(m.userId.id, { banned: !m.banned })}>
-                  {m.banned ? "Unban" : "Ban"}
+                {m.role !== "owner" && (
+                  <>
+                    {ASSIGNABLE_ROLES.map((role) => (
+                      <DropdownMenuItem key={role} onClick={() => handleRoleChange(m.userId.id, role)}>
+                        Make {role}
+                      </DropdownMenuItem>
+                    ))}
+                    <DropdownMenuItem onClick={() => handleModeration(m.userId.id, { muted: !m.muted })}>
+                      {m.muted ? "Unmute" : "Mute"}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem variant="destructive" onClick={() => handleModeration(m.userId.id, { banned: !m.banned })}>
+                      {m.banned ? "Unban" : "Ban"}
+                    </DropdownMenuItem>
+                  </>
+                )}
+                {/* Removing the owner outright is the one thing only a site admin can do —
+                    a regular owner/moderator can't reach this menu item for an owner row at all. */}
+                <DropdownMenuItem variant="destructive" onClick={() => handleRemove(m.userId.id)}>
+                  Remove from community
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
