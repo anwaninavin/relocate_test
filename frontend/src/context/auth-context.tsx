@@ -11,8 +11,12 @@ import { toast } from "sonner";
 
 import { api, ApiError, setAuthToken, getAuthToken } from "@/lib/api";
 import { subscribeUnauthorized } from "@/lib/auth-events";
-import { disconnectSocket } from "@/lib/socket";
 import type { Gender, UserDTO } from "@/types";
+
+// Dynamic: lib/socket pulls in socket.io-client, which only ever connects from lazy-loaded
+// chat/community routes. A static import here would ship that whole transport stack in the
+// main bundle for every visitor, including anonymous users who only see the login screen.
+const disconnectSocket = () => import("@/lib/socket").then((m) => m.disconnectSocket());
 
 interface OnboardingInput {
   name: string;
