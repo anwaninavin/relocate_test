@@ -194,7 +194,7 @@ export function SurvivalGuideView() {
 
         <Pasted rotate={-1.5} delay={0.25} className="relative mx-auto mt-10 h-20 w-56 sm:h-24 sm:w-64">
           <img
-            src="/stickers/bandaid-everything-okay.png"
+            src="/stickers/bandaid-everything-okay.webp"
             alt="Everything will be okay sticker"
             className="h-full w-full object-contain drop-shadow-[2px_6px_10px_rgba(58,46,42,0.3)]"
             draggable={false}
