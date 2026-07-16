@@ -81,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // i.e. the session died server-side (expired/rotated), not a bad login attempt.
     return subscribeUnauthorized(() => {
       setAuthToken(null);
-      disconnectSocketLazy();
+      void disconnectSocket();
       setUser((prev) => {
         if (prev) {
           toast.error("Your session has expired. Please log in again.");
@@ -103,7 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setAuthToken(null);
     setUser(null);
-    disconnectSocketLazy();
+    void disconnectSocket();
   }, []);
 
   const completeOnboarding = useCallback(async (input: OnboardingInput) => {
