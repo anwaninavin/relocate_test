@@ -11,8 +11,15 @@ import { toast } from "sonner";
 
 import { api, ApiError, setAuthToken, getAuthToken } from "@/lib/api";
 import { subscribeUnauthorized } from "@/lib/auth-events";
-import { disconnectSocket } from "@/lib/socket";
 import type { Gender, UserDTO } from "@/types";
+
+// socket.io-client is a sizeable dependency only ever needed for chat/realtime (after
+// login). Importing it lazily here keeps it out of the entry chunk that every first-time,
+// pre-login visitor downloads. There's nothing to disconnect until the socket module has
+// been loaded elsewhere (the chat features), so a no-op before then is correct.
+function disconnectSocketLazy() {
+  void import("@/lib/socket").then((m) => m.disconnectSocket());
+}
 
 interface OnboardingInput {
   name: string;
@@ -77,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // i.e. the session died server-side (expired/rotated), not a bad login attempt.
     return subscribeUnauthorized(() => {
       setAuthToken(null);
-      disconnectSocket();
+      disconnectSocketLazy();
       setUser((prev) => {
         if (prev) {
           toast.error("Your session has expired. Please log in again.");
@@ -99,7 +106,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     setAuthToken(null);
     setUser(null);
-    disconnectSocket();
+    disconnectSocketLazy();
   }, []);
 
   const completeOnboarding = useCallback(async (input: OnboardingInput) => {
