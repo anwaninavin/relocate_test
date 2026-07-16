@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 import { cn } from "@/lib/utils";
 import {
   Highlight,
@@ -130,9 +132,28 @@ function LineContent({ element, line, lineIndex }: { element: CanvasElement; lin
   );
 }
 
+function CtaLink({ href, children }: { href: string; children: React.ReactNode }) {
+  const className =
+    "mt-6 inline-block rotate-[-1deg] rounded-full bg-[#3a2e2a] px-7 py-3 text-sm font-bold text-white shadow-[3px_4px_0_rgba(0,0,0,0.15)] transition-transform hover:-translate-y-0.5 hover:rotate-0";
+  // In-page anchors (`#section-id`) need a plain anchor tag to trigger the browser's native
+  // scroll; app routes (`/path`) use react-router's Link so navigating doesn't reload the page.
+  if (href.startsWith("#")) {
+    return (
+      <a href={href} className={className}>
+        {children}
+      </a>
+    );
+  }
+  return (
+    <Link to={href} className={className}>
+      {children}
+    </Link>
+  );
+}
+
 function CardContent({ element }: { element: CanvasElement }) {
   const isHeading = element.textStyle === "heading";
-  const isHeroCard = element.id === "hero-card";
+  const isHeroCard = element.isHero === true;
   const hasArrow = element.decoration === "arrow";
 
   return (
@@ -197,14 +218,7 @@ function CardContent({ element }: { element: CanvasElement }) {
             </p>
           );
         })}
-      {isHeroCard && element.ctaLabel && (
-        <a
-          href={element.href}
-          className="mt-6 inline-block rotate-[-1deg] rounded-full bg-[#3a2e2a] px-7 py-3 text-sm font-bold text-white shadow-[3px_4px_0_rgba(0,0,0,0.15)] transition-transform hover:-translate-y-0.5 hover:rotate-0"
-        >
-          {element.ctaLabel}
-        </a>
-      )}
+      {element.ctaLabel && element.href && <CtaLink href={element.href}>{element.ctaLabel}</CtaLink>}
     </>
   );
 }

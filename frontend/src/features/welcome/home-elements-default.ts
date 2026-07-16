@@ -23,6 +23,7 @@ export const DEFAULT_HOME_ELEMENTS: CanvasElement[] = [
     shape: "plain",
     background: "white",
     textStyle: "heading",
+    isHero: true,
     lines: ["a survival guide for", "Hostel Survival Guide", "Everything you need before move-in day 💌"],
     ctaLabel: "Open My Survival Board →",
     href: "#mental-prep",

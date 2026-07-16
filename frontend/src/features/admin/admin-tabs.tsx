@@ -22,6 +22,7 @@ const TABS = [
   { href: "/admin/nav", label: "Nav Items" },
   { href: "/admin/home-cards", label: "Home Cards" },
   { href: "/admin/home-screen", label: "Home Screen" },
+  { href: "/admin/guide-screen", label: "Guide Screen" },
 ];
 
 export function AdminTabs() {

@@ -49,6 +49,7 @@ const AdminLayoutPage = lazy(() => import("@/pages/admin-layout-page"));
 const AdminNavPage = lazy(() => import("@/pages/admin-nav-page"));
 const AdminHomeCardsPage = lazy(() => import("@/pages/admin-home-cards-page"));
 const AdminHomeScreenPage = lazy(() => import("@/pages/admin-home-screen-page"));
+const AdminGuideScreenPage = lazy(() => import("@/pages/admin-guide-screen-page"));
 const AdminCitiesPage = lazy(() => import("@/pages/admin-cities-page"));
 const AdminCommunitiesPage = lazy(() => import("@/pages/admin-communities-page"));
 const AdminPlacesPage = lazy(() => import("@/pages/admin-places-page"));
@@ -220,6 +221,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminHomeScreenPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/guide-screen"
+              element={
+                <AdminRoute>
+                  <AdminGuideScreenPage />
                 </AdminRoute>
               }
             />

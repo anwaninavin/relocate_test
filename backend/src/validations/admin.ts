@@ -83,10 +83,11 @@ const elementLayoutOverrideSchema = z.object({
 });
 
 export const landingDesignSchema = z.object({
+  page: z.enum(["home", "survival-guide"]).optional().default("home"),
   elements: z.array(
     z.object({
       id: z.string().trim().min(1),
-      section: z.number().int().min(0).max(8).optional(),
+      section: z.number().int().min(0).max(20).optional(),
       kind: z.enum(["image", "card"]).optional(),
       // Uploaded images are stored inline as base64 data URIs — cap comfortably above the
       // frontend's 2MB file-size limit to account for base64's ~33% size inflation.

@@ -43,12 +43,13 @@ export interface LandingDesignData {
   sectionBackgrounds: SectionBackgroundOverride[] | null;
 }
 
-const HOME_PAGE = "home";
+export const LANDING_PAGES = ["home", "survival-guide"] as const;
+export type LandingPage = (typeof LANDING_PAGES)[number];
 
-/** Public — the home screen is shown to signed-out visitors too. */
-export async function getLandingDesign(): Promise<LandingDesignData> {
+/** Public — both the home screen and the survival guide are shown to signed-out visitors. */
+export async function getLandingDesign(page: LandingPage): Promise<LandingDesignData> {
   await connectDB();
-  const doc = await LandingDesign.findOne({ page: HOME_PAGE }).lean();
+  const doc = await LandingDesign.findOne({ page }).lean();
   // Mongoose's inferred lean() type marks optional nested fields as `T | null` (from its
   // own schema typing) rather than `T | undefined` as declared here — the shapes are
   // runtime-compatible (both mean "absent"), so this cast just bridges that gap.
@@ -59,14 +60,15 @@ export async function getLandingDesign(): Promise<LandingDesignData> {
 }
 
 /** Admin-only: persists the drag/resize/rotate/hide/text overrides and section background
- * choices for the home screen. */
+ * choices for a landing page (the home screen or the survival guide). */
 export async function saveLandingDesign(
+  page: LandingPage,
   elements: ElementOverride[],
   sectionBackgrounds: SectionBackgroundOverride[],
 ): Promise<LandingDesignData> {
   await connectDB();
   await LandingDesign.findOneAndUpdate(
-    { page: HOME_PAGE },
+    { page },
     { elements, sectionBackgrounds },
     { upsert: true },
   );

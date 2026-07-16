@@ -49,6 +49,10 @@ export interface CanvasElement {
    * the built-in defaults — these have no default to fall back to, so they're deleted
    * outright instead of hidden/reset, and always saved in full rather than as a diff. */
   isCustom?: boolean;
+  /** Marks the one card per page that gets the large hero treatment (uppercase kicker line,
+   * big handwritten headline, subtext) instead of the generic card text layout. Structural —
+   * set only on built-in defaults, never admin-editable, so it's not part of ElementOverride. */
+  isHero?: boolean;
   layouts: {
     mobile: ElementLayout;
     desktop: ElementLayout;
