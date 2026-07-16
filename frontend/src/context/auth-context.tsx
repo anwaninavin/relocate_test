@@ -13,13 +13,10 @@ import { api, ApiError, setAuthToken, getAuthToken } from "@/lib/api";
 import { subscribeUnauthorized } from "@/lib/auth-events";
 import type { Gender, UserDTO } from "@/types";
 
-// socket.io-client is a sizeable dependency only ever needed for chat/realtime (after
-// login). Importing it lazily here keeps it out of the entry chunk that every first-time,
-// pre-login visitor downloads. There's nothing to disconnect until the socket module has
-// been loaded elsewhere (the chat features), so a no-op before then is correct.
-function disconnectSocketLazy() {
-  void import("@/lib/socket").then((m) => m.disconnectSocket());
-}
+// Dynamic: lib/socket pulls in socket.io-client, which only ever connects from lazy-loaded
+// chat/community routes. A static import here would ship that whole transport stack in the
+// main bundle for every visitor, including anonymous users who only see the login screen.
+const disconnectSocket = () => import("@/lib/socket").then((m) => m.disconnectSocket());
 
 interface OnboardingInput {
   name: string;
