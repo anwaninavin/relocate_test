@@ -8,6 +8,10 @@ import { normalizeItemName } from "@/lib/textSimilarity";
 import { escapeRegex } from "@/lib/regex";
 import type { ChecklistGender, ChecklistPlanType, ChecklistPriority, StoreOption } from "@/types";
 
+/** Keeps the notebook page usable per category — a category with dozens of items stops
+ * reading as a packing checklist. Enforced on manual create/edit and on bulk import alike. */
+export const MAX_ITEMS_PER_CATEGORY = 10;
+
 /** Deleting a DefaultChecklistItem that existing students already reference would otherwise
  * leave their UserChecklist row pointing at nothing — silently rendering as a blank/"Untitled"
  * entry with no way to fix it. Instead, detach those rows into frozen custom items (preserving
@@ -175,6 +179,17 @@ export async function createDefaultChecklistItem(input: DefaultChecklistItemInpu
     return { success: false as const, error: "An item with this title already exists in this category" };
   }
 
+  const categoryCount = await DefaultChecklistItem.countDocuments({
+    templateId: template._id,
+    category: input.category.trim(),
+  });
+  if (categoryCount >= MAX_ITEMS_PER_CATEGORY) {
+    return {
+      success: false as const,
+      error: `"${input.category.trim()}" already has the maximum of ${MAX_ITEMS_PER_CATEGORY} items`,
+    };
+  }
+
   const item = await DefaultChecklistItem.create({
     templateId: template._id,
     category: input.category.trim(),
@@ -213,6 +228,23 @@ export async function updateDefaultChecklistItem(
   if (input.category !== undefined) patch.category = input.category.trim();
   if (input.title !== undefined) patch.title = input.title.trim();
 
+  if (input.category !== undefined) {
+    const newCategory = input.category.trim();
+    const current = await DefaultChecklistItem.findById(id).select("category templateId").lean();
+    if (current && newCategory !== current.category) {
+      const categoryCount = await DefaultChecklistItem.countDocuments({
+        templateId: current.templateId,
+        category: newCategory,
+      });
+      if (categoryCount >= MAX_ITEMS_PER_CATEGORY) {
+        return {
+          success: false as const,
+          error: `"${newCategory}" already has the maximum of ${MAX_ITEMS_PER_CATEGORY} items`,
+        };
+      }
+    }
+  }
+
   const item = await DefaultChecklistItem.findByIdAndUpdate(id, patch, { returnDocument: "after" }).lean();
   if (!item) {
     return { success: false as const, error: "Item not found" };
@@ -246,6 +278,7 @@ export interface BulkImportRow {
   title: string;
   description?: string;
   priority?: ChecklistPriority;
+  planType?: ChecklistPlanType | null;
   estimatedPrice?: number;
   gender?: ChecklistGender;
   isForAllCollegeCategories?: boolean;
@@ -253,8 +286,9 @@ export interface BulkImportRow {
 }
 
 /** Bulk import by category+title (case-insensitive); rows that already exist in the template
- * are skipped rather than duplicated. `collegeCategoryNames` are resolved to ids by the caller
- * (route layer) before this is invoked, since name resolution needs a DB round trip per name. */
+ * are skipped rather than duplicated, as are rows that would push a category past
+ * MAX_ITEMS_PER_CATEGORY. `collegeCategoryNames` are resolved to ids by the caller (route
+ * layer) before this is invoked, since name resolution needs a DB round trip per name. */
 export async function bulkImportDefaultChecklistItems(
   rows: (BulkImportRow & { applicableCollegeCategories?: string[] })[],
   adminUserId: string,
@@ -268,24 +302,38 @@ export async function bulkImportDefaultChecklistItems(
   const existingKeys = new Set(
     existing.map((i) => `${i.category.trim().toLowerCase()}::${i.title.trim().toLowerCase()}`),
   );
+  const categoryCounts = new Map<string, number>();
+  for (const item of existing) {
+    const category = item.category.trim();
+    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
+  }
 
   const seen = new Set<string>();
   const docs = [];
   let skipped = 0;
+  let skippedForCategoryLimit = 0;
 
   for (const row of rows) {
-    const key = `${row.category.trim().toLowerCase()}::${row.title.trim().toLowerCase()}`;
+    const category = row.category.trim();
+    const key = `${category.toLowerCase()}::${row.title.trim().toLowerCase()}`;
     if (existingKeys.has(key) || seen.has(key)) {
       skipped += 1;
       continue;
     }
+    if ((categoryCounts.get(category) ?? 0) >= MAX_ITEMS_PER_CATEGORY) {
+      skipped += 1;
+      skippedForCategoryLimit += 1;
+      continue;
+    }
     seen.add(key);
+    categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
     docs.push({
       templateId: template._id,
-      category: row.category.trim(),
+      category,
       title: row.title.trim(),
       description: row.description ?? "",
       priority: row.priority ?? "medium",
+      planType: row.planType ?? null,
       estimatedPrice: row.estimatedPrice ?? null,
       gender: row.gender ?? "All",
       applicableCollegeCategories: row.applicableCollegeCategories ?? [],
@@ -301,7 +349,7 @@ export async function bulkImportDefaultChecklistItems(
     await DefaultChecklistItem.insertMany(docs);
   }
 
-  return { imported: docs.length, skipped };
+  return { imported: docs.length, skipped, skippedForCategoryLimit };
 }
 
 export async function listDistinctCategories(templateId?: string) {

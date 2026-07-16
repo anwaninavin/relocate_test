@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ListChecks } from "lucide-react";
+import { Download, ListChecks } from "lucide-react";
 import { toast } from "sonner";
 
 import { Card } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { DefaultChecklistItemFormDialog } from "@/features/admin/default-checkli
 import { BulkImportDefaultItemsDialog } from "@/features/admin/bulk-import-default-items-dialog";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
+import { exportToExcel } from "@/lib/analytics/export";
 import { CHECKLIST_GENDER_OPTIONS } from "@/types";
 import type { CollegeCategoryDTO, CourseDTO } from "@/features/auth/college-taxonomy-dto";
 import type { DefaultChecklistItemDTO } from "@/features/admin/default-checklist-item-dto";
@@ -37,6 +38,7 @@ export function DefaultChecklistItemsView({
   onGenderChange,
   onActiveChange,
   onPageChange,
+  onExportAll,
 }: {
   items: DefaultChecklistItemDTO[];
   total: number;
@@ -54,11 +56,52 @@ export function DefaultChecklistItemsView({
   onGenderChange: (value: string) => void;
   onActiveChange: (value: string) => void;
   onPageChange: (page: number) => void;
+  onExportAll: () => Promise<DefaultChecklistItemDTO[]>;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchDraft, setSearchDraft] = useState(search);
+  const [isExporting, setIsExporting] = useState(false);
 
   const categoryNameById = new Map(collegeCategories.map((c) => [c.id, c.name]));
+
+  const planTypeLabel = (planType: DefaultChecklistItemDTO["planType"]) =>
+    planType === "pack" ? "Pack it" : planType === "plan" ? "Plan it" : "—";
+
+  async function handleExport() {
+    setIsExporting(true);
+    try {
+      const allItems = await onExportAll();
+      exportToExcel(
+        "default-checklist-items",
+        [
+          { key: "title", label: "Title" },
+          { key: "category", label: "Category" },
+          { key: "priority", label: "Priority" },
+          { key: "planType", label: "Pack it / Plan it" },
+          { key: "gender", label: "Gender" },
+          { key: "appliesTo", label: "Applies to" },
+          { key: "estimatedPrice", label: "Estimated price" },
+          { key: "status", label: "Status" },
+        ],
+        allItems.map((item) => ({
+          title: item.title,
+          category: item.category,
+          priority: item.priority,
+          planType: planTypeLabel(item.planType),
+          gender: item.gender,
+          appliesTo: item.isForAllCollegeCategories
+            ? "All categories"
+            : item.applicableCollegeCategories.map((id) => categoryNameById.get(id) ?? "?").join(", ") || "—",
+          estimatedPrice: item.estimatedPrice ?? "",
+          status: item.active ? "Active" : "Inactive",
+        })),
+      );
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to export items");
+    } finally {
+      setIsExporting(false);
+    }
+  }
 
   function toggleSelected(id: string) {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -110,6 +153,10 @@ export function DefaultChecklistItemsView({
         description={`Master catalog — ${total} item(s) — admin-managed, shared by every student's generated checklist`}
         action={
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExport} disabled={isExporting || total === 0}>
+              <Download className="size-4" />
+              Download Excel
+            </Button>
             <BulkImportDefaultItemsDialog />
             <DefaultChecklistItemFormDialog categories={collegeCategories} courses={courses} />
           </div>
@@ -213,6 +260,7 @@ export function DefaultChecklistItemsView({
                 <TableHead>Title</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Priority</TableHead>
+                <TableHead>Pack it / Plan it</TableHead>
                 <TableHead>Gender</TableHead>
                 <TableHead>Applies to</TableHead>
                 <TableHead>Usage</TableHead>
@@ -229,6 +277,15 @@ export function DefaultChecklistItemsView({
                   <TableCell className="font-medium">{item.title}</TableCell>
                   <TableCell>{item.category}</TableCell>
                   <TableCell className="capitalize">{item.priority}</TableCell>
+                  <TableCell>
+                    {item.planType ? (
+                      <Badge variant={item.planType === "pack" ? "accent" : "secondary"}>
+                        {planTypeLabel(item.planType)}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <Badge variant={item.gender === "All" ? "outline" : "accent"}>{item.gender}</Badge>
                   </TableCell>

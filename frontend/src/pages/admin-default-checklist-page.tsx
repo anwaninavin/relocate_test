@@ -69,6 +69,28 @@ export default function AdminDefaultChecklistPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, search, category, gender, active]);
 
+  async function fetchAllForExport(): Promise<DefaultChecklistItemDTO[]> {
+    const EXPORT_PAGE_SIZE = 200;
+    const params = new URLSearchParams({ pageSize: String(EXPORT_PAGE_SIZE) });
+    if (search) params.set("search", search);
+    if (category) params.set("category", category);
+    if (gender) params.set("gender", gender);
+    if (active) params.set("active", active);
+
+    const all: DefaultChecklistItemRaw[] = [];
+    let currentPage = 1;
+    for (;;) {
+      params.set("page", String(currentPage));
+      const result = await api.get<{ items: DefaultChecklistItemRaw[]; total: number }>(
+        `/api/admin/default-checklist-items?${params.toString()}`,
+      );
+      all.push(...result.items);
+      if (all.length >= result.total || result.items.length === 0) break;
+      currentPage += 1;
+    }
+    return all.map(toDefaultChecklistItemDTO);
+  }
+
   function updateParams(patch: Record<string, string>) {
     const next = new URLSearchParams(searchParams);
     for (const [key, value] of Object.entries(patch)) {
@@ -101,6 +123,7 @@ export default function AdminDefaultChecklistPage() {
         onGenderChange={(value) => updateParams({ gender: value })}
         onActiveChange={(value) => updateParams({ active: value })}
         onPageChange={(nextPage) => updateParams({ page: String(nextPage) })}
+        onExportAll={fetchAllForExport}
       />
     </div>
   );

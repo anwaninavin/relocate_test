@@ -76,6 +76,7 @@ export const bulkImportDefaultItemsSchema = z.object({
         title: z.string().trim().min(1).max(120),
         description: z.string().trim().max(500).optional(),
         priority: z.enum(CHECKLIST_PRIORITIES).optional(),
+        planType: z.enum(PLAN_TYPES).nullable().optional(),
         estimatedPrice: z.coerce.number().min(0).optional(),
         gender: z.enum(CHECKLIST_GENDER_OPTIONS).optional(),
         collegeCategoryNames: z.array(z.string().trim().min(1)).optional(),
