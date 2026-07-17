@@ -13,14 +13,25 @@ import { prefetchNavDestinations } from "@/lib/prefetch-nav";
 export function DashboardLayout() {
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const { bottomItems, overflowItems, allOrderedItems, hiddenHrefs, fabVisible } = useNavLayout();
+  const nav = useNavLayout();
 
   // This layout stays mounted across every tab switch (only the <Outlet> content changes),
   // so it only fires once per session — right after the user lands, on the home page or
-  // wherever they enter the app.
+  // wherever they enter the app. It waits for the real layout so it can skip destinations
+  // this install has hidden; prefetchNavDestinations itself is idempotent.
   useEffect(() => {
-    prefetchNavDestinations();
-  }, []);
+    if (!nav.ready) return;
+    prefetchNavDestinations(nav.allOrderedItems.map((item) => item.href));
+  }, [nav.ready, nav.allOrderedItems]);
+
+  // Until the real layout is known, render the nav chrome empty rather than falling back to the
+  // shipped default: the default disagrees with a customized layout about which entries exist
+  // and where they sit, so painting it first is what made hidden features appear for a moment
+  // and then rearrange or vanish. The bars keep their size while empty, so filling them in a
+  // moment later doesn't shift the page.
+  const bottomItems = nav.ready ? nav.bottomItems : [];
+  const overflowItems = nav.ready ? nav.overflowItems : [];
+  const allOrderedItems = nav.ready ? nav.allOrderedItems : [];
 
   return (
     <div className="bg-background relative flex min-h-dvh overflow-x-clip">
@@ -32,7 +43,7 @@ export function DashboardLayout() {
         </main>
       </div>
       <BottomNav items={bottomItems} />
-      {fabVisible && <FabMenu hiddenNavHrefs={hiddenHrefs} />}
+      {nav.ready && nav.fabVisible && <FabMenu hiddenNavHrefs={nav.hiddenHrefs} />}
       <PWAInstallPrompt />
     </div>
   );
