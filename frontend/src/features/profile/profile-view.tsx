@@ -1,16 +1,16 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { motion } from "framer-motion";
-import { Loader2, User, LogOut, Pencil } from "lucide-react";
+import { Download, Loader2, User, LogOut, Pencil, Share, SquarePlus, type LucideIcon } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -23,9 +23,85 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/shared/page-header";
 import { useAuth } from "@/context/auth-context";
 import { api, ApiError } from "@/lib/api";
+import { usePwaInstall } from "@/lib/use-pwa-install";
 import { ProfileFields } from "@/features/auth/profile-fields";
 import { profileFieldsSchema, type ProfileFieldsInput } from "@/features/auth/profile-fields-schema";
 import { PublicProfileSettings } from "@/features/community/public-profile-settings";
+
+function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div>
+      <h2 className="text-muted-foreground mb-2 px-1 text-xs font-semibold tracking-wide uppercase">{title}</h2>
+      <Card className="gap-0 divide-y divide-border/60 overflow-hidden p-0">{children}</Card>
+    </div>
+  );
+}
+
+function SettingsRow({
+  icon: Icon,
+  label,
+  description,
+  action,
+}: {
+  icon: LucideIcon;
+  label: string;
+  description?: string;
+  action: ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3 px-4 py-3.5">
+      <div className="bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-full">
+        <Icon className="size-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium">{label}</p>
+        {description && <p className="text-muted-foreground text-xs">{description}</p>}
+      </div>
+      {action}
+    </div>
+  );
+}
+
+function InstallAppAction() {
+  const { installed, isIOS, canInstall, promptInstall } = usePwaInstall();
+  const [iosDialogOpen, setIosDialogOpen] = useState(false);
+
+  if (installed) {
+    return (
+      <span className="text-muted-foreground text-xs font-medium">Installed</span>
+    );
+  }
+
+  if (isIOS && !canInstall) {
+    return (
+      <>
+        <Button variant="outline" size="sm" onClick={() => setIosDialogOpen(true)}>
+          Install
+        </Button>
+        <Dialog open={iosDialogOpen} onOpenChange={setIosDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Install Pack with Me</DialogTitle>
+              <DialogDescription asChild>
+                <p className="flex flex-wrap items-center gap-1 pt-1 text-left">
+                  Tap <Share className="mx-0.5 inline size-3.5" aria-hidden /> <strong>Share</strong> in your
+                  browser toolbar, then choose <SquarePlus className="mx-0.5 inline size-3.5" aria-hidden />{" "}
+                  <strong>"Add to Home Screen"</strong>.
+                </p>
+              </DialogDescription>
+            </DialogHeader>
+          </DialogContent>
+        </Dialog>
+      </>
+    );
+  }
+
+  return (
+    <Button variant="outline" size="sm" disabled={!canInstall} onClick={() => promptInstall()}>
+      Install
+    </Button>
+  );
+}
 
 export function ProfileView() {
   const navigate = useNavigate();
@@ -85,7 +161,7 @@ export function ProfileView() {
 
   return (
     <div>
-      <PageHeader title="Profile" description="Manage your account and preferences" />
+      <PageHeader title="Profile" description="Manage your account, preferences, and app settings" />
 
       <motion.div
         initial={{ opacity: 0, y: 16 }}
@@ -149,6 +225,15 @@ export function ProfileView() {
         </Dialog>
 
         <PublicProfileSettings />
+
+        <SettingsSection title="App">
+          <SettingsRow
+            icon={Download}
+            label="Install app"
+            description="Add Pack with Me to your home screen"
+            action={<InstallAppAction />}
+          />
+        </SettingsSection>
 
         <Button
           type="button"

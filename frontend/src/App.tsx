@@ -17,11 +17,12 @@ const DashboardLayout = lazy(() =>
 );
 const AuthLayout = lazy(() => import("@/layouts/auth-layout").then((m) => ({ default: m.AuthLayout })));
 
-const RegisterPage = lazy(() => import("@/pages/register-page"));
-const WaLoginPage = lazy(() => import("@/pages/wa-login-page"));
+// Passwordless MSG91 OTP login is the single auth entry point now (mobile + OTP). The old
+// WhatsApp-OTP register / forgot-code pages and the mobile+PIN wa-login page are superseded
+// and their routes redirect here; the page files remain for reference/history.
+const OtpLoginPage = lazy(() => import("@/pages/otp-login-page"));
 const WaLoginCompletePage = lazy(() => import("@/pages/wa-login-complete-page"));
 const WaLoginHomePage = lazy(() => import("@/pages/wa-login-home-page"));
-const ForgotPasswordPage = lazy(() => import("@/pages/forgot-password-page"));
 const OnboardingPage = lazy(() => import("@/pages/onboarding-page"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 const WelcomePage = lazy(() => import("@/pages/welcome-page"));
@@ -40,7 +41,6 @@ const GuidePage = lazy(() => import("@/pages/guide-page"));
 const GuideArticlePage = lazy(() => import("@/pages/guide-article-page"));
 const SurvivalGuidePage = lazy(() => import("@/pages/survival-guide-page"));
 const ProfilePage = lazy(() => import("@/pages/profile-page"));
-const SettingsPage = lazy(() => import("@/pages/settings-page"));
 const AdminPage = lazy(() => import("@/pages/admin-page"));
 const AdminUsersPage = lazy(() => import("@/pages/admin-users-page"));
 const AdminProductsPage = lazy(() => import("@/pages/admin-products-page"));
@@ -90,27 +90,14 @@ export default function App() {
 
           <Route element={<AuthLayout />}>
             <Route path="/login" element={<Navigate to="/wa-login" replace />} />
-            <Route
-              path="/register"
-              element={
-                <AuthOnlyRoute>
-                  <RegisterPage />
-                </AuthOnlyRoute>
-              }
-            />
-            <Route
-              path="/forgot-password"
-              element={
-                <AuthOnlyRoute>
-                  <ForgotPasswordPage />
-                </AuthOnlyRoute>
-              }
-            />
+            {/* Superseded by passwordless OTP — the new login page both signs in and registers. */}
+            <Route path="/register" element={<Navigate to="/wa-login" replace />} />
+            <Route path="/forgot-password" element={<Navigate to="/wa-login" replace />} />
             <Route
               path="/wa-login"
               element={
                 <AuthOnlyRoute redirectTo="/wa-login/home">
-                  <WaLoginPage />
+                  <OtpLoginPage />
                 </AuthOnlyRoute>
               }
             />
@@ -160,7 +147,7 @@ export default function App() {
             <Route path="/guide/survival-guide" element={<SurvivalGuidePage />} />
             <Route path="/guide/:slug" element={<GuideArticlePage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings" element={<Navigate to="/profile" replace />} />
             <Route
               path="/admin"
               element={

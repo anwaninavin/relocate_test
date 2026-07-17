@@ -78,6 +78,13 @@ export const otpRequestSchema = z.object({
   mobile: mobileSchema,
 });
 
+// MSG91 "Login with OTP" widget access-token, posted by the browser after it verifies the OTP.
+// It's a JWT the backend re-confirms with MSG91 (see msg91Service.verifyWidgetToken) — we only
+// need to check it's a non-empty string here; MSG91 is the authority on its validity.
+export const widgetVerifySchema = z.object({
+  accessToken: z.string().trim().min(1, "Missing access token"),
+});
+
 export const checkMobileSchema = z.object({
   mobile: mobileSchema,
 });

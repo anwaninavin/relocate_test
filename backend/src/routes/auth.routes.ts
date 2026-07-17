@@ -8,10 +8,18 @@ import {
   otpRequestSchema,
   registerVerifySchema,
   resetPasswordSchema,
+  widgetVerifySchema,
 } from "@/validations/auth";
 import { authenticateWithPin, RateLimitedError } from "@/services/authService";
-import { completeOnboarding, getUserByMobile, registerUserWithOtp, resetPinWithOtp } from "@/services/userService";
+import {
+  completeOnboarding,
+  getOrCreateUserByMobile,
+  getUserByMobile,
+  registerUserWithOtp,
+  resetPinWithOtp,
+} from "@/services/userService";
 import { requestOtp, verifyOtp, OtpCooldownError, OtpDailyLimitError } from "@/services/otpService";
+import { verifyWidgetToken, Msg91Error } from "@/services/msg91Service";
 import { signAuthToken } from "@/lib/jwt";
 import { serializeUser } from "@/lib/serialize";
 import { requireAuth } from "@/middleware/auth";
@@ -61,6 +69,49 @@ authRouter.post("/login", async (req, res) => {
     }
     throw error;
   }
+});
+
+// Passwordless sign-in via the MSG91 "Login with OTP" widget (same widget/account as the
+// WhatsLocal project). The browser verifies the OTP against the widget and posts the signed
+// access-token here; we confirm it with MSG91, read the VERIFIED mobile out of it (never
+// trusting the number from the client), then get-or-create the account and issue our session
+// JWT. First sign-in for a number creates the account (→ needsOnboarding); returning numbers
+// just log in. This replaces the WhatsApp-OTP register/reset + mobile-PIN login as the primary
+// auth path.
+authRouter.post("/otp/widget-verify", async (req, res) => {
+  const parsed = widgetVerifySchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+
+  const ctx = eventContext(req);
+
+  let mobile: string;
+  try {
+    mobile = await verifyWidgetToken(parsed.data.accessToken);
+  } catch (error) {
+    if (error instanceof Msg91Error) {
+      logEventAsync({ eventName: "otp_failed", ...ctx, metadata: { via: "msg91_widget" } });
+      res.status(401).json({ error: error.message });
+      return;
+    }
+    throw error;
+  }
+
+  const isNew = !(await getUserByMobile(mobile));
+  const user = await getOrCreateUserByMobile(mobile);
+
+  logEventAsync({ eventName: "otp_verified", ...ctx, metadata: { via: "msg91_widget" } });
+  logEventAsync({
+    eventName: isNew ? "registration_success" : "login_success",
+    userId: user._id.toString(),
+    ...ctx,
+    metadata: { via: "msg91_widget" },
+  });
+
+  const token = signAuthToken(user._id.toString(), user.tokenVersion ?? 0);
+  res.json({ token, user: serializeUser(user) });
 });
 
 // Lets the unified mobile-number entry screen route to the right next step (enter your

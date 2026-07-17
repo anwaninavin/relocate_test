@@ -45,6 +45,9 @@ interface AuthContextValue {
   setUser: (user: UserDTO) => void;
   checkMobile: (mobile: string) => Promise<boolean>;
   loginWithToken: (token: string, user: UserDTO) => void;
+  /** Passwordless MSG91 login: exchange a widget-verified access-token for a session. First
+   * time for a number registers it (user comes back with needsOnboarding=true). */
+  loginWithWidget: (accessToken: string) => Promise<void>;
   requestRegisterOtp: (mobile: string) => Promise<OtpRequestResult>;
   registerWithOtp: (mobile: string, code: string, pin?: string) => Promise<void>;
   requestResetOtp: (mobile: string) => Promise<OtpRequestResult>;
@@ -132,6 +135,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(user);
   }, []);
 
+  const loginWithWidget = useCallback(async (accessToken: string) => {
+    const { token, user } = await api.post<{ token: string; user: UserDTO }>(
+      "/api/auth/otp/widget-verify",
+      { accessToken },
+    );
+    setAuthToken(token);
+    setUser(user);
+  }, []);
+
   const requestRegisterOtp = useCallback(async (mobile: string) => {
     return api.post<OtpRequestResult>("/api/auth/register/request-otp", { mobile });
   }, []);
@@ -169,6 +181,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser,
       checkMobile,
       loginWithToken,
+      loginWithWidget,
       requestRegisterOtp,
       registerWithOtp,
       requestResetOtp,
@@ -183,6 +196,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       refreshUser,
       checkMobile,
       loginWithToken,
+      loginWithWidget,
       requestRegisterOtp,
       registerWithOtp,
       requestResetOtp,
