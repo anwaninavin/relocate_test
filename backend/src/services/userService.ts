@@ -142,6 +142,21 @@ export async function registerUserWithOtp(mobile: string, verifiedOtpCode: strin
   return { success: true as const, user };
 }
 
+/** Passwordless sign-in/up (MSG91 OTP flow): returns the account for an already-verified
+ * mobile, creating a brand-new student account on first sign-in. No login PIN is set — with
+ * MSG91 the number itself is the credential (re-verified via OTP on every login), so these
+ * accounts authenticate purely by widget-verified mobile. A fresh account has no `name`, so
+ * serializeUser reports `needsOnboarding: true` and the app routes it to onboarding. */
+export async function getOrCreateUserByMobile(mobile: string) {
+  await connectDB();
+
+  const existing = await User.findOne({ mobile });
+  if (existing) return existing;
+
+  const username = await generateUniqueUsername();
+  return User.create({ mobile, role: "student", username, displayName: username });
+}
+
 /** Sets a new login code for an existing account once the mobile's OTP has been verified.
  * Defaults to the verified OTP code itself, or uses the caller-supplied `customPin` instead.
  * Bumps tokenVersion so any JWT issued before this reset stops being accepted immediately —
