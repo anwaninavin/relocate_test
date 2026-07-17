@@ -4,8 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { PageHeader } from "@/components/shared/page-header";
 import { api, peekCache } from "@/lib/api";
 import { TravelProfileForm } from "@/features/discovery/travel-profile-form";
-import { RoommateView } from "@/features/discovery/roommate-view";
-import { ConnectionsView } from "@/features/discovery/connections-view";
+import { RoomieMatchesView } from "@/features/discovery/roomie-matches-view";
 import {
   isRoommateProfileComplete,
   toTravelProfileDTO,
@@ -42,19 +41,15 @@ export default function FindARoomiePage() {
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-6">
         <TabsList className="flex-wrap overflow-x-auto">
           <TabsTrigger value="matches">Matches</TabsTrigger>
-          <TabsTrigger value="requests">Requests</TabsTrigger>
           <TabsTrigger value="profile">My Profile</TabsTrigger>
         </TabsList>
 
         <TabsContent value="matches">
-          <RoommateView
+          <RoomieMatchesView
             hasProfile={profile != null}
             profileComplete={isRoommateProfileComplete(profile)}
             onEditProfile={() => setTab("profile")}
           />
-        </TabsContent>
-        <TabsContent value="requests">
-          <ConnectionsView context="roommate" />
         </TabsContent>
         <TabsContent value="profile">
           <TravelProfileForm

@@ -16,7 +16,9 @@ const TravelProfileSchema = new Schema(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true, unique: true, index: true },
 
-    currentCity: { type: String, required: true, trim: true, maxlength: 80, index: true },
+    // Optional: a student may not know or want to share where they're moving from. Co-Packer
+    // matching widens to a destination-only match once this is unset (see findCoPackers).
+    currentCity: { type: String, default: null, trim: true, maxlength: 80, index: true },
     destinationCity: { type: String, required: true, trim: true, maxlength: 80, index: true },
 
     college: { type: String, default: null, trim: true, maxlength: 120 },
@@ -37,7 +39,6 @@ const TravelProfileSchema = new Schema(
 
     visibility: {
       hideProfile: { type: Boolean, default: false },
-      onlyShowVerified: { type: Boolean, default: false },
       onlyShowSameGender: { type: Boolean, default: false },
     },
     active: { type: Boolean, default: true },

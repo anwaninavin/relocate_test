@@ -24,7 +24,7 @@ export default function ExplorePage() {
   return (
     <div>
       <PageHeader title="Explore" description="Places to explore in your destination city" />
-      <PlacesView defaultCity={defaultCity} />
+      <PlacesView city={defaultCity} />
     </div>
   );
 }

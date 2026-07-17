@@ -20,7 +20,7 @@ const ANY = "__any__";
 
 /** Co-Packer's filter bar, and only Co-Packer's — Find a Roomie has no filters at all now, so
  * the budget and accommodation-type inputs that existed solely for it are gone along with it
- * (see RoommateView). */
+ * (see RoomieMatchesView). */
 export function DiscoveryFilters({
   value,
   onChange,

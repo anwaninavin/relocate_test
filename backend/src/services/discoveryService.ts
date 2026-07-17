@@ -1,4 +1,5 @@
 import { connectDB } from "@/db";
+import { Connection } from "@/models/Connection";
 import { TravelProfile, type TravelProfileDocument } from "@/models/TravelProfile";
 import { User, type UserDocument } from "@/models/User";
 import type { DiscoveryQuery } from "@/validations/discovery";
@@ -18,13 +19,12 @@ function ageFromDob(dob: Date | null | undefined): number | null {
 }
 
 /** A candidate is hidden from `viewer` if they've hidden their profile entirely, restricted
- * themselves to verified-only or same-gender-only viewers and the viewer doesn't qualify, or
- * the viewer has blocked them. The reverse (they've blocked the viewer) is checked by the
- * caller via `blockedByOthers`, since that requires a separate lookup across all users. */
+ * themselves to same-gender-only viewers and the viewer doesn't qualify, or the viewer has
+ * blocked them. The reverse (they've blocked the viewer) is checked by the caller via
+ * `blockedByOthers`, since that requires a separate lookup across all users. */
 function isVisibleTo(candidate: ProfileWithUser, viewer: HydratedDocument<UserDocument>): boolean {
   const v = candidate.visibility;
   if (v?.hideProfile) return false;
-  if (v?.onlyShowVerified && !viewer.verified) return false;
   if (v?.onlyShowSameGender && candidate.userId.gender && candidate.userId.gender !== viewer.gender) return false;
 
   const candidateUserId = candidate.userId._id.toString();
@@ -85,7 +85,12 @@ function applyOptionalFilters(profiles: ProfileWithUser[], filters: DiscoveryQue
  * Timing is deliberately not part of this any more. It used to also require the same travel
  * month, which made the match tighter but cost every student a date they often didn't have
  * yet; the profile no longer collects one. Two people on the same route months apart will now
- * match, so treat this as "who else is making this move", not "who else is going when I am". */
+ * match, so treat this as "who else is making this move", not "who else is going when I am".
+ *
+ * Current city is optional on the profile now too. When the viewer hasn't set one, requiring
+ * an exact match on it would mean matching only other blank-city profiles — effectively no
+ * one — so the match widens to destination city alone instead. Same tradeoff as the travel-
+ * month removal: a looser match beats asking for a field that isn't worth the friction. */
 export async function findCoPackers(viewerUserId: string, filters: DiscoveryQuery) {
   await connectDB();
   const { viewer, myProfile, blockedByOthers } = await loadViewerContext(viewerUserId);
@@ -93,7 +98,7 @@ export async function findCoPackers(viewerUserId: string, filters: DiscoveryQuer
 
   const candidates = await TravelProfile.find({
     userId: { $ne: viewer._id },
-    currentCity: myProfile.currentCity,
+    ...(myProfile.currentCity ? { currentCity: myProfile.currentCity } : {}),
     destinationCity: myProfile.destinationCity,
     active: true,
   })
@@ -145,7 +150,13 @@ export function isRoommateProfileComplete(profile: {
  *
  * There are no filter arguments: the four requirements come from the viewer's own profile, so
  * Find a Roomie has no filter bar to send any (see RoommateView). Dates and age play no part
- * here, and no longer exist on the profile at all. */
+ * here, and no longer exist on the profile at all.
+ *
+ * Candidates the viewer has already connected with (either direction, accepted) are dropped
+ * from the deck entirely — they now live in the Connections section of the merged Matches
+ * page, not here. Candidates with a pending outgoing request from the viewer stay in the deck
+ * but carry `requestStatus: "sent"`, so the merged page can fold "sent requests" into this
+ * same list as a disabled card state instead of a separate tab. */
 export async function findRoommates(viewerUserId: string) {
   await connectDB();
   const { viewer, myProfile, blockedByOthers } = await loadViewerContext(viewerUserId);
@@ -187,8 +198,31 @@ export async function findRoommates(viewerUserId: string) {
       genderPreferenceSatisfied(myProfile.genderPreference, c.userId.gender),
   );
 
+  // Roommate-context connections between the viewer and any candidate — used to drop already-
+  // accepted candidates from the deck and to flag pending outgoing ones as "sent".
+  const connections = await Connection.find({
+    context: "roommate",
+    $or: [{ requesterId: viewer._id }, { recipientId: viewer._id }],
+    status: { $in: ["pending", "accepted"] },
+  }).lean();
+
+  const acceptedOtherIds = new Set<string>();
+  const sentToIds = new Set<string>();
+  for (const conn of connections) {
+    const requesterId = conn.requesterId.toString();
+    const recipientId = conn.recipientId.toString();
+    const otherId = requesterId === viewer._id.toString() ? recipientId : requesterId;
+    if (conn.status === "accepted") acceptedOtherIds.add(otherId);
+    else if (conn.status === "pending" && requesterId === viewer._id.toString()) sentToIds.add(otherId);
+  }
+
   return visible
-    .map((c) => ({ ...baseCard(c), compatibilityScore: computeCompatibility(myProfile, c) }))
+    .filter((c) => !acceptedOtherIds.has(c.userId._id.toString()))
+    .map((c) => ({
+      ...baseCard(c),
+      compatibilityScore: computeCompatibility(myProfile, c),
+      requestStatus: sentToIds.has(c.userId._id.toString()) ? ("sent" as const) : null,
+    }))
     .sort((a, b) => b.compatibilityScore - a.compatibilityScore);
 }
 
