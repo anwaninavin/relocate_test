@@ -27,6 +27,7 @@ export function serializeUser(user: HydratedDocument<UserDocument>): UserDTO {
     interests: user.interests ?? [],
     campus: user.campus ?? null,
     year: user.year ?? null,
+    communityProfileConfigured: Boolean(user.communityProfileConfigured),
   };
 }
 

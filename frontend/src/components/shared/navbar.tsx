@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 import { BrandName } from "@/components/shared/brand-name";
 import { OverflowMenu } from "@/components/shared/overflow-menu";
@@ -11,6 +11,11 @@ interface NavbarProps {
 }
 
 export function Navbar({ isAdmin, overflowItems }: NavbarProps) {
+  // Community (and each individual community's page) has its own "Search communities" box
+  // under Discover — the app-wide "Search everything" command palette is redundant there.
+  const { pathname } = useLocation();
+  const showGlobalSearch = !pathname.startsWith("/community");
+
   return (
     <header className="sticky top-0 z-30 px-4 py-3 lg:px-8">
       {/* Blur lives on its own layer, not the sticky element itself — Safari detaches
@@ -21,13 +26,17 @@ export function Navbar({ isAdmin, overflowItems }: NavbarProps) {
           <img src="/logo.png" alt="" width={24} height={24} />
           <BrandName />
         </Link>
-        <div className="hidden flex-1 lg:block">
-          <GlobalSearch />
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="lg:hidden">
+        {showGlobalSearch && (
+          <div className="hidden flex-1 lg:block">
             <GlobalSearch />
           </div>
+        )}
+        <div className="flex items-center gap-2">
+          {showGlobalSearch && (
+            <div className="lg:hidden">
+              <GlobalSearch />
+            </div>
+          )}
           <div className="lg:hidden">
             <OverflowMenu isAdmin={isAdmin} items={overflowItems} />
           </div>
