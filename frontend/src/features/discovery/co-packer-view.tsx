@@ -28,7 +28,7 @@ export function CoPackerView({ hasProfile }: { hasProfile: boolean }) {
       <EmptyState
         icon={Users}
         title="Save your travel profile first"
-        description="Fill in your current city, destination, and travel month above to find co-packers."
+        description="Fill in your current city and destination above to find co-packers."
       />
     );
   }
@@ -40,7 +40,7 @@ export function CoPackerView({ hasProfile }: { hasProfile: boolean }) {
         <EmptyState
           icon={Users}
           title="No co-packers found yet"
-          description="No one else is travelling your exact route this month — check back later."
+          description="No one else is making your exact move yet — check back later."
         />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
