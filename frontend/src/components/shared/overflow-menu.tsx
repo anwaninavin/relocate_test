@@ -8,10 +8,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { ADMIN_NAV_ITEM, SETTINGS_NAV_ITEM, type NavItem } from "@/lib/nav-items";
+import { ADMIN_NAV_ITEM, type NavItem } from "@/lib/nav-items";
 
 export function OverflowMenu({ isAdmin, items }: { isAdmin: boolean; items: NavItem[] }) {
-  const allItems = [...items, SETTINGS_NAV_ITEM, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
+  const allItems = [...items, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
 
   return (
     <DropdownMenu>

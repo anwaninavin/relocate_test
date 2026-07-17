@@ -27,15 +27,14 @@ const PREFETCH_BY_HREF: Record<string, PrefetchTarget> = {
   "/bookings": { page: () => import("@/pages/bookings-page"), data: ["/api/bookings"] },
   "/community": { page: () => import("@/pages/community-page") },
   "/chat": { page: () => import("@/pages/chat-page") },
+  "/profile": { page: () => import("@/pages/profile-page") },
   "/guide/survival-guide": { page: () => import("@/pages/survival-guide-page"), data: ["/api/guide"] },
 };
 
-/** Destinations no admin can hide, so they're always worth warming: Settings is a system nav
- * entry (always pinned — see CONFIGURABLE_NAV_ITEMS), /guide is reachable from the survival
- * guide rather than from a nav item of its own, and /api/categories backs the quick-add FAB's
- * checklist actions, which have no nav href to be hidden behind. */
+/** Destinations no admin can hide, so they're always worth warming: /guide is reachable from
+ * the survival guide rather than from a nav item of its own, and /api/categories backs the
+ * quick-add FAB's checklist actions, which have no nav href to be hidden behind. */
 const ALWAYS_PREFETCH: PrefetchTarget[] = [
-  { page: () => import("@/pages/settings-page") },
   { page: () => import("@/pages/guide-page"), data: ["/api/categories"] },
 ];
 
