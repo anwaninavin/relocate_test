@@ -4,7 +4,7 @@ import { requireAuth } from "@/middleware/auth";
 import { getPublicProfileByUsername } from "@/services/communityService";
 import { User } from "@/models/User";
 import { isValidUsernameFormat } from "@/lib/username";
-import { usernameUpdateSchema, publicProfileUpdateSchema } from "@/validations/community";
+import { usernameUpdateSchema, publicProfileUpdateSchema, communityProfileSetupSchema } from "@/validations/community";
 import { serializeUser } from "@/lib/serialize";
 
 export const usersRouter = createAsyncRouter();
@@ -49,6 +49,21 @@ usersRouter.patch("/me/public-profile", async (req, res) => {
     return;
   }
   Object.assign(req.user!, parsed.data);
+  await req.user!.save();
+  res.json({ user: serializeUser(req.user!) });
+});
+
+// One-time "create your community profile" prompt — sets the community display name and
+// marks the prompt as done so it never shows again for this account.
+usersRouter.patch("/me/community-profile-setup", async (req, res) => {
+  const parsed = communityProfileSetupSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const { useOriginalName, displayName } = parsed.data;
+  req.user!.displayName = useOriginalName ? req.user!.name || req.user!.username || "Student" : displayName!.trim();
+  req.user!.communityProfileConfigured = true;
   await req.user!.save();
   res.json({ user: serializeUser(req.user!) });
 });

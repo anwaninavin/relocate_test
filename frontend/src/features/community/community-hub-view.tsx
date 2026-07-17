@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CommunityCard } from "@/features/community/community-card";
 import { CreateCommunityDialog } from "@/features/community/create-community-dialog";
+import { CommunityProfileSetupDialog } from "@/features/community/community-profile-setup-dialog";
 import { discoverCommunities, joinCommunity, listMyCommunities } from "@/features/community/community-api";
 import { useAuth } from "@/context/auth-context";
 import { ApiError } from "@/lib/api";
@@ -69,24 +70,24 @@ export function CommunityHubView() {
     }
   }
 
+  const discoverable = discover.filter((c) => !c.joined);
+
   return (
     <div>
       <PageHeader
         title="Community"
-        description="Connect with students from your college, course, city, and interests"
         action={
-          <div className="flex gap-2">
-            {user?.role === "admin" && (
-              <Button variant="outline" size="sm" asChild>
-                <Link to="/admin/communities">
-                  <ShieldCheck className="size-4" /> Manage all
-                </Link>
-              </Button>
-            )}
-            <CreateCommunityDialog />
-          </div>
+          user?.role === "admin" ? (
+            <Button variant="outline" size="sm" asChild>
+              <Link to="/admin/communities">
+                <ShieldCheck className="size-4" /> Manage all
+              </Link>
+            </Button>
+          ) : undefined
         }
       />
+
+      <CommunityProfileSetupDialog />
 
       <Tabs defaultValue="mine">
         <TabsList>
@@ -123,15 +124,19 @@ export function CommunityHubView() {
                 <Skeleton key={i} className="h-32" />
               ))}
             </div>
-          ) : discover.length === 0 ? (
+          ) : discoverable.length === 0 ? (
             <EmptyState icon={Search} title="No communities found" description="Try a different search, or create your own." />
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {discover.map((c) => (
+              {discoverable.map((c) => (
                 <CommunityCard key={c._id} community={c} onJoinToggle={handleJoin} />
               ))}
             </div>
           )}
+
+          <div className="mt-6 flex justify-center">
+            <CreateCommunityDialog />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

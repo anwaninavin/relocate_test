@@ -76,6 +76,12 @@ const UserSchema = new Schema(
      * in India runs multiple campuses through this catalog yet. */
     campus: { type: String, default: null, trim: true, maxlength: 120 },
     year: { type: String, default: null, trim: true, maxlength: 20 },
+    /** Set once the student has been through the one-time "create your community profile"
+     * prompt (choosing their community display name) shown on first visit to Community. False
+     * for every pre-existing account too, since that prompt didn't exist before — Mongoose
+     * applies this default on read for documents that predate the field, so it surfaces there
+     * exactly once, same as a brand-new signup. */
+    communityProfileConfigured: { type: Boolean, default: false },
   },
   { timestamps: true },
 );

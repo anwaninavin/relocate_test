@@ -150,12 +150,19 @@ export function getPublicProfile(username: string) {
   return api.get<{ profile: PublicUserDTO }>(`/api/users/${username}`);
 }
 
-export function updateUsername(username: string) {
-  return api.patch("/api/users/me/username", { username });
+export function updatePublicProfile(input: {
+  displayName?: string;
+  avatar?: string | null;
+  bio?: string;
+  interests?: string[];
+  campus?: string;
+  year?: string;
+}) {
+  return api.patch("/api/users/me/public-profile", input);
 }
 
-export function updatePublicProfile(input: { displayName?: string; bio?: string; interests?: string[]; campus?: string; year?: string }) {
-  return api.patch("/api/users/me/public-profile", input);
+export function setupCommunityProfile(input: { useOriginalName: boolean; displayName?: string }) {
+  return api.patch("/api/users/me/community-profile-setup", input);
 }
 
 export function uploadChatFile(dataUri: string, name?: string) {

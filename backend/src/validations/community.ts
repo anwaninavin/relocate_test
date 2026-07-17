@@ -44,11 +44,24 @@ export const usernameUpdateSchema = z.object({
 
 export const publicProfileUpdateSchema = z.object({
   displayName: z.string().trim().max(40).optional(),
+  avatar: z.string().trim().max(500).optional().nullable(),
   bio: z.string().trim().max(200).optional(),
   interests: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
   campus: z.string().trim().max(120).optional().nullable(),
   year: z.string().trim().max(20).optional().nullable(),
 });
+
+// One-time prompt shown on first visit to Community — asks only whether the student wants
+// their real name or a different name as their community display name.
+export const communityProfileSetupSchema = z
+  .object({
+    useOriginalName: z.boolean(),
+    displayName: z.string().trim().min(1, "Enter a name").max(40).optional(),
+  })
+  .refine((data) => data.useOriginalName || Boolean(data.displayName), {
+    message: "Enter a name",
+    path: ["displayName"],
+  });
 
 // --- Site-admin community management -------------------------------------------------------
 

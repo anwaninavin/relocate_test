@@ -41,6 +41,7 @@ export interface UserDTO {
   interests: string[];
   campus: string | null;
   year: string | null;
+  communityProfileConfigured: boolean;
 }
 
 export const DEFAULT_CHECKLIST_CATEGORIES = [
