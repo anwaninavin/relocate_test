@@ -19,6 +19,7 @@ import {
   Compass,
   Globe2,
   MessageCircle,
+  BedDouble,
 } from "lucide-react";
 
 export { HOME_ROUTE } from "@/lib/routes";
@@ -44,6 +45,7 @@ export const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: "/shopping", label: "Shopping", icon: ShoppingBag },
   { href: "/guide/survival-guide", label: "Hostel Guide", icon: BookOpen },
   { href: "/discover", label: "Discover", icon: Users },
+  { href: "/find-a-roomie", label: "Find a Roomie", icon: BedDouble },
   { href: "/bookings", label: "Bookings", icon: Ticket },
   { href: "/explore", label: "Explore", icon: Compass },
 ];

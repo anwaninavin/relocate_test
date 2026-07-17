@@ -5,7 +5,6 @@ import { PageHeader } from "@/components/shared/page-header";
 import { api, peekCache } from "@/lib/api";
 import { TravelProfileForm } from "@/features/discovery/travel-profile-form";
 import { CoPackerView } from "@/features/discovery/co-packer-view";
-import { RoommateView } from "@/features/discovery/roommate-view";
 import { ConnectionsView } from "@/features/discovery/connections-view";
 import { DirectoryContactsView } from "@/features/directory-contacts/directory-contacts-view";
 import { toTravelProfileDTO, type TravelProfileRaw } from "@/features/discovery/discovery-dto";
@@ -33,12 +32,11 @@ export default function DiscoverPage() {
 
   return (
     <div>
-      <PageHeader title="Discover" description="Find co-packers, roommates, and useful contacts in your destination city" />
+      <PageHeader title="Discover" description="Find co-packers and useful contacts in your destination city" />
 
       <Tabs defaultValue="co-packer" className="flex flex-col gap-6">
         <TabsList className="flex-wrap overflow-x-auto">
           <TabsTrigger value="co-packer">Co-Packer</TabsTrigger>
-          <TabsTrigger value="roommate">Roommate</TabsTrigger>
           <TabsTrigger value="contacts">Contacts</TabsTrigger>
           <TabsTrigger value="requests">Requests</TabsTrigger>
           <TabsTrigger value="profile">My Profile</TabsTrigger>
@@ -47,14 +45,13 @@ export default function DiscoverPage() {
         <TabsContent value="co-packer">
           <CoPackerView hasProfile={hasProfile} />
         </TabsContent>
-        <TabsContent value="roommate">
-          <RoommateView hasProfile={hasProfile} />
-        </TabsContent>
         <TabsContent value="contacts">
           <DirectoryContactsView defaultCity={defaultCity} />
         </TabsContent>
         <TabsContent value="requests">
-          <ConnectionsView />
+          {/* Roommate matching moved to its own /find-a-roomie page, and its requests went with
+              it — this list stays scoped to the co-packer matching that's still on this page. */}
+          <ConnectionsView context="co_packer" />
         </TabsContent>
         <TabsContent value="profile">
           <TravelProfileForm

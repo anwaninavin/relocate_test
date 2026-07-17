@@ -2,13 +2,17 @@ import { useEffect, useState } from "react";
 import { Home } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { api, ApiError } from "@/lib/api";
 import { DiscoveryCard } from "@/features/discovery/discovery-card";
 import { DiscoveryFilters, EMPTY_FILTERS, buildDiscoveryQuery, type DiscoveryFilterState } from "@/features/discovery/discovery-filters";
 import type { DiscoveryCardDTO } from "@/features/discovery/discovery-dto";
 
-export function RoommateView({ hasProfile }: { hasProfile: boolean }) {
+/** @param onEditProfile - Sends the student to the travel-profile form when they have no
+ * profile yet. Matching is impossible without one, so this is the only way out of the empty
+ * state — the form lives in a sibling tab, not on screen. */
+export function RoommateView({ hasProfile, onEditProfile }: { hasProfile: boolean; onEditProfile?: () => void }) {
   const [filters, setFilters] = useState<DiscoveryFilterState>(EMPTY_FILTERS);
   const [results, setResults] = useState<DiscoveryCardDTO[] | null>(null);
 
@@ -28,7 +32,14 @@ export function RoommateView({ hasProfile }: { hasProfile: boolean }) {
       <EmptyState
         icon={Home}
         title="Save your travel profile first"
-        description="Fill in your destination city above to find roommates arriving around the same time."
+        description="Tell us where you're headed and roughly when, and we'll match you with roomies arriving around the same time."
+        action={
+          onEditProfile && (
+            <Button size="sm" onClick={onEditProfile}>
+              Set up my profile
+            </Button>
+          )
+        }
       />
     );
   }

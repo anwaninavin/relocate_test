@@ -82,10 +82,14 @@ interface PopulatedUser {
   verified: boolean;
 }
 
+/** Which matcher a connection came from — co-packers (Discover) or roommates (Find a Roomie).
+ * The two live on separate pages, so it also scopes each page's request lists. */
+export type ConnectionContext = "co_packer" | "roommate";
+
 export interface ConnectionRequestDTO {
   id: string;
   status: "pending" | "accepted" | "declined";
-  context: "co_packer" | "roommate";
+  context: ConnectionContext;
   message: string | null;
   createdAt: string;
   otherUser: PopulatedUser;
@@ -94,7 +98,7 @@ export interface ConnectionRequestDTO {
 export interface ConnectionRequestRaw {
   _id: string;
   status: "pending" | "accepted" | "declined";
-  context: "co_packer" | "roommate";
+  context: ConnectionContext;
   message: string | null;
   createdAt: string;
   requesterId: PopulatedUser;

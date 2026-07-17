@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { Check, X, UserX, ShieldOff } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Check, X, UserX, ShieldOff, MessageSquare } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -10,10 +11,12 @@ import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
+import { startDirectConversation } from "@/features/community/community-api";
 import {
   toIncomingRequestDTO,
   toOutgoingRequestDTO,
   toAcceptedConnectionDTO,
+  type ConnectionContext,
   type ConnectionRequestDTO,
   type ConnectionRequestRaw,
 } from "@/features/discovery/discovery-dto";
@@ -38,7 +41,34 @@ function RequestRow({ request, children }: { request: ConnectionRequestDTO; chil
   );
 }
 
-export function ConnectionsView() {
+/** Opens (or reuses) the DM with a connection and jumps into it — the bridge from a match to
+ * an actual conversation. The endpoint is idempotent per pair, so tapping this repeatedly
+ * lands in the same thread rather than spawning duplicates. */
+function MessageButton({ userId }: { userId: string }) {
+  const navigate = useNavigate();
+  const [starting, setStarting] = useState(false);
+
+  async function handleMessage() {
+    setStarting(true);
+    try {
+      const { conversation } = await startDirectConversation(userId);
+      navigate(`/chat/${conversation._id}`);
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to start conversation");
+      setStarting(false);
+    }
+  }
+
+  return (
+    <Button size="sm" variant="outline" onClick={handleMessage} disabled={starting}>
+      <MessageSquare className="size-4" /> Message
+    </Button>
+  );
+}
+
+/** @param context - Scopes every request list to one matcher. Co-packers and roommates now
+ * live on separate pages, so each shows only its own requests; omit to show both. */
+export function ConnectionsView({ context }: { context?: ConnectionContext }) {
   const { user } = useAuth();
   const [incoming, setIncoming] = useState<ConnectionRequestDTO[]>([]);
   const [outgoing, setOutgoing] = useState<ConnectionRequestDTO[]>([]);
@@ -46,6 +76,7 @@ export function ConnectionsView() {
   const [blocked, setBlocked] = useState<{ _id: string; name: string | null; mobile: string }[]>([]);
 
   async function refresh() {
+    const inContext = (r: ConnectionRequestDTO) => !context || r.context === context;
     try {
       const [inc, out, acc, blk] = await Promise.all([
         api.get<{ requests: ConnectionRequestRaw[] }>("/api/discovery/connections/incoming"),
@@ -53,9 +84,9 @@ export function ConnectionsView() {
         api.get<{ connections: ConnectionRequestRaw[] }>("/api/discovery/connections/accepted"),
         api.get<{ blocked: { _id: string; name: string | null; mobile: string }[] }>("/api/discovery/blocked"),
       ]);
-      setIncoming(inc.requests.map(toIncomingRequestDTO));
-      setOutgoing(out.requests.map(toOutgoingRequestDTO));
-      if (user) setAccepted(acc.connections.map((c) => toAcceptedConnectionDTO(c, user.id)));
+      setIncoming(inc.requests.map(toIncomingRequestDTO).filter(inContext));
+      setOutgoing(out.requests.map(toOutgoingRequestDTO).filter(inContext));
+      if (user) setAccepted(acc.connections.map((c) => toAcceptedConnectionDTO(c, user.id)).filter(inContext));
       setBlocked(blk.blocked);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to load connections");
@@ -65,7 +96,7 @@ export function ConnectionsView() {
   useEffect(() => {
     refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  }, [user?.id, context]);
 
   async function respond(id: string, status: "accepted" | "declined") {
     try {
@@ -131,7 +162,9 @@ export function ConnectionsView() {
         ) : (
           <div className="flex flex-col gap-2">
             {accepted.map((r) => (
-              <RequestRow key={r.id} request={r} />
+              <RequestRow key={r.id} request={r}>
+                <MessageButton userId={r.otherUser._id} />
+              </RequestRow>
             ))}
           </div>
         )}

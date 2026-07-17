@@ -7,9 +7,9 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { api, ApiError } from "@/lib/api";
-import type { DiscoveryCardDTO } from "@/features/discovery/discovery-dto";
+import type { ConnectionContext, DiscoveryCardDTO } from "@/features/discovery/discovery-dto";
 
-export function DiscoveryCard({ card, context }: { card: DiscoveryCardDTO; context: "co_packer" | "roommate" }) {
+export function DiscoveryCard({ card, context }: { card: DiscoveryCardDTO; context: ConnectionContext }) {
   const [status, setStatus] = useState<"idle" | "sent">("idle");
   const [sending, setSending] = useState(false);
 
