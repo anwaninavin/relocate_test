@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { api, ApiError } from "@/lib/api";
+import { NAV_LAYOUT_STORAGE_KEY, writePersistedLayout } from "@/lib/layout-cache";
 import {
   DEFAULT_FAB_VISIBLE,
   DEFAULT_NAV_LAYOUT,
@@ -127,9 +128,12 @@ export function NavEditorView() {
   async function handleSave() {
     setIsSaving(true);
     try {
-      await api.put("/api/admin/nav-layout", {
-        widgets: [...entries, { id: FAB_NAV_ID, visible: fabVisible }],
-      });
+      const widgets = [...entries, { id: FAB_NAV_ID, visible: fabVisible }];
+      await api.put("/api/admin/nav-layout", { widgets });
+      // Keep this browser's persisted copy in step with what we just saved, so the admin's own
+      // next load paints the new nav rather than briefly replaying the old one back at them
+      // before the refetch lands.
+      writePersistedLayout(NAV_LAYOUT_STORAGE_KEY, widgets);
       toast.success("Nav layout saved");
       setIsDirty(false);
     } catch (error) {

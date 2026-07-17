@@ -56,7 +56,7 @@ export function hubCardLabel(id: string): string {
 
 /** A layout entry as it comes back from the API — only `id`/`visible` are guaranteed, so
  * `order` is optional here even though HubLayoutEntry requires it once merged. */
-interface SavedHubWidget {
+export interface SavedHubWidget {
   id: string;
   visible: boolean;
   order?: number | null;

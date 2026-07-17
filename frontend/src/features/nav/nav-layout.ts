@@ -55,7 +55,7 @@ export function navItemLabel(href: string): string {
 /** A layout entry as it comes back from the API — only `id`/`visible` are guaranteed (that's
  * all the dashboard/home-card layouts ever save through this same shared storage shape), so
  * placement/order are optional here even though NavLayoutEntry requires them once merged. */
-interface SavedNavWidget {
+export interface SavedNavWidget {
   id: string;
   visible: boolean;
   placement?: NavPlacement | null;

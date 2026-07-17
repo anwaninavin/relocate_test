@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
+import { HOME_LAYOUT_STORAGE_KEY, writePersistedLayout } from "@/lib/layout-cache";
 import {
   DEFAULT_HUB_LAYOUT,
   hubCardLabel,
@@ -95,6 +96,10 @@ export function HomeCardsEditorView() {
     setIsSaving(true);
     try {
       await api.put("/api/admin/home-layout", { widgets: entries });
+      // Keep this browser's persisted copy in step with what we just saved, so the admin's own
+      // next visit to the home page paints the new layout rather than briefly replaying the old
+      // one back at them before the refetch lands.
+      writePersistedLayout(HOME_LAYOUT_STORAGE_KEY, entries);
       toast.success("Home cards saved");
       setIsDirty(false);
     } catch (error) {
