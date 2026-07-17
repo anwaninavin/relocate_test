@@ -164,6 +164,18 @@ export function ConnectionsView({ context }: { context?: ConnectionContext }) {
             {accepted.map((r) => (
               <RequestRow key={r.id} request={r}>
                 <MessageButton userId={r.otherUser._id} />
+                {/* Accepting a match isn't final — either side can back out afterwards. */}
+                <ConfirmDialog
+                  trigger={
+                    <Button size="sm" variant="outline">
+                      <X className="size-4" /> Reject
+                    </Button>
+                  }
+                  title={`Reject ${r.otherUser.name ?? "this student"}?`}
+                  description="You'll both drop out of each other's connections. They can send you a new request later, and so can you."
+                  confirmLabel="Reject"
+                  onConfirm={() => respond(r.id, "declined")}
+                />
               </RequestRow>
             ))}
           </div>
