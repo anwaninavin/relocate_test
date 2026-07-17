@@ -62,6 +62,7 @@ const AdminSuggestedItemsPage = lazy(() => import("@/pages/admin-suggested-items
 const AdminTempUsersPage = lazy(() => import("@/pages/admin-temp-users-page"));
 const AdminChecklistHealthPage = lazy(() => import("@/pages/admin-checklist-health-page"));
 const DiscoverPage = lazy(() => import("@/pages/discover-page"));
+const FindARoomiePage = lazy(() => import("@/pages/find-a-roomie-page"));
 const BookingsPage = lazy(() => import("@/pages/bookings-page"));
 const ExplorePage = lazy(() => import("@/pages/explore-page"));
 const CommunityPage = lazy(() => import("@/pages/community-page"));
@@ -147,6 +148,7 @@ export default function App() {
             <Route path="/wishlist" element={<WishlistPage />} />
             <Route path="/shopping" element={<ShoppingPage />} />
             <Route path="/discover" element={<DiscoverPage />} />
+            <Route path="/find-a-roomie" element={<FindARoomiePage />} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/community" element={<CommunityPage />} />
