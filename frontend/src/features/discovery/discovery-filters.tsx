@@ -1,14 +1,12 @@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ACCOMMODATION_TYPES, GENDER_OPTIONS } from "@/types";
+import { GENDER_OPTIONS } from "@/types";
 
 export interface DiscoveryFilterState {
   gender: string;
   ageMin: string;
   ageMax: string;
   college: string;
-  budgetMax: string;
-  accommodationType: string;
 }
 
 export const EMPTY_FILTERS: DiscoveryFilterState = {
@@ -16,23 +14,19 @@ export const EMPTY_FILTERS: DiscoveryFilterState = {
   ageMin: "",
   ageMax: "",
   college: "",
-  budgetMax: "",
-  accommodationType: "",
 };
 
 const ANY = "__any__";
 
-/** @param showRoommateFilters - Find a Roomie's filter set: adds budget and accommodation type,
- * and drops the age inputs, which are no longer part of roommate matching. Age stays for
- * Co-Packer. The arrival-week filter is gone entirely — it only ever served Find a Roomie. */
+/** Co-Packer's filter bar, and only Co-Packer's — Find a Roomie has no filters at all now, so
+ * the budget and accommodation-type inputs that existed solely for it are gone along with it
+ * (see RoommateView). */
 export function DiscoveryFilters({
   value,
   onChange,
-  showRoommateFilters,
 }: {
   value: DiscoveryFilterState;
   onChange: (v: DiscoveryFilterState) => void;
-  showRoommateFilters?: boolean;
 }) {
   return (
     <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -56,49 +50,20 @@ export function DiscoveryFilters({
         onChange={(e) => onChange({ ...value, college: e.target.value })}
       />
 
-      {!showRoommateFilters && (
-        <div className="flex gap-2">
-          <Input
-            type="number"
-            placeholder="Age min"
-            value={value.ageMin}
-            onChange={(e) => onChange({ ...value, ageMin: e.target.value })}
-          />
-          <Input
-            type="number"
-            placeholder="Age max"
-            value={value.ageMax}
-            onChange={(e) => onChange({ ...value, ageMax: e.target.value })}
-          />
-        </div>
-      )}
-
-      {showRoommateFilters && (
-        <>
-          <Input
-            type="number"
-            placeholder="Max budget (₹/mo)"
-            value={value.budgetMax}
-            onChange={(e) => onChange({ ...value, budgetMax: e.target.value })}
-          />
-          <Select
-            value={value.accommodationType || ANY}
-            onValueChange={(v) => onChange({ ...value, accommodationType: v === ANY ? "" : v })}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Accommodation type" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ANY}>Any type</SelectItem>
-              {ACCOMMODATION_TYPES.map((t) => (
-                <SelectItem key={t} value={t}>
-                  {t}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </>
-      )}
+      <div className="flex gap-2">
+        <Input
+          type="number"
+          placeholder="Age min"
+          value={value.ageMin}
+          onChange={(e) => onChange({ ...value, ageMin: e.target.value })}
+        />
+        <Input
+          type="number"
+          placeholder="Age max"
+          value={value.ageMax}
+          onChange={(e) => onChange({ ...value, ageMax: e.target.value })}
+        />
+      </div>
     </div>
   );
 }
@@ -109,7 +74,5 @@ export function buildDiscoveryQuery(filters: DiscoveryFilterState): string {
   if (filters.ageMin) params.set("ageMin", filters.ageMin);
   if (filters.ageMax) params.set("ageMax", filters.ageMax);
   if (filters.college) params.set("college", filters.college);
-  if (filters.budgetMax) params.set("budgetMax", filters.budgetMax);
-  if (filters.accommodationType) params.set("accommodationType", filters.accommodationType);
   return params.toString();
 }

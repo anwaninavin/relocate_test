@@ -138,26 +138,15 @@ export function isRoommateProfileComplete(profile: {
   return profile.budgetMin != null && profile.budgetMax != null && Boolean(profile.accommodationType);
 }
 
-/** Find a Roomie's filter-bar refinements. Deliberately narrower than the co-packer set: age is
- * no longer part of roommate matching, so it isn't honoured here even if an older client still
- * sends it. Narrowing to a type keeps the "Any" crowd in — they're up for that type too. */
-function applyRoommateFilters(profiles: ProfileWithUser[], filters: DiscoveryQuery) {
-  return profiles.filter((p) => {
-    if (filters.gender && p.userId.gender !== filters.gender) return false;
-    if (filters.college && !(p.college ?? p.userId.college ?? "").toLowerCase().includes(filters.college.toLowerCase())) return false;
-    if (filters.accommodationType && !accommodationSatisfied(filters.accommodationType, p.accommodationType)) return false;
-    if (filters.budgetMax != null && p.budgetMin != null && p.budgetMin > filters.budgetMax) return false;
-    return true;
-  });
-}
-
 /** Roommate discovery. Four conditions are mandatory, and a candidate failing any of them is
  * not shown at all: same destination city, overlapping budget, mutually acceptable gender
- * preference, and a compatible accommodation type. Everything else — college, interests,
- * languages, lifestyle — is an optional filter or feeds the compatibility score only.
+ * preference, and a compatible accommodation type. College, interests, languages and lifestyle
+ * feed the compatibility score only.
  *
- * Dates and age play no part here, and no longer exist on the profile at all. */
-export async function findRoommates(viewerUserId: string, filters: DiscoveryQuery) {
+ * There are no filter arguments: the four requirements come from the viewer's own profile, so
+ * Find a Roomie has no filter bar to send any (see RoommateView). Dates and age play no part
+ * here, and no longer exist on the profile at all. */
+export async function findRoommates(viewerUserId: string) {
   await connectDB();
   const { viewer, myProfile, blockedByOthers } = await loadViewerContext(viewerUserId);
   if (!myProfile) return [];
@@ -198,7 +187,7 @@ export async function findRoommates(viewerUserId: string, filters: DiscoveryQuer
       genderPreferenceSatisfied(myProfile.genderPreference, c.userId.gender),
   );
 
-  return applyRoommateFilters(visible, filters)
+  return visible
     .map((c) => ({ ...baseCard(c), compatibilityScore: computeCompatibility(myProfile, c) }))
     .sort((a, b) => b.compatibilityScore - a.compatibilityScore);
 }

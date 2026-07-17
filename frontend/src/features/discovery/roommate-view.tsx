@@ -6,10 +6,14 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/shared/empty-state";
 import { api, ApiError } from "@/lib/api";
 import { DiscoveryCard } from "@/features/discovery/discovery-card";
-import { DiscoveryFilters, EMPTY_FILTERS, buildDiscoveryQuery, type DiscoveryFilterState } from "@/features/discovery/discovery-filters";
 import type { DiscoveryCardDTO } from "@/features/discovery/discovery-dto";
 
-/** @param profileComplete - Whether the profile carries the fields roommate matching requires
+/** No filter bar here, by design: your own profile already states the destination, budget,
+ * accommodation type and gender preference, and matching treats all four as hard requirements.
+ * Anything the old filters could narrow was either one of those — already applied — or a
+ * refinement on a deck this small. Change the profile to change the matches.
+ *
+ * @param profileComplete - Whether the profile carries the fields roommate matching requires
  * (budget, accommodation type — see isRoommateProfileComplete). The server returns nothing
  * without them, so without this the student would get a "no roomies" screen blaming the city
  * for a gap in their own profile.
@@ -25,7 +29,6 @@ export function RoommateView({
   profileComplete: boolean;
   onEditProfile?: () => void;
 }) {
-  const [filters, setFilters] = useState<DiscoveryFilterState>(EMPTY_FILTERS);
   const [results, setResults] = useState<DiscoveryCardDTO[] | null>(null);
 
   useEffect(() => {
@@ -34,10 +37,10 @@ export function RoommateView({
       return;
     }
     api
-      .get<{ results: DiscoveryCardDTO[] }>(`/api/discovery/roommates?${buildDiscoveryQuery(filters)}`)
+      .get<{ results: DiscoveryCardDTO[] }>("/api/discovery/roommates")
       .then(({ results }) => setResults(results))
       .catch((error) => toast.error(error instanceof ApiError ? error.message : "Failed to load roommates"));
-  }, [filters, hasProfile, profileComplete]);
+  }, [hasProfile, profileComplete]);
 
   if (!hasProfile) {
     return (
@@ -75,7 +78,6 @@ export function RoommateView({
 
   return (
     <div>
-      <DiscoveryFilters value={filters} onChange={setFilters} showRoommateFilters />
       {results === null ? null : results.length === 0 ? (
         <EmptyState
           icon={Home}

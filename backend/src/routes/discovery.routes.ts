@@ -44,13 +44,11 @@ discoveryRouter.get("/co-packers", async (req, res) => {
   res.json({ results });
 });
 
+/** No query filters: roommate matching is driven entirely by the viewer's own travel profile.
+ * A stale client still sending the old filter params gets an unfiltered deck rather than a 400
+ * — its results are a superset of what it asked for, which beats an error screen. */
 discoveryRouter.get("/roommates", async (req, res) => {
-  const parsed = discoveryQuerySchema.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid filters" });
-    return;
-  }
-  const results = await findRoommates(req.user!._id.toString(), parsed.data);
+  const results = await findRoommates(req.user!._id.toString());
   res.json({ results });
 });
 
