@@ -1,13 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
-import { ADMIN_NAV_ITEM, HOME_ROUTE, SETTINGS_NAV_ITEM, type NavItem } from "@/lib/nav-items";
+import { ADMIN_NAV_ITEM, HOME_ROUTE, type NavItem } from "@/lib/nav-items";
 import { BrandName } from "@/components/shared/brand-name";
 
 export function Sidebar({ isAdmin, items }: { isAdmin: boolean; items: NavItem[] }) {
   const { pathname } = useLocation();
 
-  const allItems = [...items, SETTINGS_NAV_ITEM, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
+  const allItems = [...items, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
 
   return (
     <aside className="bg-sidebar border-sidebar-border sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r px-4 py-6 lg:flex">

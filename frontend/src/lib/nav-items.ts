@@ -13,7 +13,6 @@ import {
   BookOpen,
   UserRound,
   ShieldCheck,
-  Settings,
   Users,
   Ticket,
   Compass,
@@ -62,15 +61,10 @@ export const ADMIN_NAV_ITEM: NavItem = {
   icon: ShieldCheck,
 };
 
-export const SETTINGS_NAV_ITEM: NavItem = {
-  href: "/settings",
-  label: "Settings",
-  icon: Settings,
-};
-
 /** Every nav item an admin can independently show/hide, place in the bottom tab bar vs the
  * "more" (3-dot) overflow menu, and reorder — see features/nav/nav-layout.ts for the
- * admin-configurable layout built from this list. Settings/Admin are deliberately not part
- * of this set: they're system entries, always pinned at the end of the overflow menu (and
- * the desktop sidebar), not a "feature" an admin would hide or reposition. */
+ * admin-configurable layout built from this list. Admin is deliberately not part of this
+ * set: it's a system entry, always pinned at the end of the overflow menu (and the desktop
+ * sidebar), not a "feature" an admin would hide or reposition. Profile carries account
+ * settings alongside the profile fields, so it stays configurable like any other feature. */
 export const CONFIGURABLE_NAV_ITEMS: NavItem[] = [...PRIMARY_NAV_ITEMS, PROFILE_NAV_ITEM];

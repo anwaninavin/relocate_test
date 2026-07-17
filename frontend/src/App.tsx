@@ -41,7 +41,6 @@ const GuidePage = lazy(() => import("@/pages/guide-page"));
 const GuideArticlePage = lazy(() => import("@/pages/guide-article-page"));
 const SurvivalGuidePage = lazy(() => import("@/pages/survival-guide-page"));
 const ProfilePage = lazy(() => import("@/pages/profile-page"));
-const SettingsPage = lazy(() => import("@/pages/settings-page"));
 const AdminPage = lazy(() => import("@/pages/admin-page"));
 const AdminUsersPage = lazy(() => import("@/pages/admin-users-page"));
 const AdminProductsPage = lazy(() => import("@/pages/admin-products-page"));
@@ -148,7 +147,7 @@ export default function App() {
             <Route path="/guide/survival-guide" element={<SurvivalGuidePage />} />
             <Route path="/guide/:slug" element={<GuideArticlePage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings" element={<Navigate to="/profile" replace />} />
             <Route
               path="/admin"
               element={
