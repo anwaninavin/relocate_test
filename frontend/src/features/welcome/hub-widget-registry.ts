@@ -1,6 +1,7 @@
 import {
   BedDouble,
   BookOpen,
+  Compass,
   FileText,
   Globe2,
   Heart,
@@ -49,6 +50,10 @@ export const HUB_CARDS: HubCardDef[] = [
   // layout has already assigned to another card, leaving the two to tie. Appending keeps its
   // order past every saved one, so it lands last until an admin positions it.
   { id: "find-a-roomie", section: "Roommate Vibes", title: "Find a Roomie", href: "/find-a-roomie", icon: BedDouble },
+  // Appended for the same reason as find-a-roomie above — a fresh card's default order is its
+  // array index, so inserting it mid-array would collide with an order a saved layout already
+  // assigned elsewhere.
+  { id: "explore", section: "Explore", title: "Explore", href: "/explore", icon: Compass },
 ];
 
 export const DEFAULT_HUB_LAYOUT: HubLayoutEntry[] = HUB_CARDS.map((card, i) => ({

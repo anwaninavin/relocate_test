@@ -10,7 +10,7 @@ import { api, ApiError } from "@/lib/api";
 import type { ConnectionContext, DiscoveryCardDTO } from "@/features/discovery/discovery-dto";
 
 export function DiscoveryCard({ card, context }: { card: DiscoveryCardDTO; context: ConnectionContext }) {
-  const [status, setStatus] = useState<"idle" | "sent">("idle");
+  const [status, setStatus] = useState<"idle" | "sent">(card.requestStatus === "sent" ? "sent" : "idle");
   const [sending, setSending] = useState(false);
 
   async function handleConnect() {
@@ -52,7 +52,8 @@ export function DiscoveryCard({ card, context }: { card: DiscoveryCardDTO; conte
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-3 gap-y-1 text-xs">
         <span className="flex items-center gap-1">
           <MapPin className="size-3" />
-          {card.currentCity} → {card.destinationCity}
+          {card.currentCity ? `${card.currentCity} → ` : ""}
+          {card.destinationCity}
         </span>
         {/* "Any" is a preference, not a place — as a bare badge next to "Hostel" and "Flat" it
             would read like a type of building. Say what it actually means. */}

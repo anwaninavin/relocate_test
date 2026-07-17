@@ -19,7 +19,6 @@ export interface TravelProfileDTO {
   lifestyleTags: string[];
   visibility: {
     hideProfile: boolean;
-    onlyShowVerified: boolean;
     onlyShowSameGender: boolean;
   };
   active: boolean;
@@ -45,7 +44,6 @@ export function toTravelProfileDTO(raw: TravelProfileRaw | null): TravelProfileD
     lifestyleTags: raw?.lifestyleTags ?? [],
     visibility: {
       hideProfile: raw?.visibility?.hideProfile ?? false,
-      onlyShowVerified: raw?.visibility?.onlyShowVerified ?? false,
       onlyShowSameGender: raw?.visibility?.onlyShowSameGender ?? false,
     },
     active: raw?.active ?? true,
@@ -83,6 +81,10 @@ export interface DiscoveryCardDTO {
   lifestyleTags: string[];
   age: number | null;
   compatibilityScore?: number;
+  /** Set by findRoommates when the viewer already has a pending outgoing request to this
+   * candidate — lets the card open already showing "Request sent" instead of a live Connect
+   * button. Only meaningful for roommate cards; co-packer cards never set it. */
+  requestStatus?: "sent" | null;
 }
 
 interface PopulatedUser {

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Compass, Heart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,18 +11,19 @@ import { api, ApiError } from "@/lib/api";
 import { PLACE_CATEGORIES } from "@/types";
 import { PlaceCard } from "@/features/places/place-card";
 import { toPlaceDTO, type PlaceDTO, type PlaceRaw } from "@/features/places/place-dto";
-import { toCityOptionDTO, type CityOptionDTO, type CityOptionRaw } from "@/features/auth/college-taxonomy-dto";
 
 const ANY = "__any__";
 
-export function PlacesView({ defaultCity }: { defaultCity: string }) {
-  const [city, setCity] = useState(defaultCity);
+/** @param city - The student's destination city, taken directly from their travel profile.
+ * There's no picker any more: Explore is meant to show the one city that's actually relevant,
+ * not let a student browse the whole country. Blank (no travel profile / no destination city
+ * saved yet) shows an actionable empty state instead of an empty picker. */
+export function PlacesView({ city }: { city: string }) {
   const [category, setCategory] = useState("");
   const [search, setSearch] = useState("");
   const [showFavorites, setShowFavorites] = useState(false);
   const [places, setPlaces] = useState<PlaceDTO[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
-  const [cities, setCities] = useState<CityOptionDTO[]>([]);
 
   async function fetchFavorites() {
     try {
@@ -62,58 +64,24 @@ export function PlacesView({ defaultCity }: { defaultCity: string }) {
   }, []);
 
   useEffect(() => {
-    api
-      .get<{ cities: CityOptionRaw[] }>("/api/cities")
-      .then(({ cities: raw }) => {
-        const options = raw.map(toCityOptionDTO);
-        setCities(options);
-        // The travel profile takes the destination city as free text
-        // (discovery/travel-profile-form.tsx), so it may differ from the catalog by case. The
-        // API doesn't care — it matches case-insensitively — but Select needs an exact match
-        // against an item to show anything, so snap to the catalog's spelling.
-        setCity((current) => options.find((c) => c.name.toLowerCase() === current.toLowerCase())?.name ?? current);
-      })
-      .catch((error) => toast.error(error instanceof ApiError ? error.message : "Failed to load cities"));
-  }, []);
-
-  useEffect(() => {
     fetchPlaces();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [city, category, search, showFavorites]);
 
-  /** Catalog cities, plus the selected one if the catalog has no spelling of it at all — a
-   * free-text profile can say "Bangalore" where the catalog says "Bengaluru". Listing it keeps
-   * the picker honest about what's being searched (and why it found nothing) instead of
-   * rendering blank over a live filter. */
-  const cityOptions = useMemo(() => {
-    const names = cities.map((c) => c.name);
-    if (city && !names.some((name) => name.toLowerCase() === city.toLowerCase())) return [city, ...names];
-    return names;
-  }, [cities, city]);
-
   const empty = showFavorites
     ? { title: "No favourites yet", description: "Save places you like to see them here." }
     : !city.trim()
-      ? { title: "Choose a city to explore", description: "Pick a city above to see places and eateries worth your time." }
-      : { title: "No places found", description: "Try a different city or category." };
+      ? {
+          title: "Set your destination city",
+          description: "Add your destination city in Find a Roomie's profile tab and we'll show places to explore there.",
+        }
+      : { title: "No places found", description: "Try a different category or search." };
 
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2">
-        {!showFavorites && (
+        {!showFavorites && city.trim() && (
           <>
-            <Select value={city} onValueChange={setCity}>
-              <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="City" />
-              </SelectTrigger>
-              <SelectContent>
-                {cityOptions.map((name) => (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
             <Select value={category || ANY} onValueChange={(v) => setCategory(v === ANY ? "" : v)}>
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Category" />
@@ -141,7 +109,18 @@ export function PlacesView({ defaultCity }: { defaultCity: string }) {
       </div>
 
       {places.length === 0 ? (
-        <EmptyState icon={Compass} title={empty.title} description={empty.description} />
+        <EmptyState
+          icon={Compass}
+          title={empty.title}
+          description={empty.description}
+          action={
+            !showFavorites && !city.trim() ? (
+              <Button asChild size="sm">
+                <Link to="/find-a-roomie">Set destination city</Link>
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {places.map((place) => (
