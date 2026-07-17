@@ -37,10 +37,7 @@ export default function FindARoomiePage() {
 
   return (
     <div>
-      <PageHeader
-        title="Find a Roomie"
-        description="Match with students moving to your destination city, then start chatting"
-      />
+      <PageHeader title="Find a Roomie" />
 
       <Tabs value={tab} onValueChange={setTab} className="flex flex-col gap-6">
         <TabsList className="flex-wrap overflow-x-auto">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BadgeCheck, MapPin, Calendar, GraduationCap, UserPlus, Check } from "lucide-react";
+import { BadgeCheck, MapPin, GraduationCap, UserPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,23 +54,13 @@ export function DiscoveryCard({ card, context }: { card: DiscoveryCardDTO; conte
           <MapPin className="size-3" />
           {card.currentCity} → {card.destinationCity}
         </span>
-        {/* Dates are a co-packer concern: that match is built on travelling together, so when
-            someone arrives is the point. Roommate matching ignores travel month and arrival
-            date entirely, so showing them here would only invite a judgement the match didn't
-            make. */}
-        {context === "co_packer" &&
-          (card.arrivalDate ? (
-            <span className="flex items-center gap-1">
-              <Calendar className="size-3" />
-              {new Date(card.arrivalDate).toLocaleDateString()}
-            </span>
-          ) : (
-            <span className="flex items-center gap-1">
-              <Calendar className="size-3" />
-              {card.travelMonth}
-            </span>
-          ))}
-        {card.accommodationType && <Badge variant="outline">{card.accommodationType}</Badge>}
+        {/* "Any" is a preference, not a place — as a bare badge next to "Hostel" and "Flat" it
+            would read like a type of building. Say what it actually means. */}
+        {card.accommodationType && (
+          <Badge variant="outline">
+            {card.accommodationType === "Any" ? "Open to any place" : card.accommodationType}
+          </Badge>
+        )}
         {context === "roommate" && card.budgetMin != null && card.budgetMax != null && (
           <span>
             ₹{card.budgetMin.toLocaleString("en-IN")}–{card.budgetMax.toLocaleString("en-IN")}/mo

@@ -27,12 +27,12 @@ const travelProfileSchema = z
   .object({
     currentCity: z.string().trim().min(1, "Enter your current city").max(80),
     destinationCity: z.string().trim().min(1, "Enter your destination city").max(80),
-    travelMonth: z.string().trim().regex(/^\d{4}-\d{2}$/, "Pick a month"),
-    arrivalDate: z.string().optional(),
     college: z.string().trim().max(120).optional(),
     // Required — roommate matching won't show anyone without these (see findRoommates).
     budgetMin: budgetField("Enter your minimum budget"),
     budgetMax: budgetField("Enter your maximum budget"),
+    // Both default to "Any", so neither can actually arrive empty — these guard against a
+    // hand-rolled request, not against the form.
     accommodationType: z.string().trim().min(1, "Pick an accommodation type"),
     genderPreference: z.string().trim().min(1, "Pick a gender preference"),
     ageRangeMin: z.coerce.number().min(16).max(100).optional(),
@@ -55,10 +55,54 @@ function toLines(value: string) {
   return value.split(",").map((v) => v.trim()).filter(Boolean);
 }
 
+/** @param divided - Draws a rule above the heading. Skip it on the first section, where there's
+ * nothing to divide from. */
+function SectionHeading({ title, hint, divided }: { title: string; hint: string; divided?: boolean }) {
+  return (
+    <div className={divided ? "border-border/60 mt-2 flex flex-col gap-0.5 border-t pt-5" : "flex flex-col gap-0.5"}>
+      <p className="text-sm font-medium">{title}</p>
+      <p className="text-muted-foreground text-xs">{hint}</p>
+    </div>
+  );
+}
+
+/** DefaultValues, not FormInput: budget is required in the parsed output, but a profile that
+ * hasn't set one has to start the field *empty* so the student is asked for it — seeding 0
+ * would both look like an answer and quietly pass validation. */
+function buildDefaults(profile: TravelProfileDTO | null): DefaultValues<FormInput> {
+  return {
+    currentCity: profile?.currentCity ?? "",
+    destinationCity: profile?.destinationCity ?? "",
+    college: profile?.college ?? "",
+    budgetMin: profile?.budgetMin ?? undefined,
+    budgetMax: profile?.budgetMax ?? undefined,
+    // "Any" rather than blank, matching genderPreference below and the model's own default:
+    // not stating a preference is itself an answer here, and the commonest one.
+    accommodationType: profile?.accommodationType ?? "Any",
+    genderPreference: profile?.genderPreference ?? "Any",
+    ageRangeMin: profile?.ageRangeMin ?? undefined,
+    ageRangeMax: profile?.ageRangeMax ?? undefined,
+    interests: profile?.interests ?? [],
+    languages: profile?.languages ?? [],
+    lifestyleTags: profile?.lifestyleTags ?? [],
+    hideProfile: profile?.visibility.hideProfile ?? false,
+    onlyShowVerified: profile?.visibility.onlyShowVerified ?? false,
+    onlyShowSameGender: profile?.visibility.onlyShowSameGender ?? false,
+  };
+}
+
+/** Fetches first and only then mounts the form, so `useForm` is seeded with the real profile
+ * once and never reset underneath a live field.
+ *
+ * That split is load-bearing, not tidiness. Mounting on placeholders and calling `form.reset`
+ * when the fetch lands silently wiped whichever Select the reset actually changed: Radix
+ * responds to a changed value by force-setting its hidden native <select> and dispatching a
+ * change event, and if the option list hasn't registered yet the select falls back to "" —
+ * which the event then writes straight back into the form. Gender preference survived only
+ * because its placeholder and its saved value were both "Any", so nothing ever changed. */
 export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfileDTO) => void }) {
   const [profile, setProfile] = useState<TravelProfileDTO | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     api
@@ -68,42 +112,23 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
       .finally(() => setLoaded(true));
   }, []);
 
-  /** DefaultValues, not FormInput: budget is required in the parsed output, but a profile that
-   * hasn't set one has to start the field *empty* so the student is asked for it — seeding 0
-   * would both look like an answer and quietly pass validation. */
-  function buildDefaults(): DefaultValues<FormInput> {
-    return {
-      currentCity: profile?.currentCity ?? "",
-      destinationCity: profile?.destinationCity ?? "",
-      travelMonth: profile?.travelMonth ?? "",
-      arrivalDate: profile?.arrivalDate?.slice(0, 10) ?? "",
-      college: profile?.college ?? "",
-      budgetMin: profile?.budgetMin ?? undefined,
-      budgetMax: profile?.budgetMax ?? undefined,
-      // Empty rather than a sentinel: accommodation type is required now, so an unset one has
-      // to fail validation and show the placeholder, not quietly mean "Any".
-      accommodationType: profile?.accommodationType ?? "",
-      genderPreference: profile?.genderPreference ?? "Any",
-      ageRangeMin: profile?.ageRangeMin ?? undefined,
-      ageRangeMax: profile?.ageRangeMax ?? undefined,
-      interests: profile?.interests ?? [],
-      languages: profile?.languages ?? [],
-      lifestyleTags: profile?.lifestyleTags ?? [],
-      hideProfile: profile?.visibility.hideProfile ?? false,
-      onlyShowVerified: profile?.visibility.onlyShowVerified ?? false,
-      onlyShowSameGender: profile?.visibility.onlyShowSameGender ?? false,
-    };
-  }
+  if (!loaded) return null;
+  return <TravelProfileFields profile={profile} onSaved={onSaved} />;
+}
+
+function TravelProfileFields({
+  profile,
+  onSaved,
+}: {
+  profile: TravelProfileDTO | null;
+  onSaved?: (profile: TravelProfileDTO) => void;
+}) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<FormInput>({
     resolver: zodResolver(travelProfileSchema) as Resolver<FormInput>,
-    defaultValues: buildDefaults(),
+    defaultValues: buildDefaults(profile),
   });
-
-  useEffect(() => {
-    if (loaded) form.reset(buildDefaults());
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loaded, profile]);
 
   async function onSubmit(values: FormInput) {
     setIsSubmitting(true);
@@ -116,18 +141,14 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
           onlyShowSameGender: values.onlyShowSameGender,
         },
       });
-      const dto = toTravelProfileDTO(saved);
-      setProfile(dto);
       toast.success("Discovery profile saved");
-      onSaved?.(dto);
+      onSaved?.(toTravelProfileDTO(saved));
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to save profile");
     } finally {
       setIsSubmitting(false);
     }
   }
-
-  if (!loaded) return null;
 
   return (
     <Card>
@@ -137,6 +158,11 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+            <SectionHeading
+              title="Required"
+              hint="Roomie matching only suggests people you line up with on every one of these."
+            />
+
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -169,51 +195,6 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
             <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="travelMonth"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Travel month</FormLabel>
-                    <FormControl>
-                      <Input type="month" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="arrivalDate"
-                render={({ field }) => (
-                  <FormItem>
-                    {/* No longer "for roommate matching" — roomie matching ignores dates
-                        entirely now. It only shows on your Co-Packer card. */}
-                    <FormLabel>Arrival date (optional)</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            <FormField
-              control={form.control}
-              name="college"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>College (optional)</FormLabel>
-                  <FormControl>
-                    <Input {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <div className="grid gap-4 sm:grid-cols-3">
-              <FormField
-                control={form.control}
                 name="budgetMin"
                 render={({ field }) => (
                   <FormItem>
@@ -238,6 +219,9 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
                   </FormItem>
                 )}
               />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="accommodationType"
@@ -247,10 +231,11 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
                         <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Pick one" />
+                          <SelectValue />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
+                        <SelectItem value="Any">Any</SelectItem>
                         {ACCOMMODATION_TYPES.map((t) => (
                           <SelectItem key={t} value={t}>
                             {t}
@@ -262,9 +247,6 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
                   </FormItem>
                 )}
               />
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-3">
               <FormField
                 control={form.control}
                 name="genderPreference"
@@ -286,9 +268,33 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
+            </div>
+
+            <SectionHeading
+              title="Optional"
+              hint="Used to rank your matches and narrow them down. Leave anything blank if you'd rather not say."
+              divided
+            />
+
+            <FormField
+              control={form.control}
+              name="college"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>College</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
                 name="ageRangeMin"
@@ -366,7 +372,11 @@ export function TravelProfileForm({ onSaved }: { onSaved?: (profile: TravelProfi
               />
             </div>
 
-            <p className="text-muted-foreground text-sm font-medium">Privacy settings</p>
+            <SectionHeading
+              title="Privacy"
+              hint="Who gets to see your profile in Find a Roomie and Discover."
+              divided
+            />
             <div className="flex flex-col gap-2">
               <FormField
                 control={form.control}
