@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { api, ApiError } from "@/lib/api";
 import { useAuth } from "@/context/auth-context";
 import { ACCOMMODATION_TYPES, GENDER_OPTIONS } from "@/types";
@@ -74,12 +74,18 @@ function SectionHeading({ title, hint, divided }: { title: string; hint: string;
  *
  * @param registeredCity - The account's registration city (`User.city`), i.e. their college /
  * destination. Only used as a fallback when no travel profile has been saved yet, so it never
- * overwrites a destination the student already chose here. */
-function buildDefaults(profile: TravelProfileDTO | null, registeredCity: string | null): DefaultValues<FormInput> {
+ * overwrites a destination the student already chose here.
+ * @param registeredCollege - The account's registered college (`User.college`), same fallback
+ * treatment as registeredCity. */
+function buildDefaults(
+  profile: TravelProfileDTO | null,
+  registeredCity: string | null,
+  registeredCollege: string | null,
+): DefaultValues<FormInput> {
   return {
     currentCity: profile?.currentCity ?? "",
     destinationCity: profile?.destinationCity || registeredCity || "",
-    college: profile?.college ?? "",
+    college: profile?.college || registeredCollege || "",
     budgetMin: profile?.budgetMin ?? undefined,
     budgetMax: profile?.budgetMax ?? undefined,
     // "Any" rather than blank, matching genderPreference below and the model's own default:
@@ -133,7 +139,7 @@ function TravelProfileFields({
 
   const form = useForm<FormInput>({
     resolver: zodResolver(travelProfileSchema) as Resolver<FormInput>,
-    defaultValues: buildDefaults(profile, user?.city ?? null),
+    defaultValues: buildDefaults(profile, user?.city ?? null, user?.college ?? null),
   });
 
   async function onSubmit(values: FormInput) {
@@ -157,9 +163,6 @@ function TravelProfileFields({
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>My travel profile</CardTitle>
-      </CardHeader>
       <CardContent>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
