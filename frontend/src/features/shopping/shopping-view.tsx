@@ -1,9 +1,8 @@
 import { useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { ExternalLink, ShoppingBag, Star, Check, X } from "lucide-react";
+import { ExternalLink, ShoppingBag, Check, X } from "lucide-react";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -25,10 +24,6 @@ const STORE_LABELS: Record<keyof ProductDTO["buyLinks"], string> = {
   decathlon: "Decathlon",
   local: "Local Store",
 };
-
-function discountedPrice(price: number, discountPercent: number) {
-  return Math.round(price * (1 - discountPercent / 100));
-}
 
 export function ShoppingView({ products }: { products: ProductDTO[] }) {
   const [category, setCategory] = useState<string>("all");
@@ -69,7 +64,6 @@ export function ShoppingView({ products }: { products: ProductDTO[] }) {
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((product, i) => {
-            const final = discountedPrice(product.price, product.discountPercent);
             const Icon = getProductIcon(product.icon);
             const availableStores = (Object.keys(product.buyLinks) as (keyof ProductDTO["buyLinks"])[]).filter(
               (key) => product.buyLinks[key],
@@ -95,16 +89,6 @@ export function ShoppingView({ products }: { products: ProductDTO[] }) {
                     ) : (
                       <Icon className="text-muted-foreground size-10" aria-hidden="true" />
                     )}
-                    {product.featured && (
-                      <Badge className="absolute top-2 left-2" variant="accent">
-                        Popular
-                      </Badge>
-                    )}
-                    {product.discountPercent > 0 && (
-                      <Badge className="absolute top-2 right-2" variant="success">
-                        {product.discountPercent}% off
-                      </Badge>
-                    )}
                   </div>
 
                   <CardContent className="flex flex-1 flex-col gap-3 pb-5">
@@ -114,16 +98,7 @@ export function ShoppingView({ products }: { products: ProductDTO[] }) {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-lg font-bold">₹{final.toLocaleString("en-IN")}</span>
-                      {product.discountPercent > 0 && (
-                        <span className="text-muted-foreground text-sm line-through">
-                          ₹{product.price.toLocaleString("en-IN")}
-                        </span>
-                      )}
-                      <span className="ml-auto flex items-center gap-1 text-sm">
-                        <Star className="fill-warning text-warning size-3.5" />
-                        {product.rating.toFixed(1)}
-                      </span>
+                      <span className="text-lg font-bold">₹{product.price.toLocaleString("en-IN")}</span>
                     </div>
 
                     {(product.pros.length > 0 || product.cons.length > 0) && (
