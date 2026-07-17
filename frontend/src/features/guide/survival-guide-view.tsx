@@ -4,10 +4,16 @@ import { SectionCanvas } from "@/features/canvas/section-canvas";
 import { GUIDE_SECTIONS } from "@/features/guide/guide-sections";
 import { GUIDE_TOPICS as NAV_SECTIONS } from "@/features/guide/guide-topics";
 import { useGuideDesign } from "@/features/guide/use-guide-elements";
+import { useMediaQuery } from "@/lib/use-media-query";
 
 export function SurvivalGuideView() {
   const { elements, sectionBackgrounds, loading } = useGuideDesign();
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  // Renders only the active breakpoint's tree instead of mounting both and hiding one with
+  // CSS — every image element shares the same `src` across breakpoints (only position/scale
+  // differ), so mounting both used to fetch every image on the page twice on first load.
+  const isDesktop = useMediaQuery("(min-width: 640px)");
+  const breakpoint = isDesktop ? "desktop" : "mobile";
 
   // Scroll-spy: highlight whichever section's top is currently nearest the sticky nav,
   // not just whichever was last clicked.
@@ -47,24 +53,13 @@ export function SurvivalGuideView() {
 
       {/* HERO */}
       <section id={heroSection.id} className="relative">
-        <div className="block sm:hidden">
-          <SectionCanvas
-            section={heroSection}
-            sectionIdx={0}
-            elements={elements}
-            breakpoint="mobile"
-            background={sectionBackgrounds[heroSection.id]}
-          />
-        </div>
-        <div className="hidden sm:block">
-          <SectionCanvas
-            section={heroSection}
-            sectionIdx={0}
-            elements={elements}
-            breakpoint="desktop"
-            background={sectionBackgrounds[heroSection.id]}
-          />
-        </div>
+        <SectionCanvas
+          section={heroSection}
+          sectionIdx={0}
+          elements={elements}
+          breakpoint={breakpoint}
+          background={sectionBackgrounds[heroSection.id]}
+        />
       </section>
 
       {/* STICKY SECTION NAV */}
@@ -91,24 +86,13 @@ export function SurvivalGuideView() {
         const idx = i + 1;
         return (
           <section key={section.id} id={section.id} className="relative scroll-mt-32">
-            <div className="block sm:hidden">
-              <SectionCanvas
-                section={section}
-                sectionIdx={idx}
-                elements={elements}
-                breakpoint="mobile"
-                background={sectionBackgrounds[section.id]}
-              />
-            </div>
-            <div className="hidden sm:block">
-              <SectionCanvas
-                section={section}
-                sectionIdx={idx}
-                elements={elements}
-                breakpoint="desktop"
-                background={sectionBackgrounds[section.id]}
-              />
-            </div>
+            <SectionCanvas
+              section={section}
+              sectionIdx={idx}
+              elements={elements}
+              breakpoint={breakpoint}
+              background={sectionBackgrounds[section.id]}
+            />
           </section>
         );
       })}

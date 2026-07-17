@@ -2,9 +2,12 @@ import { connectDB } from "@/db";
 import { GuideArticle } from "@/models/GuideArticle";
 import type { GuideArticleInput, GuideArticleUpdateInput } from "@/validations/admin";
 
+// The overview list only ever renders title/slug/category/icon/summary (see
+// toGuideArticleSummaryDTO) — excluding the full article `content` here keeps this payload from
+// scaling with every article's body text, since the reader only needs that once they open one.
 export async function listGuideArticles() {
   await connectDB();
-  return GuideArticle.find().sort({ category: 1, order: 1 }).lean();
+  return GuideArticle.find().select("-content").sort({ category: 1, order: 1 }).lean();
 }
 
 export async function getGuideArticleBySlug(slug: string) {
