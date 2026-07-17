@@ -66,6 +66,7 @@ const DiscoverPage = lazy(() => import("@/pages/discover-page"));
 const FindARoomiePage = lazy(() => import("@/pages/find-a-roomie-page"));
 const BookingsPage = lazy(() => import("@/pages/bookings-page"));
 const ExplorePage = lazy(() => import("@/pages/explore-page"));
+const KnowYourCampusPage = lazy(() => import("@/pages/know-your-campus-page"));
 const CommunityPage = lazy(() => import("@/pages/community-page"));
 const CommunityDetailPage = lazy(() => import("@/pages/community-detail-page"));
 const ChatPage = lazy(() => import("@/pages/chat-page"));
@@ -139,6 +140,7 @@ export default function App() {
             <Route path="/find-a-roomie" element={<FindARoomiePage />} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/explore" element={<ExplorePage />} />
+            <Route path="/know-your-campus" element={<KnowYourCampusPage />} />
             <Route path="/community" element={<CommunityPage />} />
             <Route path="/community/:slug" element={<CommunityDetailPage />} />
             <Route path="/chat" element={<ChatPage />} />

@@ -183,6 +183,21 @@ export const PLACE_CATEGORIES = [
 ] as const;
 export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];
 
+/** Know Your Campus tip categories — deliberately broader strokes than PLACE_CATEGORIES,
+ * since a tip is a student's one-liner ("the photocopy shop behind gate 2 binds theses
+ * overnight"), not a catalogued venue. */
+export const CAMPUS_TIP_CATEGORIES = [
+  "Food",
+  "Hangouts",
+  "Books & Stationery",
+  "Transport",
+  "Shops & Services",
+  "Hostel Life",
+  "Academics",
+  "Other",
+] as const;
+export type CampusTipCategory = (typeof CAMPUS_TIP_CATEGORIES)[number];
+
 // --- Community + Chat ------------------------------------------------------------------
 
 /** Auto-join scoped types are derived straight from a student's own profile fields (college,
@@ -231,7 +246,7 @@ export type MessageScopeType = (typeof MESSAGE_SCOPE_TYPES)[number];
 export const CONVERSATION_TYPES = ["dm", "group"] as const;
 export type ConversationType = (typeof CONVERSATION_TYPES)[number];
 
-export const REPORT_TARGET_TYPES = ["message", "user", "community"] as const;
+export const REPORT_TARGET_TYPES = ["message", "user", "community", "campus_tip"] as const;
 export type ReportTargetType = (typeof REPORT_TARGET_TYPES)[number];
 
 export const REPORT_REASONS = [

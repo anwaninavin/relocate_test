@@ -161,6 +161,19 @@ export const PLACE_CATEGORIES = [
 ] as const;
 export type PlaceCategory = (typeof PLACE_CATEGORIES)[number];
 
+/** Know Your Campus tip categories — mirrors backend/src/types.ts. */
+export const CAMPUS_TIP_CATEGORIES = [
+  "Food",
+  "Hangouts",
+  "Books & Stationery",
+  "Transport",
+  "Shops & Services",
+  "Hostel Life",
+  "Academics",
+  "Other",
+] as const;
+export type CampusTipCategory = (typeof CAMPUS_TIP_CATEGORIES)[number];
+
 // --- Community + Chat ------------------------------------------------------------------
 
 export type CommunityType =
