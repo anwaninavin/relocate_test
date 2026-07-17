@@ -1,4 +1,5 @@
 import {
+  BedDouble,
   BookOpen,
   FileText,
   Globe2,
@@ -42,6 +43,12 @@ export const HUB_CARDS: HubCardDef[] = [
   { id: "community", section: "Roommate Vibes", title: "Community", href: "/community", icon: Globe2 },
   { id: "wishlist", section: "Underrated Essentials", title: "Wishlist", href: "/wishlist", icon: Heart },
   { id: "documents", section: "Final", title: "Documents", href: "/documents", icon: FileText },
+  // Appended rather than slotted next to Discover under "Roommate Vibes", despite belonging
+  // there: a card's default order is its index in this array, and mergeHubLayout hands a newly
+  // shipped card that default. Inserting mid-array would give it an order an existing saved
+  // layout has already assigned to another card, leaving the two to tie. Appending keeps its
+  // order past every saved one, so it lands last until an admin positions it.
+  { id: "find-a-roomie", section: "Roommate Vibes", title: "Find a Roomie", href: "/find-a-roomie", icon: BedDouble },
 ];
 
 export const DEFAULT_HUB_LAYOUT: HubLayoutEntry[] = HUB_CARDS.map((card, i) => ({
