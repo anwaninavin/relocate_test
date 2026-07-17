@@ -85,8 +85,10 @@ export function RoomieMatchesView({
   onEditProfile?: () => void;
 }) {
   const { user } = useAuth();
-  const [incoming, setIncoming] = useState<ConnectionRequestDTO[]>([]);
-  const [accepted, setAccepted] = useState<ConnectionRequestDTO[]>([]);
+  // null (not []) until the first fetch resolves, so the page doesn't flash "No connections
+  // yet" / "No pending requests" before the real data arrives — same reasoning as `matches`.
+  const [incoming, setIncoming] = useState<ConnectionRequestDTO[] | null>(null);
+  const [accepted, setAccepted] = useState<ConnectionRequestDTO[] | null>(null);
   const [matches, setMatches] = useState<DiscoveryCardDTO[] | null>(null);
 
   async function refresh() {
@@ -165,7 +167,7 @@ export function RoomieMatchesView({
     <div className="flex flex-col gap-8">
       <div>
         <h3 className="mb-2 text-sm font-semibold">Connections</h3>
-        {accepted.length === 0 ? (
+        {accepted === null ? null : accepted.length === 0 ? (
           <EmptyState icon={Users} title="No connections yet" description="Accepted requests will show up here." />
         ) : (
           <div className="flex flex-col gap-2">
@@ -191,7 +193,7 @@ export function RoomieMatchesView({
 
       <div>
         <h3 className="mb-2 text-sm font-semibold">Received requests</h3>
-        {incoming.length === 0 ? (
+        {incoming === null ? null : incoming.length === 0 ? (
           <p className="text-muted-foreground text-sm">No pending requests.</p>
         ) : (
           <div className="flex flex-col gap-2">
