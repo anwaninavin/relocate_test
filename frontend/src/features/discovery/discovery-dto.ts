@@ -1,14 +1,16 @@
 import type { AccommodationType, Gender } from "@/types";
 
+/** "Any" is a real answer — "I don't mind" — and the default, mirroring genderPreference. It
+ * isn't part of AccommodationType because a booking has to name an actual kind of place. */
+export type AccommodationPreference = AccommodationType | "Any";
+
 export interface TravelProfileDTO {
   currentCity: string;
   destinationCity: string;
-  travelMonth: string;
-  arrivalDate: string | null;
   college: string | null;
   budgetMin: number | null;
   budgetMax: number | null;
-  accommodationType: AccommodationType | null;
+  accommodationType: AccommodationPreference | null;
   genderPreference: Gender | "Any";
   ageRangeMin: number | null;
   ageRangeMax: number | null;
@@ -31,8 +33,6 @@ export function toTravelProfileDTO(raw: TravelProfileRaw | null): TravelProfileD
   return {
     currentCity: raw?.currentCity ?? "",
     destinationCity: raw?.destinationCity ?? "",
-    travelMonth: raw?.travelMonth ?? "",
-    arrivalDate: raw?.arrivalDate ?? null,
     college: raw?.college ?? null,
     budgetMin: raw?.budgetMin ?? null,
     budgetMax: raw?.budgetMax ?? null,
@@ -75,9 +75,7 @@ export interface DiscoveryCardDTO {
   college: string | null;
   currentCity: string;
   destinationCity: string;
-  travelMonth: string;
-  arrivalDate: string | null;
-  accommodationType: AccommodationType | null;
+  accommodationType: AccommodationPreference | null;
   budgetMin: number | null;
   budgetMax: number | null;
   interests: string[];
