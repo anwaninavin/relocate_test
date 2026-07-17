@@ -1,0 +1,135 @@
+/**
+ * Backfills `imageUrl` on existing Place documents that don't have one, using real photos
+ * from Wikipedia/Wikimedia Commons — no invented or stock-generic images.
+ *
+ * Why Wikipedia and not a stock-photo API: it's free, needs no API key, and each result is
+ * tied to an actual article, so a match can be verified against the place name instead of
+ * trusted blindly. Wikipedia's own full-text search is loose though — searching for a small
+ * local eatery can return an unrelated but topically-similar article (e.g. a generic dish
+ * page) with its own photo, which would misrepresent that place. So every candidate is
+ * title-matched against the place name (normalized word overlap) and rejected below a
+ * threshold rather than attached speculatively. In practice this means well-documented
+ * landmarks/temples/parks get real photos and small local restaurants/stalls mostly don't —
+ * consistent with seedPlaces.ts's existing "nothing invented" stance; add those manually via
+ * the admin Places editor instead.
+ *
+ * Only fills places where imageUrl is currently null — never overwrites an image an admin has
+ * already set. Safe to re-run; already-filled places are skipped on subsequent runs.
+ *
+ * Usage:
+ *   npm run images:places                 # fill all places missing an image
+ *   npm run images:places -- --dry-run    # preview matches/rejections, write nothing
+ *   npm run images:places -- --city=Delhi # limit to one city (matches seedPlaces.ts spelling)
+ */
+import "dotenv/config";
+import mongoose from "mongoose";
+
+import { Place } from "@/models/Place";
+
+const USER_AGENT = "PackWithMe-PlaceImageFetcher/1.0 (+https://packwithme.instify.in)";
+const MATCH_THRESHOLD = 0.5;
+const REQUEST_DELAY_MS = 1200;
+const MAX_RETRIES = 4;
+
+function sleep(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function tokenize(s: string): string[] {
+  return s
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(Boolean);
+}
+
+/** Fraction of the place name's words that appear in the candidate article title. */
+function matchScore(placeName: string, articleTitle: string): number {
+  const nameTokens = tokenize(placeName);
+  if (nameTokens.length === 0) return 0;
+  const titleTokens = new Set(tokenize(articleTitle));
+  const common = nameTokens.filter((t) => titleTokens.has(t));
+  return common.length / nameTokens.length;
+}
+
+interface WikiPage {
+  title: string;
+  thumbnail?: { source: string };
+}
+
+async function searchWikipediaImage(query: string): Promise<WikiPage | null> {
+  const url =
+    "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrlimit=1" +
+    "&prop=pageimages&piprop=thumbnail&pithumbsize=1000&format=json" +
+    `&gsrsearch=${encodeURIComponent(query)}`;
+
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const res = await fetch(url, { headers: { "User-Agent": USER_AGENT } });
+    const text = await res.text();
+    try {
+      const data = JSON.parse(text);
+      const pages = data?.query?.pages;
+      const page = pages ? (Object.values(pages)[0] as WikiPage) : null;
+      return page ?? null;
+    } catch {
+      // Wikipedia returns a plain-text rate-limit notice instead of JSON when throttling.
+      await sleep(REQUEST_DELAY_MS * (attempt + 1));
+    }
+  }
+  throw new Error(`Wikipedia API request failed after ${MAX_RETRIES} retries: ${query}`);
+}
+
+async function main() {
+  const args = process.argv.slice(2);
+  const dryRun = args.includes("--dry-run");
+  const cityArg = args.find((a) => a.startsWith("--city="))?.split("=")[1];
+
+  const uri = process.env.MONGODB_URI;
+  if (!uri) throw new Error("Missing MONGODB_URI environment variable");
+  await mongoose.connect(uri);
+
+  const filter: Record<string, unknown> = { imageUrl: null };
+  if (cityArg) filter.city = new RegExp(`^${cityArg}$`, "i");
+
+  const places = await Place.find(filter).sort({ city: 1, name: 1 });
+  console.log(`${places.length} place(s) missing an image${cityArg ? ` in ${cityArg}` : ""}${dryRun ? " (dry run)" : ""}\n`);
+
+  let matched = 0;
+  let skipped = 0;
+
+  for (const place of places) {
+    const query = `${place.name} ${place.city}`;
+    let page: WikiPage | null = null;
+    try {
+      page = await searchWikipediaImage(query);
+    } catch (error) {
+      console.log(`  ERROR  ${query} — ${(error as Error).message}`);
+      await sleep(REQUEST_DELAY_MS);
+      continue;
+    }
+
+    const score = page ? matchScore(place.name, page.title) : 0;
+    const accept = Boolean(page?.thumbnail?.source) && score >= MATCH_THRESHOLD;
+
+    if (accept && page?.thumbnail) {
+      console.log(`  MATCH  ${query} -> "${page.title}" (score ${score.toFixed(2)})`);
+      matched += 1;
+      if (!dryRun) {
+        await Place.updateOne({ _id: place._id, imageUrl: null }, { imageUrl: page.thumbnail.source });
+      }
+    } else {
+      console.log(`  skip   ${query}${page ? ` (closest: "${page.title}", score ${score.toFixed(2)})` : " (no result)"}`);
+      skipped += 1;
+    }
+
+    await sleep(REQUEST_DELAY_MS);
+  }
+
+  console.log(`\n${matched} matched${dryRun ? " (not written — dry run)" : ""}, ${skipped} skipped out of ${places.length}`);
+  await mongoose.disconnect();
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exit(1);
+});
