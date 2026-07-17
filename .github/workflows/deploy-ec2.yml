@@ -18,8 +18,12 @@ jobs:
       # lines), which ssh-action reported as "no key found".
       - name: Decode deploy key
         run: |
-          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d > /tmp/deploy_key
+          echo "${{ secrets.EC2_SSH_KEY_B64 }}" | base64 -d -i > /tmp/deploy_key
           chmod 600 /tmp/deploy_key
+          ssh-keygen -y -f /tmp/deploy_key > /dev/null || {
+            echo "::error::Decoded EC2_SSH_KEY_B64 is not a valid private key — re-copy 'base64 -w0 ~/.ssh/gha_deploy' on the box and update the secret."
+            exit 1
+          }
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.0.3
