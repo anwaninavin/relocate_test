@@ -28,6 +28,7 @@ async function ensureTemplateHasDefaultItems(templateId: string) {
     title: item.item,
     description: item.description ?? "",
     priority: item.priority,
+    planType: item.planType ?? null,
     sortOrder: index,
     isForAllCollegeCategories: true,
     isForAllCourses: true,
