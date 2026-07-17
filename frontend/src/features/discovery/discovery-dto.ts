@@ -1,14 +1,16 @@
 import type { AccommodationType, Gender } from "@/types";
 
+/** "Any" is a real answer — "I don't mind" — and the default, mirroring genderPreference. It
+ * isn't part of AccommodationType because a booking has to name an actual kind of place. */
+export type AccommodationPreference = AccommodationType | "Any";
+
 export interface TravelProfileDTO {
   currentCity: string;
   destinationCity: string;
-  travelMonth: string;
-  arrivalDate: string | null;
   college: string | null;
   budgetMin: number | null;
   budgetMax: number | null;
-  accommodationType: AccommodationType | null;
+  accommodationType: AccommodationPreference | null;
   genderPreference: Gender | "Any";
   ageRangeMin: number | null;
   ageRangeMax: number | null;
@@ -31,8 +33,6 @@ export function toTravelProfileDTO(raw: TravelProfileRaw | null): TravelProfileD
   return {
     currentCity: raw?.currentCity ?? "",
     destinationCity: raw?.destinationCity ?? "",
-    travelMonth: raw?.travelMonth ?? "",
-    arrivalDate: raw?.arrivalDate ?? null,
     college: raw?.college ?? null,
     budgetMin: raw?.budgetMin ?? null,
     budgetMax: raw?.budgetMax ?? null,
@@ -52,6 +52,20 @@ export function toTravelProfileDTO(raw: TravelProfileRaw | null): TravelProfileD
   };
 }
 
+/** Whether a profile carries everything roommate matching treats as mandatory. Mirrors
+ * `isRoommateProfileComplete` in the backend's discoveryService — the server won't return any
+ * roomies without these, and this lets the page say why instead of showing a bare "none
+ * found". Gender preference isn't checked: it defaults to "Any", which is a real answer. */
+export function isRoommateProfileComplete(profile: TravelProfileDTO | null): boolean {
+  return (
+    profile != null &&
+    profile.destinationCity.trim() !== "" &&
+    profile.budgetMin != null &&
+    profile.budgetMax != null &&
+    profile.accommodationType != null
+  );
+}
+
 export interface DiscoveryCardDTO {
   userId: string;
   name: string | null;
@@ -61,9 +75,7 @@ export interface DiscoveryCardDTO {
   college: string | null;
   currentCity: string;
   destinationCity: string;
-  travelMonth: string;
-  arrivalDate: string | null;
-  accommodationType: AccommodationType | null;
+  accommodationType: AccommodationPreference | null;
   budgetMin: number | null;
   budgetMax: number | null;
   interests: string[];

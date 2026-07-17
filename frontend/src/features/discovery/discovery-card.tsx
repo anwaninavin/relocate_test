@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { BadgeCheck, MapPin, Calendar, GraduationCap, UserPlus, Check } from "lucide-react";
+import { BadgeCheck, MapPin, GraduationCap, UserPlus, Check } from "lucide-react";
 import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -54,18 +54,18 @@ export function DiscoveryCard({ card, context }: { card: DiscoveryCardDTO; conte
           <MapPin className="size-3" />
           {card.currentCity} → {card.destinationCity}
         </span>
-        {card.arrivalDate ? (
-          <span className="flex items-center gap-1">
-            <Calendar className="size-3" />
-            {new Date(card.arrivalDate).toLocaleDateString()}
-          </span>
-        ) : (
-          <span className="flex items-center gap-1">
-            <Calendar className="size-3" />
-            {card.travelMonth}
+        {/* "Any" is a preference, not a place — as a bare badge next to "Hostel" and "Flat" it
+            would read like a type of building. Say what it actually means. */}
+        {card.accommodationType && (
+          <Badge variant="outline">
+            {card.accommodationType === "Any" ? "Open to any place" : card.accommodationType}
+          </Badge>
+        )}
+        {context === "roommate" && card.budgetMin != null && card.budgetMax != null && (
+          <span>
+            ₹{card.budgetMin.toLocaleString("en-IN")}–{card.budgetMax.toLocaleString("en-IN")}/mo
           </span>
         )}
-        {card.accommodationType && <Badge variant="outline">{card.accommodationType}</Badge>}
       </div>
 
       {(card.interests.length > 0 || card.languages.length > 0 || card.lifestyleTags.length > 0) && (
