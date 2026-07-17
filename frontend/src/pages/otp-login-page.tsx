@@ -9,14 +9,7 @@ import { Label } from "@/components/ui/label";
 import { BrandName } from "@/components/shared/brand-name";
 import { useAuth } from "@/context/auth-context";
 import { trackRegistrationPageOpened } from "@/lib/analytics/client";
-import {
-  CAPTCHA_ID,
-  isCaptchaVerified,
-  msg91Configured,
-  renderCaptcha,
-  sendOtp,
-  verifyOtp,
-} from "@/lib/msg91";
+import { msg91Configured, sendOtp, verifyOtp } from "@/lib/msg91";
 
 /**
  * Passwordless login/registration via the MSG91 "Login with OTP" widget (same widget as the
@@ -39,22 +32,11 @@ export default function OtpLoginPage() {
 
   useEffect(() => {
     trackRegistrationPageOpened();
-    // Render the (h)captcha into #msg91-captcha-box if the widget has it enabled. Safe no-op
-    // when captcha is disabled in the MSG91 widget settings (the box just stays empty).
-    if (msg91Configured) {
-      renderCaptcha().catch(() => {
-        /* captcha is best-effort; sendOtp() re-inits the widget if needed */
-      });
-    }
   }, []);
 
   async function handleSend(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!isCaptchaVerified()) {
-      setError("Please complete the verification below, then try again.");
-      return;
-    }
     setIsSubmitting(true);
     try {
       await sendOtp(mobile);
@@ -124,8 +106,6 @@ export default function OtpLoginPage() {
                 required
               />
             </div>
-            {/* MSG91 renders the (h)captcha here when it's enabled in the widget settings. */}
-            <div id={CAPTCHA_ID} className="empty:hidden" />
             {error && <p className="text-destructive text-sm">{error}</p>}
           </div>
           <Button
