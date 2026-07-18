@@ -13,6 +13,7 @@ import { api, ApiError, setAuthToken, getAuthToken } from "@/lib/api";
 import { subscribeUnauthorized } from "@/lib/auth-events";
 import { readPersistedUser, writePersistedUser, clearPersistedUser } from "@/lib/user-cache";
 import { clearPersistedChecklist } from "@/features/checklist/checklist-cache";
+import { clearPersistedMyCommunities } from "@/features/community/community-cache";
 import type { Gender, UserDTO } from "@/types";
 
 // Dynamic: lib/socket pulls in socket.io-client, which only ever connects from lazy-loaded
@@ -136,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // this one's list on their first load (the payload is user-scoped, but on explicit logout
     // there's no reason to keep it lying around).
     clearPersistedChecklist();
+    clearPersistedMyCommunities();
     disconnectSocket();
   }, [applyUser]);
 
