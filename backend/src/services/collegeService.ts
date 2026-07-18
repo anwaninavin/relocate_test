@@ -4,6 +4,7 @@ import { CollegeCategory } from "@/models/CollegeCategory";
 import { User } from "@/models/User";
 import { escapeRegex } from "@/lib/regex";
 import { COLLEGE_SEEDS_BY_CATEGORY } from "@/lib/collegeSeedData";
+import { ensureBaselineCategoriesSeeded } from "@/services/collegeCategoryService";
 
 function slugify(name: string) {
   return name
@@ -17,13 +18,15 @@ function slugify(name: string) {
  * time the College collection is empty — mirrors cityService.ensureCitiesSeeded, so the
  * onboarding/profile college picker isn't blocked on someone remembering to run
  * `npm run seed:colleges` by hand after a fresh deploy. No-op once colleges exist (including
- * admin-added ones). Silently skips any category (e.g. "Engineering") that doesn't have a
- * matching CollegeCategory yet — same fallback as the manual script — since that catalog is
- * seeded separately via `npm run seed:checklist-taxonomy`. */
+ * admin-added ones). Ensures the CollegeCategory baseline exists first (rather than silently
+ * skipping categories that aren't there yet) — on a fresh database this used to race the
+ * lazy, request-triggered category seed and lose, leaving College permanently empty. */
 export async function ensureCollegesSeeded() {
   await connectDB();
   const count = await College.estimatedDocumentCount();
   if (count > 0) return;
+
+  await ensureBaselineCategoriesSeeded();
 
   const docs: Array<{
     city: string;
@@ -83,6 +86,7 @@ function byRankThenName(
  * onboarding/profile college picker (which cascades off both the city and category selects). */
 export async function listActiveCollegesByCityAndCategory(city: string, collegeCategoryId: string) {
   await connectDB();
+  await ensureCollegesSeeded();
   const colleges = await College.find({ city, collegeCategoryId, active: true }).lean();
   return colleges.sort(byRankThenName);
 }

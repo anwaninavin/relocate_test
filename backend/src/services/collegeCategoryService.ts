@@ -39,7 +39,7 @@ const DESIGN_STARTER_COURSES = ["Fashion Design", "Graphic Design", "Interior De
  * manual, never-auto-run script (scripts/seedChecklistTaxonomy.ts). Seeds a baseline the first
  * time the collection is found empty, so a fresh/unconfigured environment doesn't permanently
  * block every new signup. Safe to call on every request that needs the list. */
-async function ensureBaselineCategoriesSeeded() {
+export async function ensureBaselineCategoriesSeeded() {
   const hasAny = await CollegeCategory.exists({});
   if (hasAny) return;
 
