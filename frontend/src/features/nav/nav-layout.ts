@@ -1,4 +1,4 @@
-import { CONFIGURABLE_NAV_ITEMS, type NavItem } from "@/lib/nav-items";
+import { CONFIGURABLE_NAV_ITEMS, HOME_ROUTE, type NavItem } from "@/lib/nav-items";
 
 export type NavPlacement = "bottom" | "overflow";
 
@@ -29,7 +29,7 @@ const INITIALLY_HIDDEN_HREFS = new Set([
 /** The bottom tab bar's shape before any admin ever customizes it — Home, Checklist,
  * Community, Discover, in that order. Everything else in CONFIGURABLE_NAV_ITEMS defaults to
  * the overflow menu, in its declared order. */
-const DEFAULT_BOTTOM_HREFS = ["/wa-login/home", "/checklist", "/community", "/discover"];
+const DEFAULT_BOTTOM_HREFS = [HOME_ROUTE, "/checklist", "/community", "/discover"];
 
 export const DEFAULT_NAV_LAYOUT: NavLayoutEntry[] = (() => {
   const bottomHrefs = DEFAULT_BOTTOM_HREFS.filter((href) => CONFIGURABLE_NAV_ITEMS.some((i) => i.href === href));

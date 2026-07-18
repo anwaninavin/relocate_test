@@ -99,7 +99,7 @@ export default function App() {
             <Route
               path="/wa-login"
               element={
-                <AuthOnlyRoute redirectTo="/wa-login/home">
+                <AuthOnlyRoute redirectTo={HOME_ROUTE}>
                   <OtpLoginPage />
                 </AuthOnlyRoute>
               }
@@ -125,7 +125,10 @@ export default function App() {
               </ProtectedRoute>
             }
           >
-            <Route path="/wa-login/home" element={<WaLoginHomePage />} />
+            <Route path="/home" element={<WaLoginHomePage />} />
+            {/* Legacy path from when this hub lived under the WA-login flow; kept as a
+                redirect for old bookmarks/links (see HOME_ROUTE in lib/routes.ts). */}
+            <Route path="/wa-login/home" element={<Navigate to={HOME_ROUTE} replace />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/checklist" element={<ChecklistPage />} />
             <Route path="/checklist/:category" element={<ChecklistCategoryPage />} />

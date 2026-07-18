@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 
 import { CommunityIcon } from "@/components/shared/community-icon";
+import { HOME_ROUTE } from "@/lib/routes";
 
 export { HOME_ROUTE } from "@/lib/routes";
 
@@ -32,7 +33,7 @@ export interface NavItem {
 }
 
 export const PRIMARY_NAV_ITEMS: NavItem[] = [
-  { href: "/wa-login/home", label: "Home", icon: Home },
+  { href: HOME_ROUTE, label: "Home", icon: Home },
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/community", label: "Community", icon: CommunityIcon },
   { href: "/chat", label: "Messages", icon: MessageCircle },

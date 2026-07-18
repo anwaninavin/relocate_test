@@ -118,7 +118,7 @@ export function HomeCardsEditorView() {
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
         <p className="text-muted-foreground text-sm">
-          Hide or show cards on the home hub (/wa-login/home) that every student sees after signing in, and reorder
+          Hide or show cards on the home hub (/home) that every student sees after signing in, and reorder
           them with the arrows.
         </p>
         <div className="flex flex-col gap-2">

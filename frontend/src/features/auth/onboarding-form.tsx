@@ -23,7 +23,7 @@ import { ProfileFields } from "@/features/auth/profile-fields";
 import { AvatarUploadField } from "@/features/auth/avatar-upload-field";
 import { profileFieldsSchema, type ProfileFieldsInput } from "@/features/auth/profile-fields-schema";
 
-export function OnboardingForm({ defaultName, viaWaLogin }: { defaultName?: string; viaWaLogin?: boolean }) {
+export function OnboardingForm({ defaultName }: { defaultName?: string }) {
   const navigate = useNavigate();
   const { completeOnboarding } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -47,7 +47,7 @@ export function OnboardingForm({ defaultName, viaWaLogin }: { defaultName?: stri
     try {
       await completeOnboarding({ ...values, avatar: avatar || undefined });
       toast.success("Welcome to Pack with Me!");
-      navigate(viaWaLogin ? "/wa-login/home" : HOME_ROUTE, { replace: true });
+      navigate(HOME_ROUTE, { replace: true });
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Something went wrong");
     } finally {

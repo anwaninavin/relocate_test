@@ -24,10 +24,7 @@ export function ProtectedRoute({ children }: { children: ReactNode }) {
     // Same reactive-redirect-wins-the-race situation as AuthOnlyRoute below: this guard's
     // own redirect fires (and wins) before OnboardingForm's own post-submit navigate() can
     // take effect, so this is the actual authority over where onboarding completion lands.
-    // viaWaLogin (set when /wa-login originally sent a new registration here) is still
-    // readable on this location's state, since we haven't navigated away yet.
-    const viaWaLogin = (location.state as { viaWaLogin?: boolean } | null)?.viaWaLogin;
-    return <Navigate to={viaWaLogin ? "/wa-login/home" : HOME_ROUTE} replace />;
+    return <Navigate to={HOME_ROUTE} replace />;
   }
 
   return <>{children}</>;

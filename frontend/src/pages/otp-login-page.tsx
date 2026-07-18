@@ -16,7 +16,7 @@ import { msg91Configured, sendOtp, verifyOtp } from "@/lib/msg91";
  * WhatsLocal project). Mobile → OTP → verify → session. First time for a number registers it
  * and the app then routes to onboarding; a returning number just logs in. The reactive
  * AuthOnlyRoute guard wrapping this route is the authority on where a successful sign-in lands
- * (onboarding for new users, /wa-login/home for returning ones), so we don't navigate manually
+ * (onboarding for new users, /home for returning ones), so we don't navigate manually
  * on success — see components/protected-route.tsx.
  */
 export default function OtpLoginPage() {
