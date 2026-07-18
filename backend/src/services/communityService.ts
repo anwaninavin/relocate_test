@@ -57,8 +57,10 @@ export async function ensureCommunity(
     visibility?: CommunityVisibility;
     /** Status to create the community with if it doesn't exist yet — has no effect when a
      * matching community already exists (its current status is left untouched). Defaults to
-     * "approved"; auto-join uses "pending" for newly-created city/college/campus/course
-     * communities so they need a site admin's sign-off before showing up in discovery. */
+     * "approved", which auto-join relies on for city/course/year communities (all backed by
+     * curated/DB catalogs, so immediately safe to show every student in discovery) — but
+     * auto-join still passes "pending" explicitly for college/campus, since those names can be
+     * arbitrary free text a student typed. */
     status?: CommunityStatus;
   } = {},
 ): Promise<HydratedDocument<CommunityDocument>> {
@@ -167,12 +169,15 @@ export async function ensureAutoJoinCommunities(user: AutoJoinableUser) {
   if (user.city) {
     const city = await ensureCommunity("city", user.city, `${user.city} Students`, {
       description: `Students living in or heading to ${user.city}.`,
-      status: "pending",
     });
     joins.push(joinCommunity(userId, city._id.toString()));
   }
 
   if (user.college) {
+    // Unlike city (picked from the admin-curated City catalog) or course/year (backed by DB
+    // Course records), college is free text once a student picks "Other" on the college
+    // picker, and campus is free text always — so these two still need a site admin's sign-off
+    // before going public, to avoid an arbitrary/abusive name showing up in Discover unmoderated.
     const college = await ensureCommunity("college", user.college, user.college, {
       description: `The community for everyone at ${user.college}.`,
       status: "pending",
@@ -195,7 +200,6 @@ export async function ensureAutoJoinCommunities(user: AutoJoinableUser) {
       const courseKey = `course:${user.courseId.toString()}`;
       const courseCommunity = await ensureCommunity("course", courseKey, course.name, {
         description: `Everyone studying ${course.name}.`,
-        status: "pending",
       });
       joins.push(joinCommunity(userId, courseCommunity._id.toString()));
 
@@ -203,7 +207,6 @@ export async function ensureAutoJoinCommunities(user: AutoJoinableUser) {
         const yearKey = `${courseKey}:${user.year}`;
         const yearCommunity = await ensureCommunity("year", yearKey, `${course.name} — Year ${user.year}`, {
           description: `${course.name} students in year ${user.year}.`,
-          status: "pending",
         });
         joins.push(joinCommunity(userId, yearCommunity._id.toString()));
       }

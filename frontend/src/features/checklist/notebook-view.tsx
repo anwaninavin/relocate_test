@@ -62,8 +62,8 @@ export function NotebookView({
   allCategories: string[];
 }) {
   const [groups, setGroups] = useState(initialGroups);
-  /** Items keep whatever planType the default checklist (or the user) gave them; anything
-   * still unclassified shows up under "Unsorted" instead of being forced into Pack/Plan. */
+  // Unclassified items (planType not yet set) default into "Pack it" rather than a separate
+  // "Unsorted" bucket — see notebook-category-section.tsx's visibleItems fold-in.
   const [planTypeFilter, setPlanTypeFilter] = useState<PlanTypeFilter>("pack");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 

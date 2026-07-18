@@ -55,31 +55,29 @@ export async function completeOnboarding(userId: string, input: OnboardingInput)
 }
 
 /** One-time "create your community profile" prompt, shown on first visit to Community: sets
- * the community display name and, since onboarding no longer collects them, the college/city
- * details too — this is the first point those are actually known. */
+ * the username (which doubles as the community display name — see User model's pre-save hook)
+ * and, since onboarding no longer collects them, the college/city details too — this is the
+ * first point those are actually known. Caller (users.routes.ts) has already checked the
+ * username isn't taken, but this still goes through `findByIdAndUpdate` rather than
+ * `.save()`, which would otherwise skip that pre-save hook — so `displayName` is set alongside
+ * `username` explicitly here rather than relying on it. */
 export async function completeCommunityProfileSetup(
   userId: string,
   input: {
-    useOriginalName: boolean;
-    displayName?: string;
+    username: string;
     college: string;
     collegeCategoryId: string;
     city: string;
   },
 ) {
   await connectDB();
-  const user = await User.findById(userId).select("name username").lean();
-  if (!user) return null;
-
   const collegeCategory = await resolveLegacyCollegeCategory(input.collegeCategoryId);
-  const displayName = input.useOriginalName
-    ? user.name || user.username || "Student"
-    : input.displayName!.trim();
 
   const updated = await User.findByIdAndUpdate(
     userId,
     {
-      displayName,
+      username: input.username,
+      displayName: input.username,
       communityProfileConfigured: true,
       college: input.college,
       collegeCategoryId: input.collegeCategoryId,
@@ -88,10 +86,11 @@ export async function completeCommunityProfileSetup(
     },
     { returnDocument: "after" },
   ).lean();
+  if (!updated) return null;
 
   // City/college are now known for the first time — this is when auto-join into the
   // Country/City/College/Marketplace/Events communities actually has data to work with.
-  if (updated) await ensureAutoJoinCommunities(updated);
+  await ensureAutoJoinCommunities(updated);
   return updated;
 }
 

@@ -55,7 +55,7 @@ export function ConversationListView() {
         <div className="flex flex-col gap-1">
           {conversations.map((c) => {
             const other = c.members[0];
-            const title = c.type === "group" ? c.name || "Group chat" : other?.displayName || "Student";
+            const title = c.type === "group" ? c.name || "Group chat" : other?.username ? `@${other.username}` : "Student";
             return (
               <Link key={c.id} to={`/chat/${c.id}`} className="flex items-center gap-3 rounded-xl p-3 hover:bg-muted">
                 <Avatar className="size-11">

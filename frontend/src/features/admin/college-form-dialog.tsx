@@ -154,7 +154,7 @@ export function CollegeFormDialog({
                 <FormItem>
                   <FormLabel>College name</FormLabel>
                   <FormControl>
-                    <Input placeholder="IIT Bombay" {...field} />
+                    <Input placeholder="Enter your college name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

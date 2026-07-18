@@ -67,8 +67,13 @@ const UserSchema = new Schema(
     /** Community/chat public identity — the ONLY identity other students ever see. `name`,
      * `mobile`, `city`/`college`/room/address stay private and are never selected into a
      * community/chat API response (see lib/serialize.ts's serializePublicUser). Generated
-     * automatically at account creation (see lib/username.ts) and editable from Settings. */
+     * automatically at account creation (see lib/username.ts) and editable from Settings —
+     * students choose their own username instead of a separate display name, and it doubles
+     * as one (see the pre-save hook below). */
     username: { type: String, default: null, trim: true, lowercase: true, maxlength: 32, unique: true, sparse: true, index: true },
+    /** Kept in sync with `username` (see pre-save hook) rather than set independently — the
+     * field still exists separately because plenty of read paths (chat/search/community)
+     * already select and fall back on it, not because it's ever chosen on its own. */
     displayName: { type: String, default: null, trim: true, maxlength: 40 },
     bio: { type: String, default: "", trim: true, maxlength: 200 },
     interests: { type: [{ type: String, trim: true, maxlength: 40 }], default: [] },
@@ -89,6 +94,18 @@ const UserSchema = new Schema(
 /** Backs the admin dashboard's "active in last 7/30 days" counts (countActiveUsers), which
  * filter on updatedAt — without this, that query is a full collection scan. */
 UserSchema.index({ updatedAt: 1 });
+
+/** Username IS the display name — mirrored into displayName on every save (not just when
+ * username changes) so every existing read path that selects displayName (chat, search,
+ * community member lists) keeps working without also having to select+fallback on username
+ * everywhere. Unconditional on purpose: it also self-heals accounts with a legacy custom
+ * displayName from before this field stopped being independently editable, the next time that
+ * document is saved for any reason, instead of leaving them permanently stale. */
+UserSchema.pre("save", function () {
+  if (this.username) {
+    this.displayName = this.username;
+  }
+});
 
 export type UserDocument = InferSchemaType<typeof UserSchema>;
 

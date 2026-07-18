@@ -35,16 +35,20 @@ export const moderateMemberSchema = z.object({
   banned: z.boolean().optional(),
 });
 
+/** The community/chat public identity is the username itself (see User model) — there's no
+ * separate "display name" to choose, so every place a username gets set or changed shares this
+ * one format check. */
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9_]{3,32}$/, "3-32 characters: letters, numbers, underscore only");
+
 export const usernameUpdateSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z0-9_]{3,32}$/, "3-32 characters: letters, numbers, underscore only"),
+  username: usernameSchema,
 });
 
 export const publicProfileUpdateSchema = z.object({
-  displayName: z.string().trim().max(40).optional(),
   avatar: z.string().trim().max(500).optional().nullable(),
   bio: z.string().trim().max(200).optional(),
   interests: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
@@ -52,21 +56,17 @@ export const publicProfileUpdateSchema = z.object({
   year: z.string().trim().max(20).optional().nullable(),
 });
 
-// One-time prompt shown on first visit to Community — collects the community display name
-// plus the college/city details onboarding no longer asks for up front (see
-// validations/auth.ts's onboardingSchema, which is now just name + gender).
-export const communityProfileSetupSchema = z
-  .object({
-    useOriginalName: z.boolean(),
-    displayName: z.string().trim().min(1, "Enter a name").max(40).optional(),
-    college: z.string().trim().min(1, "Enter your college name").max(120, "College name is too long"),
-    collegeCategoryId: collegeCategoryIdSchema,
-    city: citySchema,
-  })
-  .refine((data) => data.useOriginalName || Boolean(data.displayName), {
-    message: "Enter a name",
-    path: ["displayName"],
-  });
+// One-time prompt shown on first visit to Community — lets the student pick their own
+// username (pre-filled with the auto-generated one, which doubles as their community display
+// name — no separate display name to ask for) plus the college/city details onboarding no
+// longer asks for up front (see validations/auth.ts's onboardingSchema, which is now just name
+// + gender).
+export const communityProfileSetupSchema = z.object({
+  username: usernameSchema,
+  college: z.string().trim().min(1, "Enter your college name").max(120, "College name is too long"),
+  collegeCategoryId: collegeCategoryIdSchema,
+  city: citySchema,
+});
 
 // --- Site-admin community management -------------------------------------------------------
 

@@ -12,6 +12,14 @@ export const usersRouter = createAsyncRouter();
 
 usersRouter.use(requireAuth);
 
+/** The pre-check (`findOne` for a clash) is inherently racy against the `username` field's
+ * unique index — two requests can both pass the check before either saves. Rather than let
+ * that surface as a raw 500 from the driver, treat a duplicate-key error on save the same as a
+ * caught clash. */
+function isDuplicateUsernameError(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code: unknown }).code === 11000);
+}
+
 // Public, privacy-safe lookup by username — never exposes name/mobile/city/college beyond
 // what serializePublicUser already allows through (see communityService.serializePublicUser).
 usersRouter.get("/:username", async (req, res) => {
@@ -39,7 +47,15 @@ usersRouter.patch("/me/username", async (req, res) => {
     return;
   }
   req.user!.username = parsed.data.username;
-  await req.user!.save();
+  try {
+    await req.user!.save();
+  } catch (error) {
+    if (isDuplicateUsernameError(error)) {
+      res.status(400).json({ error: "That username is already taken" });
+      return;
+    }
+    throw error;
+  }
   res.json({ user: serializeUser(req.user!) });
 });
 
@@ -54,7 +70,8 @@ usersRouter.patch("/me/public-profile", async (req, res) => {
   res.json({ user: serializeUser(req.user!) });
 });
 
-// One-time "create your community profile" prompt — sets the community display name plus the
+// One-time "create your community profile" prompt — lets the student confirm/choose their
+// username (which doubles as their community display name — see User model) plus the
 // college/city details onboarding no longer collects, and marks the prompt as done so it
 // never shows again for this account.
 usersRouter.patch("/me/community-profile-setup", async (req, res) => {
@@ -63,7 +80,21 @@ usersRouter.patch("/me/community-profile-setup", async (req, res) => {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
-  const updated = await completeCommunityProfileSetup(req.user!._id.toString(), parsed.data);
+  const clash = await User.findOne({ username: parsed.data.username, _id: { $ne: req.user!._id } }).lean();
+  if (clash) {
+    res.status(400).json({ error: "That username is already taken" });
+    return;
+  }
+  let updated;
+  try {
+    updated = await completeCommunityProfileSetup(req.user!._id.toString(), parsed.data);
+  } catch (error) {
+    if (isDuplicateUsernameError(error)) {
+      res.status(400).json({ error: "That username is already taken" });
+      return;
+    }
+    throw error;
+  }
   if (!updated) {
     res.status(404).json({ error: "User not found" });
     return;
