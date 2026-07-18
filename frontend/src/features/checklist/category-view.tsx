@@ -283,10 +283,22 @@ export function CategoryView({
                   transition={{ delay: i * 0.02 }}
                   className="hover:bg-muted/50 flex items-center gap-3 px-3 py-2.5"
                 >
+                  {/* The checkbox's own box is only 20px — too small to reliably tap on a phone,
+                      so a single tap near it often lands just outside and does nothing. This
+                      pseudo-element pads the actual hit area out to ~44px (Apple/WCAG's minimum
+                      touch target) without changing how big the box looks. */}
                   {selectMode ? (
-                    <Checkbox checked={selectedIds.includes(item.id)} onCheckedChange={() => toggleSelected(item.id)} />
+                    <Checkbox
+                      checked={selectedIds.includes(item.id)}
+                      onCheckedChange={() => toggleSelected(item.id)}
+                      className="before:absolute before:-inset-3 before:content-[''] relative"
+                    />
                   ) : (
-                    <Checkbox checked={item.completed} onCheckedChange={() => toggleCompleted(item)} />
+                    <Checkbox
+                      checked={item.completed}
+                      onCheckedChange={() => toggleCompleted(item)}
+                      className="before:absolute before:-inset-3 before:content-[''] relative"
+                    />
                   )}
 
                   <span

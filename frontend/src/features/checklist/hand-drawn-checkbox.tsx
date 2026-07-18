@@ -20,7 +20,11 @@ export function HandDrawnCheckbox({
       whileTap={{ scale: 0.82 }}
       animate={checked ? { scale: [1, 1.15, 1] } : { scale: 1 }}
       transition={{ duration: 0.3, ease: "easeOut" }}
-      className="relative flex size-6 shrink-0 items-center justify-center border-[2.25px] border-[#3a2e2a]/60 bg-white/70"
+      // The drawn box is only 24px — comfortable to see but too small to reliably tap on a
+      // phone, so a single tap near it often lands just outside and does nothing. This
+      // pseudo-element pads the actual hit area out to ~44px (Apple/WCAG's minimum touch
+      // target) without changing how big the box looks.
+      className="before:absolute before:-inset-2.5 before:content-[''] relative flex size-6 shrink-0 items-center justify-center border-[2.25px] border-[#3a2e2a]/60 bg-white/70"
       style={{ borderRadius: "3px 7px 5px 6px" }}
     >
       <AnimatePresence>
