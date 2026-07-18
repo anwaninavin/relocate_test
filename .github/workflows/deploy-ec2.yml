@@ -82,6 +82,12 @@ jobs:
           npm run seed:products
           npm run seed:places
 
+          # Fills imageUrl on any place seedPlaces.ts just created (or left) with none, from
+          # Wikipedia — no API key needed. Only touches places where imageUrl is still null,
+          # so on a caught-up DB this is a single no-op query; only newly-added placeless
+          # places cost the ~1.2s/place Wikipedia lookup. See fetchPlaceImages.ts.
+          npm run images:places
+
           cd ~/hostel-git/frontend
           npm ci --no-audit --no-fund
           npm run build
