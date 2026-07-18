@@ -5,9 +5,9 @@
  */
 const TARGET_BYTES = 100 * 1024;
 const MAX_DIMENSION = 1280;
-const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
+export const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
 
-function readFileAsDataUrl(file: File): Promise<string> {
+function readFileAsDataUrl(file: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(reader.result as string);
@@ -38,10 +38,11 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-/** Compresses an image file down to (ideally) under `targetBytes` and returns it as a
- * base64 data URI, ready to store directly on a checklist item. */
+/** Compresses an image file (or blob, e.g. a cropped canvas output) down to (ideally) under
+ * `targetBytes` and returns it as a base64 data URI, ready to store directly on a checklist
+ * item or profile photo. */
 export async function compressImageToDataUrl(
-  file: File,
+  file: Blob,
   targetBytes = TARGET_BYTES,
 ): Promise<string> {
   if (!file.type.startsWith("image/")) {

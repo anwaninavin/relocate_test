@@ -4,7 +4,8 @@ import { toast } from "sonner";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { compressImageToDataUrl } from "@/lib/image-compression";
+import { AvatarCropDialog } from "@/features/auth/avatar-crop-dialog";
+import { compressImageToDataUrl, MAX_SOURCE_BYTES } from "@/lib/image-compression";
 import { api, ApiError } from "@/lib/api";
 
 interface AvatarUploadFieldProps {
@@ -16,17 +17,43 @@ interface AvatarUploadFieldProps {
 
 /** Optional profile-picture picker for onboarding — plain `accept="image/*"` (no `capture`
  * attribute) so mobile browsers offer both "choose from gallery" and "take photo" in the
- * native picker. Never required: the caller decides whether to submit without a value. */
+ * native picker. Never required: the caller decides whether to submit without a value.
+ * Picking a file opens a crop step (AvatarCropDialog) before it's compressed and uploaded. */
 export function AvatarUploadField({ value, onChange, fallback }: AvatarUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [busy, setBusy] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
 
-  async function handleFile(file: File | undefined) {
+  function resetInput() {
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleFile(file: File | undefined) {
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error("Please choose an image file");
+      resetInput();
+      return;
+    }
+    if (file.size > MAX_SOURCE_BYTES) {
+      toast.error("Image is too large to process");
+      resetInput();
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setCropSrc(reader.result as string);
+    reader.onerror = () => {
+      toast.error("Failed to read image");
+      resetInput();
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleCropConfirm(blob: Blob) {
     setBusy(true);
     try {
-      const dataUrl = await compressImageToDataUrl(file);
+      const dataUrl = await compressImageToDataUrl(blob);
       setPreviewUrl(dataUrl);
       const { url } = await api.post<{ url: string }>("/api/uploads/image", { image: dataUrl });
       onChange(url);
@@ -41,8 +68,14 @@ export function AvatarUploadField({ value, onChange, fallback }: AvatarUploadFie
     } finally {
       setBusy(false);
       setPreviewUrl(null);
-      if (inputRef.current) inputRef.current.value = "";
+      setCropSrc(null);
+      resetInput();
     }
+  }
+
+  function handleCropCancel() {
+    setCropSrc(null);
+    resetInput();
   }
 
   const displayUrl = previewUrl ?? value;
@@ -85,6 +118,8 @@ export function AvatarUploadField({ value, onChange, fallback }: AvatarUploadFie
         className="hidden"
         onChange={(e) => handleFile(e.target.files?.[0])}
       />
+
+      <AvatarCropDialog imageSrc={cropSrc} busy={busy} onCancel={handleCropCancel} onConfirm={handleCropConfirm} />
     </div>
   );
 }
