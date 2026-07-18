@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -51,16 +51,24 @@ export default function ChecklistPage() {
   // fetch below quietly swap in any changes (stale-while-revalidate).
   const [loading, setLoading] = useState(() => readSeed(userId) === null);
 
+  // Guards against a checklist fetch that started earlier (e.g. the initial mount load) resolving
+  // *after* a later one (e.g. the refetch right after checking an item) and clobbering the fresher
+  // data with a stale, pre-mutation snapshot — the cause of the checkbox appearing to "revert".
+  const fetchIdRef = useRef(0);
+
   useEffect(() => {
     async function fetchData() {
+      const fetchId = ++fetchIdRef.current;
       try {
         const { categories } = await api.get<PersistedChecklistPayload>(CHECKLIST_PATH);
+        if (fetchId !== fetchIdRef.current) return;
         setGroups(toGroups(categories));
         writePersistedChecklist(userId, { categories });
       } catch (error) {
+        if (fetchId !== fetchIdRef.current) return;
         toast.error(error instanceof ApiError ? error.message : "Failed to load checklist");
       } finally {
-        setLoading(false);
+        if (fetchId === fetchIdRef.current) setLoading(false);
       }
     }
     fetchData();

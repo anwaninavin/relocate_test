@@ -133,8 +133,15 @@ async function apiFetch<T>(path: string, options: RequestInit = {}, attempt = 0)
 }
 
 // Dedupe identical concurrent GETs (e.g. two widgets mounting at once and both asking for the
-// same list) so we don't fire the request twice — the second caller just rides the first.
-const inFlightGets = new Map<string, Promise<unknown>>();
+// same list) so we don't fire the request twice — the second caller just rides the first, UNLESS
+// a mutation has landed since that request started (see lastMutationAt below): riding it then
+// would hand the caller a pre-mutation snapshot, which is exactly the "checked a box, it reverted
+// a moment later" bug this used to cause on the checklist page.
+const inFlightGets = new Map<string, { promise: Promise<unknown>; startedAt: number }>();
+// Bumped every time a mutation (POST/PUT/PATCH/DELETE) completes. A GET that started before this
+// timestamp is presumed to reflect pre-mutation state, so it's never reused for a new caller and
+// its response is never written to the cache.
+let lastMutationAt = 0;
 
 /** Synchronously reads a still-fresh cached GET response, if any — lets a component seed its
  * initial state with the last known data instead of `null` when it (re)mounts (e.g. switching
@@ -151,17 +158,26 @@ function getWithDedupe<T>(path: string): Promise<T> {
   }
 
   const existing = inFlightGets.get(path);
-  if (existing) return existing as Promise<T>;
+  if (existing && existing.startedAt >= lastMutationAt) {
+    return existing.promise as Promise<T>;
+  }
 
+  const startedAt = Date.now();
   const request = apiFetch<T>(path)
     .then((data) => {
-      getCache.set(path, { data, expiresAt: Date.now() + GET_CACHE_TTL_MS });
+      // A request that started before the most recent mutation may have been served pre-mutation
+      // state — don't let it poison the cache for callers arriving after the mutation.
+      if (startedAt >= lastMutationAt) {
+        getCache.set(path, { data, expiresAt: Date.now() + GET_CACHE_TTL_MS });
+      }
       return data;
     })
     .finally(() => {
-      inFlightGets.delete(path);
+      if (inFlightGets.get(path)?.startedAt === startedAt) {
+        inFlightGets.delete(path);
+      }
     });
-  inFlightGets.set(path, request);
+  inFlightGets.set(path, { promise: request, startedAt });
   return request as Promise<T>;
 }
 
@@ -174,6 +190,7 @@ function withBody(method: string) {
       // Any mutation can affect data another page has cached (e.g. adding a checklist item
       // changes /api/dashboard's counts too) — simplest correct move is to drop it all.
       getCache.clear();
+      lastMutationAt = Date.now();
       return data;
     });
 }
