@@ -176,11 +176,10 @@ export function CommunityMembersDialog({ community, trigger }: { community: Comm
               <div key={m.userId.id} className="flex items-center gap-2.5 rounded-xl p-2">
                 <Avatar className="size-8">
                   <AvatarImage src={m.userId.avatar ?? undefined} />
-                  <AvatarFallback>{m.userId.displayName.charAt(0).toUpperCase()}</AvatarFallback>
+                  <AvatarFallback>{m.userId.username.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium">{m.userId.displayName}</p>
-                  <p className="text-muted-foreground truncate text-xs">@{m.userId.username}</p>
+                  <p className="truncate text-sm font-medium">@{m.userId.username}</p>
                 </div>
                 <Badge variant={m.role === "owner" ? "accent" : "outline"} className="capitalize">
                   {m.role}

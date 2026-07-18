@@ -1,11 +1,18 @@
 import { useState } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { Check, Plus } from "lucide-react";
+import { Calendar, Check, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { HandDrawnCheckbox } from "@/features/checklist/hand-drawn-checkbox";
 import { ItemFormDialog } from "@/features/checklist/item-form-dialog";
-import { ItemDetailSheet } from "@/features/checklist/item-detail-sheet";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
 import type { ChecklistPlanType } from "@/types";
@@ -33,8 +40,8 @@ export function NotebookPage({
   planTypeFilter: PlanTypeFilter;
   onItemsChange: (updater: (prev: ChecklistItemDTO[]) => ChecklistItemDTO[]) => void;
 }) {
-  const [detailItem, setDetailItem] = useState<ChecklistItemDTO | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<ChecklistItemDTO | null>(null);
 
   async function toggle(item: ChecklistItemDTO) {
     onItemsChange((prev) => prev.map((i) => (i.id === item.id ? { ...i, completed: !i.completed } : i)));
@@ -59,7 +66,6 @@ export function NotebookPage({
 
   async function handlePlanTypeChange(item: ChecklistItemDTO, planType: ChecklistPlanType | null) {
     onItemsChange((prev) => prev.map((i) => (i.id === item.id ? { ...i, planType } : i)));
-    setDetailItem((prev) => (prev && prev.id === item.id ? { ...prev, planType } : prev));
     try {
       await api.patch(`/api/checklist/${item.id}`, { planType });
       emitRefresh();
@@ -68,15 +74,15 @@ export function NotebookPage({
     }
   }
 
-  // Each tab shows only its own bucket: unclassified items land on "Unsorted" instead of
-  // being folded into Pack it, so the user has to actively choose a side for them.
+  // Unclassified items (planType not yet set) default into "Pack it" rather than being
+  // hidden in a separate bucket.
   const visibleItems =
-    planTypeFilter === "unsorted"
-      ? items.filter((i) => i.planType == null)
+    planTypeFilter === "pack"
+      ? items.filter((i) => i.planType !== "plan")
       : items.filter((i) => i.planType === planTypeFilter);
   const pending = visibleItems.filter((i) => !i.completed);
   const completed = visibleItems.filter((i) => i.completed);
-  const planTypeLabel = planTypeFilter === "pack" ? "pack it" : planTypeFilter === "plan" ? "plan it" : "sort";
+  const planTypeLabel = planTypeFilter === "pack" ? "pack it" : "plan it";
 
   return (
     <div className="exam-paper relative flex h-full min-h-[70vh] flex-col overflow-hidden rounded-[20px] border border-[#e9ddc9] p-5 shadow-[0_2px_14px_rgba(58,46,42,0.14)] sm:min-h-[560px] sm:p-8 lg:min-h-[calc(100dvh-230px)] lg:p-10">
@@ -144,14 +150,39 @@ export function NotebookPage({
                   className="flex items-center gap-3 border-b border-dashed border-[#e9ddc9]/80 py-2 lg:gap-4 lg:py-3"
                 >
                   <HandDrawnCheckbox checked={false} onClick={() => toggle(item)} />
-                  <button
-                    type="button"
-                    onClick={() => setDetailItem(item)}
-                    className="block max-w-full truncate pr-1 text-left text-lg text-[#3a2e2a] sm:text-xl lg:text-2xl"
+                  <span
+                    className="block min-w-0 flex-1 truncate pr-1 text-lg text-[#3a2e2a] sm:text-xl lg:text-2xl"
                     style={{ fontFamily: "var(--font-caveat-notebook)" }}
                   >
                     {item.item}
-                  </button>
+                  </span>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0 text-[#8a7a6a] hover:text-[#3a2e2a]"
+                        aria-label="Item actions"
+                      >
+                        <MoreVertical className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "pack")}>
+                        <Check className="size-4" />
+                        Pack It
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "plan")}>
+                        <Calendar className="size-4" />
+                        Plan It
+                      </DropdownMenuItem>
+                      <DropdownMenuItem variant="destructive" onClick={() => setDeleteConfirmItem(item)}>
+                        <Trash2 className="size-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </motion.div>
               ))}
             </AnimatePresence>
@@ -201,13 +232,28 @@ export function NotebookPage({
         }}
       />
 
-      <ItemDetailSheet
-        item={detailItem}
-        open={detailItem !== null}
-        onOpenChange={(open) => !open && setDetailItem(null)}
-        onDelete={handleDelete}
-        onPlanTypeChange={handlePlanTypeChange}
-      />
+      <Dialog open={deleteConfirmItem !== null} onOpenChange={(open) => !open && setDeleteConfirmItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this item?</DialogTitle>
+            <DialogDescription>This can't be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmItem(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmItem) handleDelete(deleteConfirmItem.id);
+                setDeleteConfirmItem(null);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

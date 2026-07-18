@@ -7,12 +7,11 @@ import { NotebookPage } from "@/features/checklist/notebook-page";
 import type { ChecklistPlanType } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
-export type PlanTypeFilter = ChecklistPlanType | "unsorted";
+export type PlanTypeFilter = ChecklistPlanType;
 
 const PLAN_TYPE_TABS: { type: PlanTypeFilter; label: string }[] = [
   { type: "pack", label: "Pack it" },
   { type: "plan", label: "Plan it" },
-  { type: "unsorted", label: "Unsorted" },
 ];
 
 /** Curated for a plain notebook margin doodle feel — no event-specific stickers. */
@@ -87,8 +86,6 @@ export function NotebookView({
   const [groups, setGroups] = useState(initialGroups);
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState(1);
-  /** Items keep whatever planType the default checklist (or the user) gave them; anything
-   * still unclassified shows up under "Unsorted" instead of being forced into Pack/Plan. */
   const [planTypeFilter, setPlanTypeFilter] = useState<PlanTypeFilter>("pack");
 
   useEffect(() => {

@@ -34,16 +34,20 @@ export const moderateMemberSchema = z.object({
   banned: z.boolean().optional(),
 });
 
+/** The community/chat public identity is the username itself (see User model) — there's no
+ * separate "display name" to choose, so every place a username gets set or changed shares this
+ * one format check. */
+const usernameSchema = z
+  .string()
+  .trim()
+  .toLowerCase()
+  .regex(/^[a-z0-9_]{3,32}$/, "3-32 characters: letters, numbers, underscore only");
+
 export const usernameUpdateSchema = z.object({
-  username: z
-    .string()
-    .trim()
-    .toLowerCase()
-    .regex(/^[a-z0-9_]{3,32}$/, "3-32 characters: letters, numbers, underscore only"),
+  username: usernameSchema,
 });
 
 export const publicProfileUpdateSchema = z.object({
-  displayName: z.string().trim().max(40).optional(),
   avatar: z.string().trim().max(500).optional().nullable(),
   bio: z.string().trim().max(200).optional(),
   interests: z.array(z.string().trim().min(1).max(40)).max(20).optional(),
@@ -51,17 +55,12 @@ export const publicProfileUpdateSchema = z.object({
   year: z.string().trim().max(20).optional().nullable(),
 });
 
-// One-time prompt shown on first visit to Community — asks only whether the student wants
-// their real name or a different name as their community display name.
-export const communityProfileSetupSchema = z
-  .object({
-    useOriginalName: z.boolean(),
-    displayName: z.string().trim().min(1, "Enter a name").max(40).optional(),
-  })
-  .refine((data) => data.useOriginalName || Boolean(data.displayName), {
-    message: "Enter a name",
-    path: ["displayName"],
-  });
+// One-time prompt shown on first visit to Community — lets the student pick their own
+// username (pre-filled with the auto-generated one), which doubles as their community display
+// name. No separate display name to ask for.
+export const communityProfileSetupSchema = z.object({
+  username: usernameSchema,
+});
 
 // --- Site-admin community management -------------------------------------------------------
 

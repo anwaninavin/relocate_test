@@ -11,6 +11,7 @@ import { assertRequiredEnv } from "@/lib/env";
 import { connectDB } from "@/db";
 import { ensureCitiesSeeded } from "@/services/cityService";
 import { ensureGlobalCommunitiesSeeded } from "@/services/communityService";
+import { ensureCollegesSeeded } from "@/services/collegeService";
 import { initSocketServer } from "@/lib/socket";
 import { analyticsContext } from "@/middleware/analyticsContext";
 import { authRouter } from "@/routes/auth.routes";
@@ -250,7 +251,7 @@ const httpServer = createServer(app);
 initSocketServer(httpServer);
 
 connectDB()
-  .then(() => Promise.all([ensureCitiesSeeded(), ensureGlobalCommunitiesSeeded()]))
+  .then(() => Promise.all([ensureCitiesSeeded(), ensureGlobalCommunitiesSeeded(), ensureCollegesSeeded()]))
   .then(() => {
     httpServer.listen(PORT, () => {
       console.log(`Backend listening on port ${PORT}`);

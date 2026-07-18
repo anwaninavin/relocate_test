@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import type { UseFormReturn } from "react-hook-form";
-import { MapPin, School } from "lucide-react";
+import { Check, ChevronsUpDown, MapPin, School } from "lucide-react";
 import { toast } from "sonner";
 
+import { Button } from "@/components/ui/button";
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 import { api, ApiError } from "@/lib/api";
 import { GENDER_OPTIONS } from "@/types";
@@ -26,6 +29,65 @@ import {
 } from "@/features/auth/college-taxonomy-dto";
 
 const OTHER_COLLEGE = "__other__";
+
+/** Searchable city picker — the plain `Select` doesn't scale to the full Indian-city catalog,
+ * so this swaps in a filterable command palette inside a popover instead. */
+function CityCombobox({
+  cities,
+  value,
+  onChange,
+  placeholder,
+}: {
+  cities: CityOptionDTO[];
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between font-normal"
+        >
+          <span className="flex min-w-0 items-center gap-2">
+            <MapPin className="text-muted-foreground size-4 shrink-0" />
+            <span className={cn("truncate", !value && "text-muted-foreground")}>{value || placeholder}</span>
+          </span>
+          <ChevronsUpDown className="text-muted-foreground size-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[var(--radix-popover-trigger-width)] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search city..." />
+          <CommandList>
+            <CommandEmpty>No city found.</CommandEmpty>
+            <CommandGroup>
+              {cities.map((c) => (
+                <CommandItem
+                  key={c.id}
+                  value={c.name}
+                  onSelect={() => {
+                    onChange(c.name);
+                    setOpen(false);
+                  }}
+                >
+                  <Check className={cn("size-4", value === c.name ? "opacity-100" : "opacity-0")} />
+                  {c.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 /** Gender + college name + college category + city (+ course/home town on the profile-edit
  * form) — shared by the onboarding form and the profile-edit form so both stay in sync.
@@ -140,27 +202,17 @@ export function ProfileFields({
         name="city"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>City</FormLabel>
+            <FormLabel>Destination City (Where you are moving)</FormLabel>
             <FormControl>
-              <Select
+              <CityCombobox
+                cities={cities}
                 value={field.value}
-                onValueChange={(value) => {
+                onChange={(value) => {
                   field.onChange(value);
                   form.setValue("college", "");
                 }}
-              >
-                <SelectTrigger className="w-full">
-                  <MapPin className="text-muted-foreground size-4" />
-                  <SelectValue placeholder="Select your city" />
-                </SelectTrigger>
-                <SelectContent>
-                  {cities.map((c) => (
-                    <SelectItem key={c.id} value={c.name}>
-                      {c.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Select your destination city"
+              />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -283,19 +335,12 @@ export function ProfileFields({
             <FormItem>
               <FormLabel>Home town</FormLabel>
               <FormControl>
-                <Select value={field.value} onValueChange={field.onChange}>
-                  <SelectTrigger className="w-full">
-                    <MapPin className="text-muted-foreground size-4" />
-                    <SelectValue placeholder="Select your home town" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {cities.map((c) => (
-                      <SelectItem key={c.id} value={c.name}>
-                        {c.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <CityCombobox
+                  cities={cities}
+                  value={field.value ?? ""}
+                  onChange={field.onChange}
+                  placeholder="Select your home town"
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

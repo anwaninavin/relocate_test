@@ -23,7 +23,12 @@ export function ConversationView() {
   if (!id) return null;
 
   const other = conversation?.members[0];
-  const title = conversation?.type === "group" ? conversation.name || "Group chat" : other?.displayName || "Student";
+  const title =
+    conversation?.type === "group"
+      ? conversation.name || "Group chat"
+      : other?.username
+        ? `@${other.username}`
+        : "Student";
 
   return (
     <div className="flex h-[calc(100dvh-9rem)] flex-col gap-3 lg:h-[calc(100dvh-6rem)]">
@@ -37,7 +42,6 @@ export function ConversationView() {
         </Avatar>
         <div className="min-w-0">
           <p className="truncate font-display font-semibold">{title}</p>
-          {other?.username && <p className="text-muted-foreground truncate text-xs">@{other.username}</p>}
         </div>
       </div>
       <div className="min-h-0 flex-1 rounded-2xl border border-border/70">

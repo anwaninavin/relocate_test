@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Check, Copy, ListChecks, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, Calendar, Check, Copy, ListChecks, MoreVertical, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -15,6 +15,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { EmptyState } from "@/components/shared/empty-state";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { PageHeader } from "@/components/shared/page-header";
@@ -23,7 +30,6 @@ import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
 import type { ChecklistCategory, ChecklistPlanType, ChecklistPriority } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
-import { ItemDetailSheet } from "@/features/checklist/item-detail-sheet";
 
 type PriorityFilter = "all" | ChecklistPriority;
 type StatusFilter = "all" | "completed" | "incomplete";
@@ -71,7 +77,7 @@ export function CategoryView({
   const [sortBy, setSortBy] = useState<SortOption>("name");
   const [localSelectMode, setLocalSelectMode] = useState(false);
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
-  const [detailItem, setDetailItem] = useState<ChecklistItemDTO | null>(null);
+  const [deleteConfirmItem, setDeleteConfirmItem] = useState<ChecklistItemDTO | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
   const isControlled = controlledSelectMode !== undefined;
@@ -137,7 +143,6 @@ export function CategoryView({
 
   async function handlePlanTypeChange(item: ChecklistItemDTO, planType: ChecklistPlanType | null) {
     setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, planType } : i)));
-    setDetailItem((prev) => (prev && prev.id === item.id ? { ...prev, planType } : prev));
     try {
       await api.patch(`/api/checklist/${item.id}`, { planType });
       emitRefresh();
@@ -292,19 +297,39 @@ export function CategoryView({
                   </span>
 
                   <div className="min-w-0 flex-1">
-                    <button
-                      type="button"
-                      onClick={() => setDetailItem(item)}
+                    <span
                       className={
                         item.completed
-                          ? "text-muted-foreground block max-w-full truncate text-left line-through"
-                          : "block max-w-full truncate text-left font-medium"
+                          ? "text-muted-foreground block max-w-full truncate line-through"
+                          : "block max-w-full truncate font-medium"
                       }
                     >
                       {item.item}
-                    </button>
+                    </span>
                     {item.price != null && <p className="text-muted-foreground text-xs">₹{item.price}</p>}
                   </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="size-8 shrink-0" aria-label="Item actions">
+                        <MoreVertical className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "pack")}>
+                        <Check className="size-4" />
+                        Pack It
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "plan")}>
+                        <Calendar className="size-4" />
+                        Plan It
+                      </DropdownMenuItem>
+                      <DropdownMenuItem variant="destructive" onClick={() => setDeleteConfirmItem(item)}>
+                        <Trash2 className="size-4" />
+                        Delete
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </motion.div>
               ))}
             </div>
@@ -349,13 +374,28 @@ export function CategoryView({
         </motion.div>
       )}
 
-      <ItemDetailSheet
-        item={detailItem}
-        open={detailItem !== null}
-        onOpenChange={(open) => !open && setDetailItem(null)}
-        onDelete={handleDelete}
-        onPlanTypeChange={handlePlanTypeChange}
-      />
+      <Dialog open={deleteConfirmItem !== null} onOpenChange={(open) => !open && setDeleteConfirmItem(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete this item?</DialogTitle>
+            <DialogDescription>This can't be undone.</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmItem(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteConfirmItem) handleDelete(deleteConfirmItem.id);
+                setDeleteConfirmItem(null);
+              }}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

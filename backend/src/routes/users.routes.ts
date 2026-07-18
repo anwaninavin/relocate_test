@@ -53,16 +53,21 @@ usersRouter.patch("/me/public-profile", async (req, res) => {
   res.json({ user: serializeUser(req.user!) });
 });
 
-// One-time "create your community profile" prompt — sets the community display name and
-// marks the prompt as done so it never shows again for this account.
+// One-time "create your community profile" prompt — lets the student confirm/choose their
+// username (which doubles as their community display name — see User model) and marks the
+// prompt as done so it never shows again for this account.
 usersRouter.patch("/me/community-profile-setup", async (req, res) => {
   const parsed = communityProfileSetupSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
-  const { useOriginalName, displayName } = parsed.data;
-  req.user!.displayName = useOriginalName ? req.user!.name || req.user!.username || "Student" : displayName!.trim();
+  const clash = await User.findOne({ username: parsed.data.username, _id: { $ne: req.user!._id } }).lean();
+  if (clash) {
+    res.status(400).json({ error: "That username is already taken" });
+    return;
+  }
+  req.user!.username = parsed.data.username;
   req.user!.communityProfileConfigured = true;
   await req.user!.save();
   res.json({ user: serializeUser(req.user!) });
