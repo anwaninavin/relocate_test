@@ -164,7 +164,12 @@ export function updateUsername(username: string) {
   return api.patch("/api/users/me/username", { username });
 }
 
-export function setupCommunityProfile(input: { username: string }) {
+export function setupCommunityProfile(input: {
+  username: string;
+  college: string;
+  collegeCategoryId: string;
+  city: string;
+}) {
   return api.patch("/api/users/me/community-profile-setup", input);
 }
 

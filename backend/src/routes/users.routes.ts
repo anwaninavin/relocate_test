@@ -5,6 +5,7 @@ import { getPublicProfileByUsername } from "@/services/communityService";
 import { User } from "@/models/User";
 import { isValidUsernameFormat } from "@/lib/username";
 import { usernameUpdateSchema, publicProfileUpdateSchema, communityProfileSetupSchema } from "@/validations/community";
+import { completeCommunityProfileSetup } from "@/services/userService";
 import { serializeUser } from "@/lib/serialize";
 
 export const usersRouter = createAsyncRouter();
@@ -70,8 +71,9 @@ usersRouter.patch("/me/public-profile", async (req, res) => {
 });
 
 // One-time "create your community profile" prompt — lets the student confirm/choose their
-// username (which doubles as their community display name — see User model) and marks the
-// prompt as done so it never shows again for this account.
+// username (which doubles as their community display name — see User model) plus the
+// college/city details onboarding no longer collects, and marks the prompt as done so it
+// never shows again for this account.
 usersRouter.patch("/me/community-profile-setup", async (req, res) => {
   const parsed = communityProfileSetupSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -83,10 +85,9 @@ usersRouter.patch("/me/community-profile-setup", async (req, res) => {
     res.status(400).json({ error: "That username is already taken" });
     return;
   }
-  req.user!.username = parsed.data.username;
-  req.user!.communityProfileConfigured = true;
+  let updated;
   try {
-    await req.user!.save();
+    updated = await completeCommunityProfileSetup(req.user!._id.toString(), parsed.data);
   } catch (error) {
     if (isDuplicateUsernameError(error)) {
       res.status(400).json({ error: "That username is already taken" });
@@ -94,5 +95,9 @@ usersRouter.patch("/me/community-profile-setup", async (req, res) => {
     }
     throw error;
   }
-  res.json({ user: serializeUser(req.user!) });
+  if (!updated) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  res.json({ user: { ...serializeUser(req.user!), ...updated } });
 });

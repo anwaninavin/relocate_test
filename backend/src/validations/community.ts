@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { COMMUNITY_ROLES, COMMUNITY_STATUS, COMMUNITY_VISIBILITY } from "@/types";
+import { citySchema, collegeCategoryIdSchema } from "@/validations/auth";
 
 export const createCommunitySchema = z.object({
   name: z.string().trim().min(3, "Name is too short").max(120),
@@ -56,10 +57,15 @@ export const publicProfileUpdateSchema = z.object({
 });
 
 // One-time prompt shown on first visit to Community — lets the student pick their own
-// username (pre-filled with the auto-generated one), which doubles as their community display
-// name. No separate display name to ask for.
+// username (pre-filled with the auto-generated one, which doubles as their community display
+// name — no separate display name to ask for) plus the college/city details onboarding no
+// longer asks for up front (see validations/auth.ts's onboardingSchema, which is now just name
+// + gender).
 export const communityProfileSetupSchema = z.object({
   username: usernameSchema,
+  college: z.string().trim().min(1, "Enter your college name").max(120, "College name is too long"),
+  collegeCategoryId: collegeCategoryIdSchema,
+  city: citySchema,
 });
 
 // --- Site-admin community management -------------------------------------------------------
