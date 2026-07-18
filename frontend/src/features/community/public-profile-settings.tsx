@@ -42,12 +42,21 @@ export function PublicProfileSettings() {
       if (normalized !== user?.username) {
         await updateUsername(normalized);
       }
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to update username");
+      setSaving(false);
+      return;
+    }
+    try {
       await updatePublicProfile({ avatar: avatar || null });
       await refreshUser();
       toast.success("Community profile updated");
       setOpen(false);
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to update community profile");
+      // The username change above may already have been committed server-side even though
+      // this step failed — refresh so the UI doesn't keep showing the stale pre-save value.
+      await refreshUser();
+      toast.error(error instanceof ApiError ? error.message : "Username saved, but the photo failed to update");
     } finally {
       setSaving(false);
     }

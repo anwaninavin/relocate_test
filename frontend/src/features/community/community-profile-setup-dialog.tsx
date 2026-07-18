@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -21,6 +21,14 @@ export function CommunityProfileSetupDialog() {
   const { user, refreshUser } = useAuth();
   const [username, setUsername] = useState(user?.username ?? "");
   const [submitting, setSubmitting] = useState(false);
+
+  // `user` can still be null on first render (e.g. right after onboarding, before the
+  // persisted-user cache is written) — this backfills the auto-generated username once auth
+  // resolves, but only while the student hasn't started typing their own choice.
+  useEffect(() => {
+    if (user?.username && !username) setUsername(user.username);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.username]);
 
   const open = Boolean(user && !user.communityProfileConfigured);
   const normalized = username.trim().toLowerCase();

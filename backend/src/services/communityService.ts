@@ -57,8 +57,10 @@ export async function ensureCommunity(
     visibility?: CommunityVisibility;
     /** Status to create the community with if it doesn't exist yet — has no effect when a
      * matching community already exists (its current status is left untouched). Defaults to
-     * "approved" so auto-created city/college/campus/course/year communities are immediately
-     * visible to every student in discovery, not just members who were auto-joined. */
+     * "approved", which auto-join relies on for city/course/year communities (all backed by
+     * curated/DB catalogs, so immediately safe to show every student in discovery) — but
+     * auto-join still passes "pending" explicitly for college/campus, since those names can be
+     * arbitrary free text a student typed. */
     status?: CommunityStatus;
   } = {},
 ): Promise<HydratedDocument<CommunityDocument>> {
@@ -172,8 +174,13 @@ export async function ensureAutoJoinCommunities(user: AutoJoinableUser) {
   }
 
   if (user.college) {
+    // Unlike city (picked from the admin-curated City catalog) or course/year (backed by DB
+    // Course records), college is free text once a student picks "Other" on the college
+    // picker, and campus is free text always — so these two still need a site admin's sign-off
+    // before going public, to avoid an arbitrary/abusive name showing up in Discover unmoderated.
     const college = await ensureCommunity("college", user.college, user.college, {
       description: `The community for everyone at ${user.college}.`,
+      status: "pending",
     });
     joins.push(joinCommunity(userId, college._id.toString()));
 
@@ -181,6 +188,7 @@ export async function ensureAutoJoinCommunities(user: AutoJoinableUser) {
       const campusKey = `${user.college}::${user.campus}`;
       const campus = await ensureCommunity("campus", campusKey, `${user.college} — ${user.campus}`, {
         description: `The ${user.campus} campus community.`,
+        status: "pending",
       });
       joins.push(joinCommunity(userId, campus._id.toString()));
     }

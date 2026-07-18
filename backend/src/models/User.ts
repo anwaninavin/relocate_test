@@ -95,11 +95,14 @@ const UserSchema = new Schema(
  * filter on updatedAt — without this, that query is a full collection scan. */
 UserSchema.index({ updatedAt: 1 });
 
-/** Username IS the display name — whenever a username is set or changed, mirror it into
- * displayName so every existing read path that selects displayName (chat, search, community
- * member lists) keeps working without also having to select+fallback on username everywhere. */
+/** Username IS the display name — mirrored into displayName on every save (not just when
+ * username changes) so every existing read path that selects displayName (chat, search,
+ * community member lists) keeps working without also having to select+fallback on username
+ * everywhere. Unconditional on purpose: it also self-heals accounts with a legacy custom
+ * displayName from before this field stopped being independently editable, the next time that
+ * document is saved for any reason, instead of leaving them permanently stale. */
 UserSchema.pre("save", function () {
-  if (this.isModified("username") && this.username) {
+  if (this.username) {
     this.displayName = this.username;
   }
 });

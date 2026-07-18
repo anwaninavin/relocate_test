@@ -11,6 +11,14 @@ export const usersRouter = createAsyncRouter();
 
 usersRouter.use(requireAuth);
 
+/** The pre-check (`findOne` for a clash) is inherently racy against the `username` field's
+ * unique index — two requests can both pass the check before either saves. Rather than let
+ * that surface as a raw 500 from the driver, treat a duplicate-key error on save the same as a
+ * caught clash. */
+function isDuplicateUsernameError(error: unknown): boolean {
+  return Boolean(error && typeof error === "object" && "code" in error && (error as { code: unknown }).code === 11000);
+}
+
 // Public, privacy-safe lookup by username — never exposes name/mobile/city/college beyond
 // what serializePublicUser already allows through (see communityService.serializePublicUser).
 usersRouter.get("/:username", async (req, res) => {
@@ -38,7 +46,15 @@ usersRouter.patch("/me/username", async (req, res) => {
     return;
   }
   req.user!.username = parsed.data.username;
-  await req.user!.save();
+  try {
+    await req.user!.save();
+  } catch (error) {
+    if (isDuplicateUsernameError(error)) {
+      res.status(400).json({ error: "That username is already taken" });
+      return;
+    }
+    throw error;
+  }
   res.json({ user: serializeUser(req.user!) });
 });
 
@@ -69,6 +85,14 @@ usersRouter.patch("/me/community-profile-setup", async (req, res) => {
   }
   req.user!.username = parsed.data.username;
   req.user!.communityProfileConfigured = true;
-  await req.user!.save();
+  try {
+    await req.user!.save();
+  } catch (error) {
+    if (isDuplicateUsernameError(error)) {
+      res.status(400).json({ error: "That username is already taken" });
+      return;
+    }
+    throw error;
+  }
   res.json({ user: serializeUser(req.user!) });
 });
