@@ -13,13 +13,16 @@ import type { BagSummaryDTO } from "@/features/bags/bag-dto";
 interface AddToBagListProps {
   itemId: string;
   bagId: string | null;
+  /** Called after the item is successfully assigned to (or created into) a bag, so a
+   * parent dialog can close itself. */
+  onDone?: () => void;
 }
 
 /** Inline "Add to Bag" list shown directly inside the item detail popup — every bag is
  * visible up front so assigning an item takes one tap instead of opening a nested popover
  * first. The item stays on the checklist either way; a bag only ever holds a reference
  * (bagId), never a copy of the item. Tapping the bag the item is already in unassigns it. */
-export function AddToBagList({ itemId, bagId }: AddToBagListProps) {
+export function AddToBagList({ itemId, bagId, onDone }: AddToBagListProps) {
   const [bags, setBags] = useState<BagSummaryDTO[] | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
@@ -47,6 +50,7 @@ export function AddToBagList({ itemId, bagId }: AddToBagListProps) {
       await api.patch(`/api/checklist/${itemId}`, { bagId: alreadyAssigned ? null : bag.id });
       emitRefresh();
       toast.success(alreadyAssigned ? `Removed from ${bag.name}` : `Added to ${bag.name}`);
+      if (!alreadyAssigned) onDone?.();
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to update bag");
     } finally {
@@ -70,6 +74,7 @@ export function AddToBagList({ itemId, bagId }: AddToBagListProps) {
       emitRefresh();
       toast.success(`Added to ${bag.name}`);
       resetCreateForm();
+      onDone?.();
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to create bag");
     } finally {
@@ -79,7 +84,6 @@ export function AddToBagList({ itemId, bagId }: AddToBagListProps) {
 
   return (
     <div>
-      <p className="text-muted-foreground mb-1 text-xs font-semibold">Add to Bag</p>
       {bags === null ? (
         <div className="flex justify-center py-3">
           <Loader2 className="text-muted-foreground size-4 animate-spin" />

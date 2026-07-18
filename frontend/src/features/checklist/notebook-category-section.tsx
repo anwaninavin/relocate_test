@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion, AnimatePresence, LayoutGroup } from "framer-motion";
-import { Calendar, Check, ChevronDown, MoreVertical, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, Luggage, MoreVertical, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -14,9 +14,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { HandDrawnCheckbox } from "@/features/checklist/hand-drawn-checkbox";
 import { ItemFormDialog } from "@/features/checklist/item-form-dialog";
+import { AddToBagDialog } from "@/features/bags/add-to-bag-dialog";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
-import type { ChecklistPlanType } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
 /** One category's notebook page, collapsed to a header row until tapped open — same paper
@@ -40,6 +40,7 @@ export function NotebookCategorySection({
 }) {
   const [addOpen, setAddOpen] = useState(false);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<ChecklistItemDTO | null>(null);
+  const [addToBagItem, setAddToBagItem] = useState<ChecklistItemDTO | null>(null);
 
   async function toggle(item: ChecklistItemDTO) {
     onItemsChange((prev) => prev.map((i) => (i.id === item.id ? { ...i, completed: !i.completed } : i)));
@@ -59,16 +60,6 @@ export function NotebookCategorySection({
       emitRefresh();
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to delete item");
-    }
-  }
-
-  async function handlePlanTypeChange(item: ChecklistItemDTO, planType: ChecklistPlanType | null) {
-    onItemsChange((prev) => prev.map((i) => (i.id === item.id ? { ...i, planType } : i)));
-    try {
-      await api.patch(`/api/checklist/${item.id}`, { planType });
-      emitRefresh();
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to update item");
     }
   }
 
@@ -155,13 +146,9 @@ export function NotebookCategorySection({
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "pack")}>
-                              <Check className="size-4" />
-                              Pack It
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "plan")}>
-                              <Calendar className="size-4" />
-                              Plan It
+                            <DropdownMenuItem onClick={() => setAddToBagItem(item)}>
+                              <Luggage className="size-4" />
+                              Add to Bag
                             </DropdownMenuItem>
                             <DropdownMenuItem variant="destructive" onClick={() => setDeleteConfirmItem(item)}>
                               <Trash2 className="size-4" />
@@ -243,6 +230,16 @@ export function NotebookCategorySection({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {addToBagItem && (
+        <AddToBagDialog
+          itemId={addToBagItem.id}
+          itemName={addToBagItem.item}
+          bagId={addToBagItem.bagId}
+          open={addToBagItem !== null}
+          onOpenChange={(open) => !open && setAddToBagItem(null)}
+        />
+      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowLeft, Calendar, Check, Copy, ListChecks, MoreVertical, Search, Trash2, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, ListChecks, Luggage, MoreVertical, Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { getCategoryIcon } from "@/lib/checklist-icons";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
-import type { ChecklistCategory, ChecklistPlanType, ChecklistPriority } from "@/types";
+import { AddToBagDialog } from "@/features/bags/add-to-bag-dialog";
+import type { ChecklistCategory, ChecklistPriority } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
 type PriorityFilter = "all" | ChecklistPriority;
@@ -87,6 +88,7 @@ export function CategoryView({
   const [localSelectMode, setLocalSelectMode] = useState(false);
   const [localSelectedIds, setLocalSelectedIds] = useState<string[]>([]);
   const [deleteConfirmItem, setDeleteConfirmItem] = useState<ChecklistItemDTO | null>(null);
+  const [addToBagItem, setAddToBagItem] = useState<ChecklistItemDTO | null>(null);
   const [bulkLoading, setBulkLoading] = useState(false);
 
   const isControlled = controlledSelectMode !== undefined;
@@ -148,16 +150,6 @@ export function CategoryView({
       emitRefresh();
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to delete item");
-    }
-  }
-
-  async function handlePlanTypeChange(item: ChecklistItemDTO, planType: ChecklistPlanType | null) {
-    onItemsChange((prev) => prev.map((i) => (i.id === item.id ? { ...i, planType } : i)));
-    try {
-      await api.patch(`/api/checklist/${item.id}`, { planType });
-      emitRefresh();
-    } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to update item");
     }
   }
 
@@ -338,13 +330,9 @@ export function CategoryView({
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "pack")}>
-                        <Check className="size-4" />
-                        Pack It
-                      </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => handlePlanTypeChange(item, "plan")}>
-                        <Calendar className="size-4" />
-                        Plan It
+                      <DropdownMenuItem onClick={() => setAddToBagItem(item)}>
+                        <Luggage className="size-4" />
+                        Add to Bag
                       </DropdownMenuItem>
                       <DropdownMenuItem variant="destructive" onClick={() => setDeleteConfirmItem(item)}>
                         <Trash2 className="size-4" />
@@ -418,6 +406,16 @@ export function CategoryView({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {addToBagItem && (
+        <AddToBagDialog
+          itemId={addToBagItem.id}
+          itemName={addToBagItem.item}
+          bagId={addToBagItem.bagId}
+          open={addToBagItem !== null}
+          onOpenChange={(open) => !open && setAddToBagItem(null)}
+        />
+      )}
     </div>
   );
 }
