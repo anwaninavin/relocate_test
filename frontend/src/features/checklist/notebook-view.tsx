@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { NotebookCategorySection } from "@/features/checklist/notebook-category-section";
@@ -46,21 +46,25 @@ interface CategoryGroup {
 }
 
 export function NotebookView({
-  groups: initialGroups,
+  groups,
+  onGroupsChange,
   allCategories,
 }: {
   groups: CategoryGroup[];
+  onGroupsChange: (updater: (prev: CategoryGroup[]) => CategoryGroup[]) => void;
   allCategories: string[];
 }) {
-  const [groups, setGroups] = useState(initialGroups);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
-  useEffect(() => {
-    setGroups(initialGroups);
-  }, [initialGroups]);
-
+  // Updates the single source of truth (ChecklistPage's own `groups` state) directly, rather than
+  // keeping a second local copy here that has to be kept in sync via an effect. That second copy
+  // used to be exactly how a checklist item's first-ever toggle (which materializes it server-side
+  // from a virtual template item into a real document with a new id) could transiently show up
+  // twice — the optimistic update landing in this component's local state under the old id, and
+  // the following refetch's fresh, correctly-id'd data replacing ChecklistPage's copy but racing
+  // with (or getting stale-guarded behind) this one — until the next full reload quietly fixed it.
   function updateCategoryItems(category: string, updater: (prev: ChecklistItemDTO[]) => ChecklistItemDTO[]) {
-    setGroups((prev) => prev.map((g) => (g.category === category ? { ...g, items: updater(g.items) } : g)));
+    onGroupsChange((prev) => prev.map((g) => (g.category === category ? { ...g, items: updater(g.items) } : g)));
   }
 
   function toggleExpanded(category: string) {
