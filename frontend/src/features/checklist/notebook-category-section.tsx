@@ -127,7 +127,7 @@ export function NotebookCategorySection({
                     {pending.map((item) => (
                       <motion.div
                         key={item.id}
-                        layoutId={`item-${item.id}`}
+                        layoutId={`pending-item-${item.id}`}
                         layout
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
@@ -192,7 +192,7 @@ export function NotebookCategorySection({
                     {completed.map((item) => (
                       <motion.button
                         key={item.id}
-                        layoutId={`item-${item.id}`}
+                        layoutId={`completed-item-${item.id}`}
                         layout
                         type="button"
                         onClick={() => toggle(item)}
