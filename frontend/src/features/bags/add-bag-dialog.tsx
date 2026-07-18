@@ -13,6 +13,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
 import { SuitcaseIcon } from "@/features/bags/suitcase-icon";
@@ -22,8 +23,18 @@ interface AddBagDialogProps {
   trigger?: React.ReactNode;
 }
 
-/** "+ Add Bag": name + color picker (preset swatches or a custom pick), with a live 3D
- * preview so you see the suitcase you're about to create. */
+/** Suggestions only — tapping one just fills the name input (and picks a matching color)
+ * so it's still fully editable; nothing here is pre-selected. */
+const SUGGESTED_BAG_TYPES = [
+  { emoji: "🎒", label: "College Backpack", color: BAG_COLOR_PRESETS[0] },
+  { emoji: "🧳", label: "Suitcase", color: BAG_COLOR_PRESETS[1] },
+  { emoji: "👜", label: "Tote Bag", color: BAG_COLOR_PRESETS[2] },
+  { emoji: "🧼", label: "Toiletry Bag", color: BAG_COLOR_PRESETS[3] },
+];
+
+/** "+ Add Bag": a friendly, user-driven create flow. Suggested bag types are shown as
+ * tappable chips that just fill in the name field — nothing is pre-picked, everything
+ * stays editable, so the bag that gets created is always the one the user named. */
 export function AddBagDialog({ trigger }: AddBagDialogProps) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
@@ -45,7 +56,7 @@ export function AddBagDialog({ trigger }: AddBagDialogProps) {
     try {
       await api.post("/api/bags", { name: trimmed, color });
       emitRefresh();
-      toast.success("Bag added");
+      toast.success("Your bag is ready 🎒");
       setOpen(false);
       reset();
     } catch (error) {
@@ -71,13 +82,43 @@ export function AddBagDialog({ trigger }: AddBagDialogProps) {
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-sm">
+      <DialogContent className="rounded-2xl sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle>New bag</DialogTitle>
+          <DialogTitle>Create a new bag 🎒</DialogTitle>
         </DialogHeader>
 
-        <div className="flex flex-col items-center gap-3">
-          <SuitcaseIcon color={color} interactive={false} size={120} />
+        <div className="flex flex-col items-center gap-4">
+          <SuitcaseIcon color={color} interactive={false} size={96} />
+
+          <div className="w-full space-y-2">
+            <Label className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">
+              Suggestions
+            </Label>
+            <div className="flex flex-wrap gap-2">
+              {SUGGESTED_BAG_TYPES.map((suggestion) => {
+                const isActive = name.trim().toLowerCase() === suggestion.label.toLowerCase();
+                return (
+                  <button
+                    key={suggestion.label}
+                    type="button"
+                    onClick={() => {
+                      setName(suggestion.label);
+                      setColor(suggestion.color);
+                    }}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors",
+                      isActive
+                        ? "border-primary bg-primary/10 text-foreground"
+                        : "border-border bg-muted/40 text-muted-foreground hover:border-primary/40 hover:text-foreground",
+                    )}
+                  >
+                    <span aria-hidden>{suggestion.emoji}</span>
+                    {suggestion.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
 
           <div className="w-full space-y-2">
             <Label htmlFor="bag-name">Bag name</Label>
@@ -86,7 +127,8 @@ export function AddBagDialog({ trigger }: AddBagDialogProps) {
               autoFocus
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Suitcase 1, Safari, Blue Bag"
+              placeholder="Name your bag"
+              className="rounded-xl"
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   e.preventDefault();
@@ -97,7 +139,7 @@ export function AddBagDialog({ trigger }: AddBagDialogProps) {
           </div>
 
           <div className="w-full space-y-2">
-            <Label>Color</Label>
+            <Label className="text-muted-foreground text-xs font-semibold tracking-wide uppercase">Color</Label>
             <div className="flex flex-wrap items-center gap-2">
               {BAG_COLOR_PRESETS.map((preset) => (
                 <button
@@ -123,9 +165,9 @@ export function AddBagDialog({ trigger }: AddBagDialogProps) {
         </div>
 
         <DialogFooter>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting} className="w-full rounded-full sm:w-auto">
             {isSubmitting && <Loader2 className="size-4 animate-spin" />}
-            Add bag
+            Create Bag ✨
           </Button>
         </DialogFooter>
       </DialogContent>
