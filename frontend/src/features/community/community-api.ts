@@ -165,10 +165,6 @@ export function setupCommunityProfile(input: { useOriginalName: boolean; display
   return api.patch("/api/users/me/community-profile-setup", input);
 }
 
-export function uploadChatFile(dataUri: string, name?: string) {
-  return api.post<{ attachment: MessageDTO["attachments"][number] }>("/api/uploads/chat-file", { file: dataUri, name });
-}
-
 export function reportContent(input: { targetType: "message" | "user" | "community"; targetId: string; reason: string; note?: string }) {
   return api.post("/api/moderation/reports", input);
 }
