@@ -1,6 +1,6 @@
 // Bump this whenever sw.js itself changes — combined with the activate handler below, that's
 // what evicts stale cache entries for anyone with an already-installed service worker.
-const CACHE_NAME = "pack-with-me-shell-v2";
+const CACHE_NAME = "pack-with-me-shell-v3";
 const APP_SHELL = ["/", "/index.html", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
 
 self.addEventListener("install", (event) => {
@@ -36,6 +36,15 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
+
+  // Never intercept API calls. Every /api/ response is dynamic and per-user (checklist state,
+  // dashboard counts, etc.) — the cache-first strategy below is fine for hashed static assets,
+  // but applying it here means a GET fired right after a PATCH/POST can be answered from a
+  // cache entry that's minutes old (since the only thing that revalidates it is another GET
+  // to that exact URL), silently undoing the mutation's optimistic UI update. The app's own
+  // fetch layer (frontend/src/lib/api.ts) already sets `cache: "no-store"` specifically to
+  // prevent this; a Service Worker sits below that and must not reintroduce it.
+  if (url.pathname.startsWith("/api/")) return;
 
   if (isAppShellRequest(request, url)) {
     event.respondWith(
