@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Calendar, Check, Copy, ListChecks, MoreVertical, Search, Trash2, X } from "lucide-react";
@@ -71,6 +71,9 @@ export function CategoryView({
   onToggleSelected?: (id: string) => void;
 }) {
   const [items, setItems] = useState(initialItems);
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
   const [search, setSearch] = useState("");
   const [priorityFilter, setPriorityFilter] = useState<PriorityFilter>("all");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -128,6 +131,7 @@ export function CategoryView({
       emitRefresh();
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : "Failed to update item");
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, completed: item.completed } : i)));
     }
   }
 
