@@ -26,7 +26,9 @@ import { api, ApiError } from "@/lib/api";
 import { usePwaInstall } from "@/lib/use-pwa-install";
 import { ProfileFields } from "@/features/auth/profile-fields";
 import { profileFieldsSchema, type ProfileFieldsInput } from "@/features/auth/profile-fields-schema";
+import { AvatarUploadField } from "@/features/auth/avatar-upload-field";
 import { PublicProfileSettings } from "@/features/community/public-profile-settings";
+import { updatePublicProfile } from "@/features/community/community-api";
 
 function SettingsSection({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -108,6 +110,7 @@ export function ProfileView() {
   const { user, refreshUser, logout } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [avatar, setAvatar] = useState(user?.avatar ?? "");
 
   const initials = (user?.name ?? user?.mobile.slice(-2) ?? "?").slice(0, 2).toUpperCase();
 
@@ -135,12 +138,16 @@ export function ProfileView() {
       city: user.city ?? "",
       homeTown: user.homeTown ?? "",
     });
+    setAvatar(user.avatar ?? "");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editOpen, user]);
 
   async function onSubmit(values: ProfileFieldsInput) {
     setIsSubmitting(true);
     try {
+      if (avatar !== (user?.avatar ?? "")) {
+        await updatePublicProfile({ avatar: avatar || null });
+      }
       await api.patch("/api/profile", values);
       await refreshUser();
       toast.success("Profile updated");
@@ -196,6 +203,7 @@ export function ProfileView() {
             </DialogHeader>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col gap-4">
+                <AvatarUploadField value={avatar} onChange={setAvatar} fallback={initials} />
                 <FormField
                   control={form.control}
                   name="name"
