@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Hash, Megaphone, Plus, Users2 } from "lucide-react";
+import { Megaphone, Plus, Users2 } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
@@ -162,7 +162,7 @@ export function CommunityDetailView() {
               channel._id === activeChannelId ? "bg-primary text-primary-foreground border-primary" : "border-border/70 text-muted-foreground",
             )}
           >
-            {channel.type === "announcement" ? <Megaphone className="size-3.5" /> : <Hash className="size-3.5" />}
+            {channel.type === "announcement" && <Megaphone className="size-3.5" />}
             {channel.name}
           </button>
         ))}

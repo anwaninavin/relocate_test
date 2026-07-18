@@ -47,7 +47,10 @@ export function MessageComposer({
       {replyTo && (
         <div className="mb-2 flex items-center justify-between rounded-lg bg-muted/50 px-3 py-1.5 text-xs">
           <span className="truncate text-muted-foreground">
-            Replying to <span className="font-medium text-foreground">{replyTo.anonymousAlias ?? replyTo.author?.displayName ?? "message"}</span>
+            Replying to{" "}
+            <span className="font-medium text-foreground">
+              {replyTo.anonymousAlias ?? (replyTo.author?.username ? `@${replyTo.author.username}` : "message")}
+            </span>
           </span>
           <button onClick={onCancelReply} aria-label="Cancel reply">
             <X className="size-3.5" />

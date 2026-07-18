@@ -10,38 +10,53 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/context/auth-context";
 import { ApiError } from "@/lib/api";
-import { updatePublicProfile } from "@/features/community/community-api";
+import { updatePublicProfile, updateUsername } from "@/features/community/community-api";
 import { AvatarUploadField } from "@/features/auth/avatar-upload-field";
 
-/** Community/chat's public identity is just a photo and a display name — never the real
- * name, mobile, city/college (those live in the account profile form above), and no
- * username/bio/interests either, to keep this a one-field-plus-photo edit. */
+const USERNAME_PATTERN = /^[a-z0-9_]{3,32}$/;
+
+/** Community/chat's public identity is a photo and a username — never the real name, mobile,
+ * or city/college (those live in the account profile form above). The username doubles as the
+ * display name (see backend User model), so there's no separate display-name field to edit. */
 export function PublicProfileSettings() {
   const { user, refreshUser } = useAuth();
   const [open, setOpen] = useState(false);
-  const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [username, setUsername] = useState(user?.username ?? "");
   const [avatar, setAvatar] = useState(user?.avatar ?? "");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     if (!open || !user) return;
-    setDisplayName(user.displayName ?? "");
+    setUsername(user.username ?? "");
     setAvatar(user.avatar ?? "");
   }, [open, user]);
 
   async function handleSave() {
-    if (!displayName.trim()) {
-      toast.error("Enter a display name");
+    const normalized = username.trim().toLowerCase();
+    if (!USERNAME_PATTERN.test(normalized)) {
+      toast.error("3-32 characters: letters, numbers, underscore only");
       return;
     }
     setSaving(true);
     try {
-      await updatePublicProfile({ displayName: displayName.trim(), avatar: avatar || null });
+      if (normalized !== user?.username) {
+        await updateUsername(normalized);
+      }
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : "Failed to update username");
+      setSaving(false);
+      return;
+    }
+    try {
+      await updatePublicProfile({ avatar: avatar || null });
       await refreshUser();
       toast.success("Community profile updated");
       setOpen(false);
     } catch (error) {
-      toast.error(error instanceof ApiError ? error.message : "Failed to update community profile");
+      // The username change above may already have been committed server-side even though
+      // this step failed — refresh so the UI doesn't keep showing the stale pre-save value.
+      await refreshUser();
+      toast.error(error instanceof ApiError ? error.message : "Username saved, but the photo failed to update");
     } finally {
       setSaving(false);
     }
@@ -49,7 +64,7 @@ export function PublicProfileSettings() {
 
   if (!user) return null;
 
-  const initials = (user.displayName ?? user.name ?? "?").slice(0, 2).toUpperCase();
+  const initials = (user.username ?? "?").slice(0, 2).toUpperCase();
 
   return (
     <Card>
@@ -59,11 +74,11 @@ export function PublicProfileSettings() {
       <CardContent className="flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Avatar className="size-14">
-            {user.avatar && <AvatarImage src={user.avatar} alt={user.displayName ?? "Community profile"} />}
+            {user.avatar && <AvatarImage src={user.avatar} alt={user.username ?? "Community profile"} />}
             <AvatarFallback>{initials}</AvatarFallback>
           </Avatar>
           <div>
-            <p className="font-medium">{user.displayName ?? "Student"}</p>
+            <p className="font-medium">@{user.username}</p>
             <p className="text-muted-foreground text-xs">Shown to other students in Community and Chat</p>
           </div>
         </div>
@@ -80,14 +95,19 @@ export function PublicProfileSettings() {
           <div className="flex flex-col items-center gap-4">
             <AvatarUploadField value={avatar} onChange={setAvatar} fallback={initials} />
             <div className="flex w-full flex-col gap-1.5">
-              <Label htmlFor="display-name">Display name</Label>
-              <Input
-                id="display-name"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="How you'd like to appear"
-                maxLength={40}
-              />
+              <Label htmlFor="username-input">Username</Label>
+              <div className="relative">
+                <span className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">
+                  @
+                </span>
+                <Input
+                  id="username-input"
+                  className="pl-7"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  maxLength={32}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

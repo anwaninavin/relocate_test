@@ -65,14 +65,13 @@ export function PublicProfileView() {
     <div className="mx-auto flex max-w-lg flex-col items-center gap-4 pt-6 text-center">
       <Avatar className="size-24">
         <AvatarImage src={profile.avatar ?? undefined} />
-        <AvatarFallback className="text-2xl">{profile.displayName.charAt(0).toUpperCase()}</AvatarFallback>
+        <AvatarFallback className="text-2xl">{profile.username.charAt(0).toUpperCase()}</AvatarFallback>
       </Avatar>
       <div>
         <div className="flex items-center justify-center gap-1.5">
-          <h1 className="font-display text-xl font-bold">{profile.displayName}</h1>
+          <h1 className="font-display text-xl font-bold">@{profile.username}</h1>
           {profile.verified && <BadgeCheck className="text-primary size-5" />}
         </div>
-        <p className="text-muted-foreground">@{profile.username}</p>
       </div>
 
       {profile.bio && <p className="text-sm">{profile.bio}</p>}

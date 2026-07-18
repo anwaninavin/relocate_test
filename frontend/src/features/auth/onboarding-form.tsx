@@ -80,7 +80,7 @@ export function OnboardingForm({ defaultName }: { defaultName?: string }) {
                 <FormControl>
                   <div className="relative">
                     <User className="text-muted-foreground absolute top-1/2 left-4 size-4 -translate-y-1/2" />
-                    <Input className="pl-11" placeholder="Aditi Sharma" {...field} />
+                    <Input className="pl-11" placeholder="Enter your name" {...field} />
                   </div>
                 </FormControl>
                 <FormMessage />

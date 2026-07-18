@@ -74,8 +74,7 @@ export function MessageBubble({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(message.body);
 
-  const name = message.anonymousAlias ?? message.author?.displayName ?? "Student";
-  const handle = message.anonymousAlias ? null : message.author?.username ? `@${message.author.username}` : null;
+  const name = message.anonymousAlias ?? message.author?.username ?? "Student";
 
   return (
     <motion.div
@@ -90,8 +89,9 @@ export function MessageBubble({
 
       <div className={cn("flex max-w-[80%] min-w-0 flex-col gap-1", isOwn && "items-end")}>
         <div className="flex items-baseline gap-1.5 text-xs text-muted-foreground">
-          <span className="font-medium text-foreground">{name}</span>
-          {handle && <span>{handle}</span>}
+          <span className="font-medium text-foreground">
+            {message.anonymousAlias ? name : `@${name}`}
+          </span>
           <span>{new Date(message.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
           {message.pinned && <Pin className="size-3" />}
         </div>

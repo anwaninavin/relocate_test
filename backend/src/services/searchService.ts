@@ -137,7 +137,6 @@ export async function globalSearch(userId: string, query: string): Promise<Searc
       type: "user" as const,
       id: u._id.toString(),
       title: `@${u.username}`,
-      subtitle: u.displayName || undefined,
       href: `/u/${u.username}`,
       imageUrl: u.avatar ?? null,
     })),
