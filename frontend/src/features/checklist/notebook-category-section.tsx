@@ -69,15 +69,15 @@ export function NotebookCategorySection({
     }
   }
 
-  // Each tab shows only its own bucket: unclassified items land on "Unsorted" instead of
-  // being folded into Pack it, so the user has to actively choose a side for them.
+  // Unclassified items (no planType yet) default into the "Pack it" bucket instead of being
+  // hidden — they can still be moved to "Plan it" per-item from the detail sheet.
   const visibleItems =
-    planTypeFilter === "unsorted"
-      ? items.filter((i) => i.planType == null)
-      : items.filter((i) => i.planType === planTypeFilter);
+    planTypeFilter === "pack"
+      ? items.filter((i) => i.planType === "pack" || i.planType == null)
+      : items.filter((i) => i.planType === "plan");
   const pending = visibleItems.filter((i) => !i.completed);
   const completed = visibleItems.filter((i) => i.completed);
-  const planTypeLabel = planTypeFilter === "pack" ? "pack it" : planTypeFilter === "plan" ? "plan it" : "sort";
+  const planTypeLabel = planTypeFilter === "pack" ? "pack it" : "plan it";
 
   return (
     <div className={cn("relative border-b border-dashed border-[#e9ddc9]/80 py-4 sm:py-5", isLast && "border-b-0")}>

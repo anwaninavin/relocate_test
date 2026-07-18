@@ -19,6 +19,7 @@ import {
   renameChecklistItem,
   updateChecklistItem,
 } from "@/services/checklistService";
+import { addRecommendedItem, listRecommendedItemsForCategory } from "@/services/userChecklistService";
 import { requireAuth } from "@/middleware/auth";
 
 export const checklistRouter = createAsyncRouter();
@@ -37,6 +38,21 @@ checklistRouter.get("/summary", async (req, res) => {
     getOverallProgress(userId),
   ]);
   res.json({ categorySummaries, overallProgress });
+});
+
+checklistRouter.get("/recommendations", async (req, res) => {
+  const collegeCategoryId = typeof req.query.collegeCategoryId === "string" ? req.query.collegeCategoryId : "";
+  if (!collegeCategoryId) {
+    res.status(400).json({ error: "collegeCategoryId is required" });
+    return;
+  }
+  const items = await listRecommendedItemsForCategory(req.user!._id.toString(), collegeCategoryId);
+  res.json({ items });
+});
+
+checklistRouter.post("/recommendations/:id/add", async (req, res) => {
+  await addRecommendedItem(req.user!._id.toString(), req.params.id);
+  res.json({ success: true });
 });
 
 checklistRouter.post("/", async (req, res) => {

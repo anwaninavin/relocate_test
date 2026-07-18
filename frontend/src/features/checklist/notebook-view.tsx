@@ -2,15 +2,15 @@ import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { NotebookCategorySection } from "@/features/checklist/notebook-category-section";
+import { PackWithMe } from "@/features/checklist/pack-with-me";
 import type { ChecklistPlanType } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
-export type PlanTypeFilter = ChecklistPlanType | "unsorted";
+export type PlanTypeFilter = ChecklistPlanType;
 
 const PLAN_TYPE_TABS: { type: PlanTypeFilter; label: string }[] = [
   { type: "pack", label: "Pack it" },
   { type: "plan", label: "Plan it" },
-  { type: "unsorted", label: "Unsorted" },
 ];
 
 /** Curated for a plain notebook margin doodle feel — no event-specific stickers. */
@@ -90,6 +90,15 @@ export function NotebookView({
 
   return (
     <div>
+      <div className="mx-auto w-full max-w-md lg:max-w-4xl xl:max-w-5xl">
+        <h1
+          className="mb-3 text-4xl text-[#3a2e2a] sm:text-5xl lg:text-6xl"
+          style={{ fontFamily: "var(--font-caveat-notebook)" }}
+        >
+          Checklist
+        </h1>
+      </div>
+
       <div className="relative mx-auto w-full max-w-md lg:max-w-4xl xl:max-w-5xl">
         <div
           aria-hidden
@@ -145,6 +154,8 @@ export function NotebookView({
           ))}
         </div>
       </div>
+
+      <PackWithMe />
     </div>
   );
 }
