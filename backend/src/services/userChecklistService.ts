@@ -240,6 +240,64 @@ export async function getDistinctCategoriesForUser(userId: string) {
   return Array.from(new Set(items.map((i) => i.category).filter(Boolean)));
 }
 
+export interface RecommendedItem {
+  id: string;
+  category: string;
+  title: string;
+  description: string;
+  priority: string;
+  estimatedPrice: number | null;
+  added: boolean;
+}
+
+/** Catalog items applicable to an explicitly chosen education category — independent of the
+ * caller's own profile, so a student can browse what another stream typically packs (the "Pack
+ * with me" flow). `added` reflects whether the caller already has a live (non-deleted) row for
+ * that item, regardless of whether it matches their own profile category. */
+export async function listRecommendedItemsForCategory(
+  userId: string,
+  collegeCategoryId: string,
+): Promise<RecommendedItem[]> {
+  await connectDB();
+
+  const template = await getOrCreateActiveTemplate();
+  const items = await findApplicableItems(String(template._id), collegeCategoryId, null, null);
+  if (items.length === 0) return [];
+
+  const addedRows = await UserChecklist.find({
+    userId,
+    deleted: false,
+    defaultChecklistItemId: { $in: items.map((i) => i._id) },
+  })
+    .select("defaultChecklistItemId")
+    .lean();
+  const addedIds = new Set(addedRows.map((r) => String(r.defaultChecklistItemId)));
+
+  return items.map((item) => ({
+    id: String(item._id),
+    category: item.category,
+    title: item.title,
+    description: item.description ?? "",
+    priority: item.priority,
+    estimatedPrice: item.estimatedPrice ?? null,
+    added: addedIds.has(String(item._id)),
+  }));
+}
+
+/** (Re)materializes a recommended catalog item into the user's own checklist, unchecked. Unlike
+ * the generic virtual-id PATCH path, this explicitly clears `deleted` — a recommendation can be
+ * an item the user previously dismissed from their own catalog view, and re-adding it here should
+ * actually bring it back rather than silently no-op. */
+export async function addRecommendedItem(userId: string, defaultChecklistItemId: string) {
+  await connectDB();
+  const overrides = { deleted: false };
+  await UserChecklist.updateOne(
+    { userId, defaultChecklistItemId },
+    { $setOnInsert: materializeDefaults(userId, defaultChecklistItemId, overrides), $set: overrides },
+    { upsert: true },
+  );
+}
+
 /** total = every applicable catalog item the user hasn't explicitly dismissed, plus their
  * custom items. completed = however many of those are checked. A dismissed (soft-deleted)
  * master-linked row is excluded from total entirely — the user asked not to see it. */
