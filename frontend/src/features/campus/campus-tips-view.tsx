@@ -75,9 +75,11 @@ export function CampusTipsView({ city, college }: { city: string; college: strin
           action={<TipFormDialog city={city} college={college} onSaved={handleCreated} />}
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="columns-1 gap-4 sm:columns-2 xl:columns-3">
           {tips.map((tip) => (
-            <TipCard key={tip.id} tip={tip} onDeleted={handleDeleted} />
+            <div key={tip.id} className="mb-4 break-inside-avoid">
+              <TipCard tip={tip} onDeleted={handleDeleted} />
+            </div>
           ))}
         </div>
       )}
