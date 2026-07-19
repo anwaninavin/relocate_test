@@ -15,6 +15,7 @@ export interface GenderThemeCustomSticker {
 
 export interface GenderThemeSettingsDTO {
   key: "Male" | "Female";
+  backgroundColor: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
@@ -62,11 +63,13 @@ export function ensureGenderThemeSettingsLoaded(): Promise<GenderThemeSettingsMa
 /** Applies (or clears) one gender key's admin color overrides as inline CSS custom properties
  * on <html> — inline styles win over both the default and `[data-gender="male"]` blocks in
  * index.css by CSS origin, so this is always the final word once it resolves. Only ever touches
- * the five brand tokens; --success/--warning/--destructive etc. are never overridden here. */
+ * the background plus the five brand tokens; --success/--warning/--destructive etc. are never
+ * overridden here. */
 export function applyGenderColorOverrides(genderKey: "Male" | "Female", settings: GenderThemeSettingsMap | null) {
   const root = document.documentElement.style;
   const s = settings?.[genderKey];
 
+  root.removeProperty("--background");
   root.removeProperty("--primary");
   root.removeProperty("--secondary");
   root.removeProperty("--accent");
@@ -75,6 +78,7 @@ export function applyGenderColorOverrides(genderKey: "Male" | "Female", settings
 
   if (!s) return;
 
+  if (s.backgroundColor) root.setProperty("--background", s.backgroundColor);
   if (s.primaryColor) {
     root.setProperty("--primary", s.primaryColor);
     root.setProperty("--ring", s.primaryColor);
