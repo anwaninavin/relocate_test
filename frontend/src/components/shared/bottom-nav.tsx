@@ -1,9 +1,10 @@
 import { Link, useLocation } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
+import { emitComingSoon } from "@/lib/coming-soon-bus";
 import type { NavItem } from "@/lib/nav-items";
 
-export function BottomNav({ items }: { items: NavItem[] }) {
+export function BottomNav({ items, disabledHrefs }: { items: NavItem[]; disabledHrefs: Set<string> }) {
   const { pathname } = useLocation();
   // Split evenly around the center FAB gap regardless of count (admin can configure fewer
   // than the max 4 slots) — first half left, remainder right.
@@ -14,17 +15,28 @@ export function BottomNav({ items }: { items: NavItem[] }) {
   function renderItem(item: NavItem) {
     const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
     const Icon = item.icon;
-    return (
-      <Link
-        key={item.href}
-        to={item.href}
-        className={cn(
-          "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-medium transition-colors",
-          active ? "text-primary" : "text-muted-foreground",
-        )}
-      >
+    const className = cn(
+      "flex min-w-0 flex-1 flex-col items-center gap-1 rounded-xl px-1 py-1.5 text-[11px] font-medium transition-colors",
+      active ? "text-primary" : "text-muted-foreground",
+    );
+    const content = (
+      <>
         <Icon className={cn("size-5 shrink-0", active && "scale-110")} />
         <span className="w-full truncate text-center">{item.label}</span>
+      </>
+    );
+
+    if (disabledHrefs.has(item.href)) {
+      return (
+        <button key={item.href} type="button" onClick={() => emitComingSoon(item.label)} className={className}>
+          {content}
+        </button>
+      );
+    }
+
+    return (
+      <Link key={item.href} to={item.href} className={className}>
+        {content}
       </Link>
     );
   }

@@ -31,6 +31,7 @@ import {
   type GenderThemeKey,
 } from "@/services/genderThemeService";
 import { createPlace, deletePlace, listPlaces, updatePlace } from "@/services/placeService";
+import { createListing, deleteListing, listListings, updateListing } from "@/services/listingService";
 import {
   adminDeleteDirectoryContact,
   listReportedContacts,
@@ -45,6 +46,8 @@ import {
   guideArticleSchema,
   guideArticleUpdateSchema,
   landingDesignSchema,
+  listingSchema,
+  listingUpdateSchema,
   placeSchema,
   placeUpdateSchema,
   productSchema,
@@ -403,6 +406,38 @@ adminRouter.patch("/places/:id", async (req, res) => {
 
 adminRouter.delete("/places/:id", async (req, res) => {
   await deletePlace(req.params.id);
+  res.json({ success: true });
+});
+
+// --- Listings (Hostel, PG, Flat) ---
+
+adminRouter.get("/listings", async (req, res) => {
+  const city = typeof req.query.city === "string" ? req.query.city : undefined;
+  res.json({ listings: await listListings(city) });
+});
+
+adminRouter.post("/listings", async (req, res) => {
+  const parsed = listingSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const listing = await createListing(parsed.data);
+  res.json({ listing });
+});
+
+adminRouter.patch("/listings/:id", async (req, res) => {
+  const parsed = listingUpdateSchema.safeParse({ ...req.body, id: req.params.id });
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
+  const listing = await updateListing(parsed.data);
+  res.json({ listing });
+});
+
+adminRouter.delete("/listings/:id", async (req, res) => {
+  await deleteListing(req.params.id);
   res.json({ success: true });
 });
 

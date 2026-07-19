@@ -57,6 +57,7 @@ const AdminCitiesPage = lazyRetry(() => import("@/pages/admin-cities-page"));
 const AdminGenderThemePage = lazyRetry(() => import("@/pages/admin-gender-theme-page"));
 const AdminCommunitiesPage = lazyRetry(() => import("@/pages/admin-communities-page"));
 const AdminPlacesPage = lazyRetry(() => import("@/pages/admin-places-page"));
+const AdminHostelPgFlatPage = lazyRetry(() => import("@/pages/admin-hostel-pg-flat-page"));
 const AdminContactsPage = lazyRetry(() => import("@/pages/admin-contacts-page"));
 const AdminCollegeCategoriesPage = lazyRetry(() => import("@/pages/admin-college-categories-page"));
 const AdminCoursesPage = lazyRetry(() => import("@/pages/admin-courses-page"));
@@ -68,6 +69,7 @@ const AdminTempUsersPage = lazyRetry(() => import("@/pages/admin-temp-users-page
 const AdminChecklistHealthPage = lazyRetry(() => import("@/pages/admin-checklist-health-page"));
 const DiscoverPage = lazyRetry(() => import("@/pages/discover-page"));
 const FindARoomiePage = lazyRetry(() => import("@/pages/find-a-roomie-page"));
+const HostelPgFlatPage = lazyRetry(() => import("@/pages/hostel-pg-flat-page"));
 const BookingsPage = lazyRetry(() => import("@/pages/bookings-page"));
 const ExplorePage = lazyRetry(() => import("@/pages/explore-page"));
 const KnowYourCampusPage = lazyRetry(() => import("@/pages/know-your-campus-page"));
@@ -156,6 +158,7 @@ export default function App() {
             <Route path="/shopping" element={<ShoppingPage />} />
             <Route path="/discover" element={<DiscoverPage />} />
             <Route path="/find-a-roomie" element={<FindARoomiePage />} />
+            <Route path="/hostel-pg-flat" element={<HostelPgFlatPage />} />
             <Route path="/bookings" element={<BookingsPage />} />
             <Route path="/explore" element={<ExplorePage />} />
             <Route path="/know-your-campus" element={<KnowYourCampusPage />} />
@@ -271,6 +274,14 @@ export default function App() {
               element={
                 <AdminRoute>
                   <AdminPlacesPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/hostel-pg-flat"
+              element={
+                <AdminRoute>
+                  <AdminHostelPgFlatPage />
                 </AdminRoute>
               }
             />

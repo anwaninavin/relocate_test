@@ -7,6 +7,7 @@ import { Navbar } from "@/components/shared/navbar";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { FabMenu } from "@/components/shared/fab-menu";
 import { PWAInstallPrompt } from "@/components/shared/pwa-install-prompt";
+import { ComingSoonDialogHost } from "@/components/shared/coming-soon-dialog-host";
 import { useNavLayout } from "@/features/nav/use-nav-layout";
 import { prefetchNavDestinations } from "@/lib/prefetch-nav";
 
@@ -35,16 +36,17 @@ export function DashboardLayout() {
 
   return (
     <div className="bg-background relative flex min-h-dvh overflow-x-clip">
-      <Sidebar isAdmin={isAdmin} items={allOrderedItems} />
+      <Sidebar isAdmin={isAdmin} items={allOrderedItems} disabledHrefs={nav.disabledHrefs} />
       <div className="flex min-w-0 flex-1 flex-col">
-        <Navbar isAdmin={isAdmin} overflowItems={overflowItems} />
+        <Navbar isAdmin={isAdmin} overflowItems={overflowItems} disabledHrefs={nav.disabledHrefs} />
         <main className="flex-1 px-4 pt-4 pb-24 lg:px-8 lg:pb-8">
           <Outlet />
         </main>
       </div>
-      <BottomNav items={bottomItems} />
+      <BottomNav items={bottomItems} disabledHrefs={nav.disabledHrefs} />
       {nav.ready && nav.fabVisible && <FabMenu hiddenNavHrefs={nav.hiddenHrefs} />}
       <PWAInstallPrompt />
+      <ComingSoonDialogHost />
     </div>
   );
 }
