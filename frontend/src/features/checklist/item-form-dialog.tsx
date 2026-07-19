@@ -22,19 +22,11 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { checklistItemSchema, type ChecklistItemInput } from "@/lib/validations/checklist";
 import { api, ApiError } from "@/lib/api";
 import { emitRefresh } from "@/lib/refresh-bus";
 import { CategorySelect } from "@/features/checklist/category-select";
-import { BagSelect } from "@/features/bags/bag-select";
-import { CHECKLIST_PRIORITIES, type ChecklistCategory } from "@/types";
+import type { ChecklistCategory } from "@/types";
 import type { ChecklistItemDTO } from "@/features/checklist/checklist-item-dto";
 
 interface ItemFormDialogProps {
@@ -165,43 +157,6 @@ export function ItemFormDialog({
                     onChange={field.onChange}
                     onCategoryCreated={(c) => setCategoryList((prev) => [...prev, c])}
                   />
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="priority"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Priority</FormLabel>
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <FormControl>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select priority" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {CHECKLIST_PRIORITIES.map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {p.charAt(0).toUpperCase() + p.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="bagId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Bag (optional)</FormLabel>
-                  <BagSelect value={field.value ?? null} onChange={field.onChange} />
                   <FormMessage />
                 </FormItem>
               )}
