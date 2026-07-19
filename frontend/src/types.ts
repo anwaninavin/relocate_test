@@ -121,6 +121,11 @@ export type GuideCategory = (typeof GUIDE_CATEGORIES)[number];
 export const ACCOMMODATION_TYPES = ["Hostel", "PG", "Flat", "Apartment", "Hotel"] as const;
 export type AccommodationType = (typeof ACCOMMODATION_TYPES)[number];
 
+/** The three listing types shown in the "Hostel, PG, Flat" browse feature — narrower than
+ * ACCOMMODATION_TYPES (which also covers Apartment/Hotel for a student's own Booking record). */
+export const LISTING_TYPES = ["Hostel", "PG", "Flat"] as const;
+export type ListingType = (typeof LISTING_TYPES)[number];
+
 export const CONTACT_CATEGORIES = [
   "Friend",
   "Senior",

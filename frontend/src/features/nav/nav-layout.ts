@@ -7,6 +7,10 @@ export interface NavLayoutEntry {
   visible: boolean;
   placement: NavPlacement;
   order: number;
+  /** Generic "is this feature live or coming-soon" flag, defaulting true for every item. Only
+   * the Hostel/PG/Flat nav item currently exposes an admin toggle for this (see
+   * LIVE_TOGGLE_HREFS below), but the field itself is shared storage like placement/order. */
+  live: boolean;
 }
 
 /** Physical limit of the mobile bottom tab bar: 2 slots either side of the center FAB. An
@@ -37,16 +41,22 @@ export const DEFAULT_NAV_LAYOUT: NavLayoutEntry[] = (() => {
   return CONFIGURABLE_NAV_ITEMS.map((item) => {
     const bottomIndex = bottomHrefs.indexOf(item.href);
     if (bottomIndex !== -1) {
-      return { id: item.href, visible: true, placement: "bottom" as const, order: bottomIndex };
+      return { id: item.href, visible: true, placement: "bottom" as const, order: bottomIndex, live: true };
     }
     return {
       id: item.href,
       visible: !INITIALLY_HIDDEN_HREFS.has(item.href),
       placement: "overflow" as const,
       order: overflowIndex++,
+      live: true,
     };
   });
 })();
+
+/** Nav hrefs that get the extra admin "Live" toggle in the Nav items editor, in addition to the
+ * ordinary visible/hidden toggle every item has. Scoped to just this feature for now rather than
+ * surfaced for every item — see NavItemRow in nav-editor-view.tsx. */
+export const LIVE_TOGGLE_HREFS = new Set(["/hostel-pg-flat"]);
 
 export function navItemLabel(href: string): string {
   return CONFIGURABLE_NAV_ITEMS.find((item) => item.href === href)?.label ?? href;
@@ -60,6 +70,7 @@ export interface SavedNavWidget {
   visible: boolean;
   placement?: NavPlacement | null;
   order?: number | null;
+  live?: boolean | null;
 }
 
 /** The floating quick-add ("+") button isn't a route — it doesn't belong in
@@ -97,6 +108,7 @@ export function mergeNavLayout(saved: SavedNavWidget[] | null | undefined): NavL
       visible: savedEntry.visible,
       placement: savedEntry.placement ?? fallback.placement,
       order: savedEntry.order ?? fallback.order,
+      live: savedEntry.live ?? fallback.live,
     };
   });
 }
@@ -108,6 +120,10 @@ export interface ResolvedNavLayout {
    * has no bottom-bar/overflow-menu distinction, just one ordered list. */
   allOrderedItems: NavItem[];
   hiddenHrefs: Set<string>;
+  /** Hrefs the admin has turned "Live" off for — clicking these should show a coming-soon
+   * popup instead of navigating. Independent of hiddenHrefs: a disabled item still renders in
+   * the nav, it just doesn't go anywhere yet. */
+  disabledHrefs: Set<string>;
   fabVisible: boolean;
 }
 
@@ -122,6 +138,7 @@ function toNavItem(entry: NavLayoutEntry): NavItem | null {
 export function resolveNavLayout(saved: SavedNavWidget[] | null | undefined): ResolvedNavLayout {
   const merged = mergeNavLayout(saved);
   const hiddenHrefs = new Set(merged.filter((e) => !e.visible).map((e) => e.id));
+  const disabledHrefs = new Set(merged.filter((e) => !e.live).map((e) => e.id));
 
   const visible = merged.filter((e) => e.visible);
   const sortedBottom = visible.filter((e) => e.placement === "bottom").sort((a, b) => a.order - b.order);
@@ -140,6 +157,7 @@ export function resolveNavLayout(saved: SavedNavWidget[] | null | undefined): Re
     overflowItems,
     allOrderedItems: [...bottomItems, ...overflowItems],
     hiddenHrefs,
+    disabledHrefs,
     fabVisible: resolveFabVisible(saved),
   };
 }

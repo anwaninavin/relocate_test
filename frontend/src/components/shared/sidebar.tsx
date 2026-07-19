@@ -1,10 +1,19 @@
 import { Link, useLocation } from "react-router-dom";
 
 import { cn } from "@/lib/utils";
+import { emitComingSoon } from "@/lib/coming-soon-bus";
 import { ADMIN_NAV_ITEM, HOME_ROUTE, type NavItem } from "@/lib/nav-items";
 import { BrandName } from "@/components/shared/brand-name";
 
-export function Sidebar({ isAdmin, items }: { isAdmin: boolean; items: NavItem[] }) {
+export function Sidebar({
+  isAdmin,
+  items,
+  disabledHrefs,
+}: {
+  isAdmin: boolean;
+  items: NavItem[];
+  disabledHrefs: Set<string>;
+}) {
   const { pathname } = useLocation();
 
   const allItems = [...items, ...(isAdmin ? [ADMIN_NAV_ITEM] : [])];
@@ -20,19 +29,30 @@ export function Sidebar({ isAdmin, items }: { isAdmin: boolean; items: NavItem[]
         {allItems.map((item) => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
           const Icon = item.icon;
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-            >
+          const className = cn(
+            "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+            active
+              ? "bg-primary/10 text-primary"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          );
+          const content = (
+            <>
               <Icon className="size-4.5 shrink-0" />
               {item.label}
+            </>
+          );
+
+          if (disabledHrefs.has(item.href)) {
+            return (
+              <button key={item.href} type="button" onClick={() => emitComingSoon(item.label)} className={className}>
+                {content}
+              </button>
+            );
+          }
+
+          return (
+            <Link key={item.href} to={item.href} className={className}>
+              {content}
             </Link>
           );
         })}

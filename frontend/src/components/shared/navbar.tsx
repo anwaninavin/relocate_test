@@ -9,9 +9,10 @@ import { HOME_ROUTE, type NavItem } from "@/lib/nav-items";
 interface NavbarProps {
   isAdmin: boolean;
   overflowItems: NavItem[];
+  disabledHrefs: Set<string>;
 }
 
-export function Navbar({ isAdmin, overflowItems }: NavbarProps) {
+export function Navbar({ isAdmin, overflowItems, disabledHrefs }: NavbarProps) {
   // Community (and each individual community's page) has its own "Search communities" box
   // under Discover — the app-wide "Search everything" command palette is redundant there.
   const { pathname } = useLocation();
@@ -40,7 +41,7 @@ export function Navbar({ isAdmin, overflowItems }: NavbarProps) {
           )}
           <UserMenu />
           <div className="lg:hidden">
-            <OverflowMenu isAdmin={isAdmin} items={overflowItems} />
+            <OverflowMenu isAdmin={isAdmin} items={overflowItems} disabledHrefs={disabledHrefs} />
           </div>
         </div>
       </div>

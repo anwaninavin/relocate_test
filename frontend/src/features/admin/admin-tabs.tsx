@@ -11,6 +11,7 @@ const TABS = [
   { href: "/admin/gender-theme", label: "Gender Theme" },
   { href: "/admin/communities", label: "Communities" },
   { href: "/admin/places", label: "Places" },
+  { href: "/admin/hostel-pg-flat", label: "Hostel, PG, Flat" },
   { href: "/admin/reported-contacts", label: "Reported Contacts" },
   { href: "/admin/college-categories", label: "College Categories" },
   { href: "/admin/courses", label: "Courses" },

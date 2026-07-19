@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { DEFAULT_CHECKLIST_CATEGORIES, GUIDE_CATEGORIES, PLACE_CATEGORIES } from "@/types";
+import { DEFAULT_CHECKLIST_CATEGORIES, GUIDE_CATEGORIES, LISTING_TYPES, PLACE_CATEGORIES } from "@/types";
 import { mobileSchema } from "@/validations/auth";
 
 export const productSchema = z.object({
@@ -75,6 +75,9 @@ export const uiLayoutSchema = z.object({
         // optional here rather than splitting into a separate schema per page.
         placement: z.enum(["bottom", "overflow"]).optional(),
         order: z.number().int().min(0).optional(),
+        // Generic "is this feature live or coming-soon" flag, defaulting true — currently only
+        // surfaced in the admin editor for the Hostel/PG/Flat nav item and home card.
+        live: z.boolean().optional(),
       }),
     )
     .min(1),
@@ -157,6 +160,25 @@ export const placeUpdateSchema = placeSchema.partial().extend({
   id: z.string().min(1),
 });
 
+export const listingSchema = z.object({
+  type: z.enum(LISTING_TYPES),
+  city: z.string().trim().min(1).max(80),
+  title: z.string().trim().min(1).max(150),
+  imageUrl: z.string().trim().url().optional().or(z.literal("")),
+  rent: z.coerce.number().min(0).optional(),
+  deposit: z.coerce.number().min(0).optional(),
+  address: z.string().trim().max(300).optional().or(z.literal("")),
+  contactName: z.string().trim().max(80).optional().or(z.literal("")),
+  contactPhone: z.string().trim().max(20).optional().or(z.literal("")),
+  mapsLink: z.string().trim().max(500).optional().or(z.literal("")),
+  description: z.string().trim().max(500).optional().or(z.literal("")),
+  featured: z.boolean().optional(),
+});
+
+export const listingUpdateSchema = listingSchema.partial().extend({
+  id: z.string().min(1),
+});
+
 // Accepts a 3- or 6-digit hex color, or "" to clear an override back to the frontend's
 // hardcoded default for that field (see gender-theme-view.tsx / gender-theme-settings.ts).
 const hexColorOrEmpty = z
@@ -203,4 +225,6 @@ export type CityInput = z.infer<typeof citySchema>;
 export type CityUpdateInput = z.infer<typeof cityUpdateSchema>;
 export type PlaceInput = z.infer<typeof placeSchema>;
 export type PlaceUpdateInput = z.infer<typeof placeUpdateSchema>;
+export type ListingInput = z.infer<typeof listingSchema>;
+export type ListingUpdateInput = z.infer<typeof listingUpdateSchema>;
 export type GenderThemeUpdateInput = z.infer<typeof genderThemeUpdateSchema>;
