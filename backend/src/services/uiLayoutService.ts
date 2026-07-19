@@ -8,6 +8,7 @@ export interface WidgetConfig {
    * layouts, which share this same storage shape. */
   placement?: "bottom" | "overflow" | null;
   order?: number | null;
+  live?: boolean | null;
 }
 
 const DASHBOARD_PAGE = "dashboard";

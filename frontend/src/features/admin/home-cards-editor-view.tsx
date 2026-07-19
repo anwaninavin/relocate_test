@@ -4,11 +4,13 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
 import { api, ApiError } from "@/lib/api";
 import { HOME_LAYOUT_STORAGE_KEY, writePersistedLayout } from "@/lib/layout-cache";
 import {
   DEFAULT_HUB_LAYOUT,
   hubCardLabel,
+  LIVE_TOGGLE_IDS,
   mergeHubLayout,
   moveHubCard,
   sortedHubLayout,
@@ -21,12 +23,14 @@ function HomeCardRow({
   isFirst,
   isLast,
   onToggleVisible,
+  onToggleLive,
   onMove,
 }: {
   entry: HubLayoutEntry;
   isFirst: boolean;
   isLast: boolean;
   onToggleVisible: () => void;
+  onToggleLive: () => void;
   onMove: (direction: -1 | 1) => void;
 }) {
   return (
@@ -54,6 +58,12 @@ function HomeCardRow({
         </button>
       </div>
       <span className="flex-1 truncate text-sm font-medium">{hubCardLabel(entry.id)}</span>
+      {LIVE_TOGGLE_IDS.has(entry.id) && (
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-muted-foreground text-xs">Live</span>
+          <Switch checked={entry.live} onCheckedChange={onToggleLive} aria-label="Toggle live" />
+        </div>
+      )}
       <button
         type="button"
         onClick={onToggleVisible}
@@ -84,6 +94,11 @@ export function HomeCardsEditorView() {
 
   function toggleVisible(id: string) {
     setEntries((current) => current.map((e) => (e.id === id ? { ...e, visible: !e.visible } : e)));
+    setIsDirty(true);
+  }
+
+  function toggleLive(id: string) {
+    setEntries((current) => current.map((e) => (e.id === id ? { ...e, live: !e.live } : e)));
     setIsDirty(true);
   }
 
@@ -129,6 +144,7 @@ export function HomeCardsEditorView() {
               isFirst={index === 0}
               isLast={index === sorted.length - 1}
               onToggleVisible={() => toggleVisible(entry.id)}
+              onToggleLive={() => toggleLive(entry.id)}
               onMove={(direction) => handleMove(entry.id, direction)}
             />
           ))}

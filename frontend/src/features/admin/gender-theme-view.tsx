@@ -5,9 +5,12 @@ import { PageHeader } from "@/components/shared/page-header";
 import { GenderThemeFormDialog } from "@/features/admin/gender-theme-form-dialog";
 import type { GenderThemeSettingsMap } from "@/features/admin/gender-theme-dto";
 
-const BUILT_IN_DEFAULTS: Record<"Male" | "Female", { primary: string; secondary: string; accent: string }> = {
-  Male: { primary: "#1e3a5f", secondary: "#3e5c76", accent: "#2e8bc0" },
-  Female: { primary: "#c96b9a", secondary: "#8a5a6b", accent: "#e0956b" },
+const BUILT_IN_DEFAULTS: Record<
+  "Male" | "Female",
+  { background: string; primary: string; secondary: string; accent: string }
+> = {
+  Male: { background: "#f2f5f9", primary: "#1e3a5f", secondary: "#3e5c76", accent: "#2e8bc0" },
+  Female: { background: "#fdf6ee", primary: "#c96b9a", secondary: "#8a5a6b", accent: "#e0956b" },
 };
 
 function ColorRow({ label, hex, fallback }: { label: string; hex: string | null; fallback: string }) {
@@ -61,6 +64,7 @@ export function GenderThemeView({ settings }: { settings: GenderThemeSettingsMap
                 <GenderThemeFormDialog settings={s} />
               </div>
               <div className="flex flex-col gap-2">
+                <ColorRow label="Background" hex={s.backgroundColor} fallback={defaults.background} />
                 <ColorRow label="Primary" hex={s.primaryColor} fallback={defaults.primary} />
                 <ColorRow label="Secondary" hex={s.secondaryColor} fallback={defaults.secondary} />
                 <ColorRow label="Accent" hex={s.accentColor} fallback={defaults.accent} />

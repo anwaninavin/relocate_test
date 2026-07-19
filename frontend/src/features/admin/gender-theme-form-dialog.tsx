@@ -43,6 +43,7 @@ const customStickerSchema = z.object({
 });
 
 const formSchema = z.object({
+  backgroundColor: hexColorOrEmpty,
   primaryColor: hexColorOrEmpty,
   secondaryColor: hexColorOrEmpty,
   accentColor: hexColorOrEmpty,
@@ -265,7 +266,7 @@ function SectionHeading({ children }: { children: ReactNode }) {
  * art path differ.
  *
  * Rendered as a bottom Sheet (full-height slide-up panel) rather than a centered Dialog: this form
- * has nine color fields plus two sticker grids, which needs real vertical room on a phone screen —
+ * has ten color fields plus two sticker grids, which needs real vertical room on a phone screen —
  * a full-height panel with a sticky header/footer and exactly one scroll region in between reads
  * as a proper mobile editing surface instead of a cramped, doubly-scrolling popup.
  */
@@ -280,6 +281,7 @@ export function GenderThemeFormDialog({ settings }: { settings: GenderThemeSetti
 
   function buildDefaults(): FormInput {
     return {
+      backgroundColor: settings.backgroundColor ?? "",
       primaryColor: settings.primaryColor ?? "",
       secondaryColor: settings.secondaryColor ?? "",
       accentColor: settings.accentColor ?? "",
@@ -342,6 +344,15 @@ export function GenderThemeFormDialog({ settings }: { settings: GenderThemeSetti
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="flex min-h-0 flex-1 flex-col">
             <div className="flex-1 space-y-6 overflow-y-auto px-5 py-5">
+              <section className="space-y-3">
+                <SectionHeading>Page background</SectionHeading>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <ColorField form={form} name="backgroundColor" label="Background" />
+                </div>
+              </section>
+
+              <Separator />
+
               <section className="space-y-3">
                 <SectionHeading>Brand colors</SectionHeading>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">

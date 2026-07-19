@@ -10,6 +10,10 @@ const WidgetConfigSchema = new Schema(
     placement: { type: String, enum: ["bottom", "overflow"], default: undefined },
     /** Nav-layout-only — admin-chosen position within its placement group. */
     order: { type: Number, default: undefined },
+    /** Generic "is this feature live or coming-soon" flag, defaulting true for every existing
+     * widget. Currently only surfaced in the admin editor for the Hostel/PG/Flat nav item and
+     * home card, but stored generically like placement/order in case another feature needs it. */
+    live: { type: Boolean, default: true },
   },
   { _id: false },
 );

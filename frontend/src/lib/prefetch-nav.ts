@@ -24,6 +24,7 @@ const PREFETCH_BY_HREF: Record<string, PrefetchTarget> = {
   "/shopping": { page: () => import("@/pages/shopping-page"), data: ["/api/products"] },
   "/discover": { page: () => import("@/pages/discover-page"), data: ["/api/discovery/profile"] },
   "/explore": { page: () => import("@/pages/explore-page") },
+  "/hostel-pg-flat": { page: () => import("@/pages/hostel-pg-flat-page") },
   "/bookings": { page: () => import("@/pages/bookings-page"), data: ["/api/bookings"] },
   "/community": { page: () => import("@/pages/community-page"), data: ["/api/communities/mine"] },
   "/chat": { page: () => import("@/pages/chat-page") },

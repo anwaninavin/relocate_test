@@ -17,6 +17,7 @@ export interface GenderThemeCustomSticker {
 
 export interface GenderThemeSettingsDTO {
   key: GenderThemeKey;
+  backgroundColor: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;
@@ -32,6 +33,7 @@ export interface GenderThemeSettingsDTO {
 // possibly-absent, since it's an optional nested path rather than a required one — this just
 // needs to accept whatever shape a lean doc (or `null`, for a cold collection) actually has.
 interface GenderThemeSettingsDocLike {
+  backgroundColor?: string | null;
   primaryColor?: string | null;
   secondaryColor?: string | null;
   accentColor?: string | null;
@@ -50,6 +52,7 @@ interface GenderThemeSettingsDocLike {
 function toDTO(key: GenderThemeKey, doc: GenderThemeSettingsDocLike | null): GenderThemeSettingsDTO {
   return {
     key,
+    backgroundColor: doc?.backgroundColor ?? null,
     primaryColor: doc?.primaryColor ?? null,
     secondaryColor: doc?.secondaryColor ?? null,
     accentColor: doc?.accentColor ?? null,

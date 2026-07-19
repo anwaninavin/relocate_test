@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import { emitComingSoon } from "@/lib/coming-soon-bus";
 import { ADMIN_NAV_ITEM } from "@/lib/nav-items";
 import { usePwaInstall } from "@/lib/use-pwa-install";
 import { HUB_CARDS, type HubCardDef } from "@/features/welcome/hub-widget-registry";
@@ -30,13 +31,17 @@ async function sharePage() {
   toast.success("Link copied to clipboard");
 }
 
+interface VisibleCard extends HubCardDef {
+  live: boolean;
+}
+
 /** Groups the visible home cards into their scrapbook sections, in each section's first-seen
  * order — cards sharing a section stay together even if the admin's saved order interleaves
  * them with cards from other sections (e.g. a newly added card appended past a section it
  * conceptually belongs to; see the "find-a-roomie" comment in hub-widget-registry.ts). */
-function groupBySection(cards: HubCardDef[]): { section: string; cards: HubCardDef[] }[] {
+function groupBySection(cards: VisibleCard[]): { section: string; cards: VisibleCard[] }[] {
   const order: string[] = [];
-  const bySection = new Map<string, HubCardDef[]>();
+  const bySection = new Map<string, VisibleCard[]>();
   for (const card of cards) {
     let group = bySection.get(card.section);
     if (!group) {
@@ -59,8 +64,11 @@ export function OverflowMenu({ isAdmin }: { isAdmin: boolean }) {
   const cardsById = new Map(HUB_CARDS.map((card) => [card.id, card]));
   const visibleCards = cards
     .filter((entry) => entry.visible)
-    .map((entry) => cardsById.get(entry.id))
-    .filter((c): c is HubCardDef => c !== undefined);
+    .map((entry) => {
+      const card = cardsById.get(entry.id);
+      return card ? { ...card, live: entry.live } : undefined;
+    })
+    .filter((c): c is VisibleCard => c !== undefined);
   const sections = groupBySection(visibleCards);
 
   function handleInstall() {
@@ -86,6 +94,20 @@ export function OverflowMenu({ isAdmin }: { isAdmin: boolean }) {
             <DropdownMenuLabel className="font-normal">{group.section}</DropdownMenuLabel>
             {group.cards.map((card) => {
               const Icon = card.icon;
+              if (!card.live) {
+                return (
+                  <DropdownMenuItem
+                    key={card.id}
+                    onSelect={(e) => {
+                      e.preventDefault();
+                      emitComingSoon(card.title);
+                    }}
+                  >
+                    <Icon className="size-4" />
+                    {card.title}
+                  </DropdownMenuItem>
+                );
+              }
               return (
                 <DropdownMenuItem key={card.id} asChild>
                   <Link to={card.href}>

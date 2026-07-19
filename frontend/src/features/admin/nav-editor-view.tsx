@@ -5,12 +5,14 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { api, ApiError } from "@/lib/api";
 import { NAV_LAYOUT_STORAGE_KEY, writePersistedLayout } from "@/lib/layout-cache";
 import {
   DEFAULT_FAB_VISIBLE,
   DEFAULT_NAV_LAYOUT,
   FAB_NAV_ID,
+  LIVE_TOGGLE_HREFS,
   MAX_BOTTOM_ITEMS,
   mergeNavLayout,
   navItemLabel,
@@ -27,6 +29,7 @@ function NavItemRow({
   isFirst,
   isLast,
   onToggleVisible,
+  onToggleLive,
   onMove,
   onPlacementChange,
 }: {
@@ -34,6 +37,7 @@ function NavItemRow({
   isFirst: boolean;
   isLast: boolean;
   onToggleVisible: () => void;
+  onToggleLive: () => void;
   onMove: (direction: -1 | 1) => void;
   onPlacementChange: (placement: NavPlacement) => void;
 }) {
@@ -73,6 +77,12 @@ function NavItemRow({
           <SelectItem value="overflow">More (⋮) menu</SelectItem>
         </SelectContent>
       </Select>
+      {LIVE_TOGGLE_HREFS.has(entry.id) && (
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="text-muted-foreground text-xs">Live</span>
+          <Switch checked={entry.live} onCheckedChange={onToggleLive} aria-label="Toggle live" />
+        </div>
+      )}
       <button
         type="button"
         onClick={onToggleVisible}
@@ -105,6 +115,11 @@ export function NavEditorView() {
 
   function toggleVisible(id: string) {
     setEntries((current) => current.map((e) => (e.id === id ? { ...e, visible: !e.visible } : e)));
+    setIsDirty(true);
+  }
+
+  function toggleLive(id: string) {
+    setEntries((current) => current.map((e) => (e.id === id ? { ...e, live: !e.live } : e)));
     setIsDirty(true);
   }
 
@@ -154,6 +169,7 @@ export function NavEditorView() {
         isFirst={index === 0}
         isLast={index === group.length - 1}
         onToggleVisible={() => toggleVisible(entry.id)}
+        onToggleLive={() => toggleLive(entry.id)}
         onMove={(direction) => handleMove(entry.id, direction)}
         onPlacementChange={(placement) => handlePlacementChange(entry.id, placement)}
       />

@@ -19,6 +19,7 @@ import {
   MessageCircle,
   BedDouble,
   GraduationCap,
+  Building2,
 } from "lucide-react";
 
 import { CommunityIcon } from "@/components/shared/community-icon";
@@ -48,6 +49,7 @@ export const PRIMARY_NAV_ITEMS: NavItem[] = [
   { href: "/guide/survival-guide", label: "Hostel Guide", icon: BookOpen },
   { href: "/discover", label: "Discover", icon: Users },
   { href: "/find-a-roomie", label: "Find a Roomie", icon: BedDouble },
+  { href: "/hostel-pg-flat", label: "Hostel, PG, Flat", icon: Building2 },
   { href: "/bookings", label: "Bookings", icon: Ticket },
   { href: "/explore", label: "Explore", icon: Compass },
   { href: "/know-your-campus", label: "Know Your Campus", icon: GraduationCap },

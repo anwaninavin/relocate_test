@@ -13,6 +13,9 @@ export type GenderThemeKey = (typeof GENDER_THEME_KEYS)[number];
 const GenderThemeSettingsSchema = new Schema(
   {
     key: { type: String, enum: GENDER_THEME_KEYS, required: true, unique: true },
+    /** Page background color override — see --background in frontend/src/index.css. Same
+     * null-means-"use the shipped default" pattern as the other color fields below. */
+    backgroundColor: { type: String, default: null, trim: true },
     primaryColor: { type: String, default: null, trim: true },
     secondaryColor: { type: String, default: null, trim: true },
     accentColor: { type: String, default: null, trim: true },

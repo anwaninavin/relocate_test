@@ -1,6 +1,7 @@
 import {
   BedDouble,
   BookOpen,
+  Building2,
   Compass,
   FileText,
   GraduationCap,
@@ -29,6 +30,10 @@ export interface HubLayoutEntry {
   id: string;
   visible: boolean;
   order: number;
+  /** Generic "is this feature live or coming-soon" flag, defaulting true for every card. Only
+   * the Hostel/PG/Flat card currently exposes an admin toggle for this (see LIVE_TOGGLE_IDS
+   * below). */
+  live: boolean;
 }
 
 /** One card per Welcome-page ("home page after splash") scrapbook section, carried over
@@ -58,13 +63,21 @@ export const HUB_CARDS: HubCardDef[] = [
   { id: "explore", section: "Explore", title: "Explore", href: "/explore", icon: Compass },
   // Appended for the same order-collision reason as the two cards above.
   { id: "know-your-campus", section: "Campus Life", title: "Know Your Campus", href: "/know-your-campus", icon: GraduationCap },
+  // Appended for the same order-collision reason as the cards above.
+  { id: "hostel-pg-flat", section: "Roommate Vibes", title: "Hostel, PG, Flat", href: "/hostel-pg-flat", icon: Building2 },
 ];
 
 export const DEFAULT_HUB_LAYOUT: HubLayoutEntry[] = HUB_CARDS.map((card, i) => ({
   id: card.id,
   visible: true,
   order: i,
+  live: true,
 }));
+
+/** Hub card ids that get the extra admin "Live" toggle in the Home cards editor, in addition to
+ * the ordinary visible/hidden toggle every card has. Scoped to just this feature for now — see
+ * HomeCardRow in home-cards-editor-view.tsx. */
+export const LIVE_TOGGLE_IDS = new Set(["hostel-pg-flat"]);
 
 export function hubCardLabel(id: string): string {
   return HUB_CARDS.find((card) => card.id === id)?.title ?? id;
@@ -76,6 +89,7 @@ export interface SavedHubWidget {
   id: string;
   visible: boolean;
   order?: number | null;
+  live?: boolean | null;
 }
 
 /** Merges an admin-saved layout onto the current card set: known ids keep their saved
@@ -97,6 +111,7 @@ export function mergeHubLayout(saved: SavedHubWidget[] | null | undefined): HubL
       id: card.id,
       visible: savedEntry.visible,
       order: savedEntry.order ?? fallback.order,
+      live: savedEntry.live ?? fallback.live,
     };
   });
 }

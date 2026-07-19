@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 
 import { useAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
+import { emitComingSoon } from "@/lib/coming-soon-bus";
 import { HUB_CARDS } from "@/features/welcome/hub-widget-registry";
 import { useHubLayout } from "@/features/welcome/use-hub-layout";
 
@@ -33,8 +34,11 @@ export function WaLoginHomeView() {
   const cardsById = new Map(HUB_CARDS.map((card, i) => [card.id, { card, i }]));
   const visibleCards = cards
     .filter((entry) => entry.visible)
-    .map((entry) => cardsById.get(entry.id))
-    .filter((c): c is { card: (typeof HUB_CARDS)[number]; i: number } => c !== undefined);
+    .map((entry) => {
+      const found = cardsById.get(entry.id);
+      return found ? { ...found, live: entry.live } : undefined;
+    })
+    .filter((c): c is { card: (typeof HUB_CARDS)[number]; i: number; live: boolean } => c !== undefined);
   const isOddCount = visibleCards.length % 2 === 1;
 
   return (
@@ -57,23 +61,15 @@ export function WaLoginHomeView() {
                 style={{ transform: `rotate(${CARD_ROTATIONS[i % CARD_ROTATIONS.length]}deg)` }}
               />
             ))
-          : visibleCards.map(({ card, i }, displayIndex) => (
-              <div
-                key={card.id}
-                className={
-                  isOddCount && displayIndex === visibleCards.length - 1
-                    ? "max-md:col-span-2 max-md:mx-auto max-md:w-[calc(50%-0.5rem)]"
-                    : undefined
-                }
-              >
-                <Link
-                  to={card.href}
-                  className="sticky-note group flex aspect-square flex-col items-center justify-center gap-2 rounded-sm p-4 text-center shadow-[0_1px_1px_rgba(58,46,42,0.06),0_10px_18px_-10px_rgba(58,46,42,0.35)] transition-transform hover:-translate-y-1"
-                  style={{
-                    background: CARD_BACKGROUNDS[i % CARD_BACKGROUNDS.length],
-                    transform: `rotate(${CARD_ROTATIONS[i % CARD_ROTATIONS.length]}deg)`,
-                  }}
-                >
+          : visibleCards.map(({ card, i, live }, displayIndex) => {
+              const noteClassName =
+                "sticky-note group flex aspect-square flex-col items-center justify-center gap-2 rounded-sm p-4 text-center shadow-[0_1px_1px_rgba(58,46,42,0.06),0_10px_18px_-10px_rgba(58,46,42,0.35)] transition-transform hover:-translate-y-1";
+              const noteStyle = {
+                background: CARD_BACKGROUNDS[i % CARD_BACKGROUNDS.length],
+                transform: `rotate(${CARD_ROTATIONS[i % CARD_ROTATIONS.length]}deg)`,
+              };
+              const noteContent = (
+                <>
                   <span
                     className="sticky-pin"
                     style={{ transform: `translateX(-50%) rotate(${PIN_ROTATIONS[i % PIN_ROTATIONS.length]}deg)` }}
@@ -90,9 +86,35 @@ export function WaLoginHomeView() {
                   >
                     {card.title}
                   </p>
-                </Link>
-              </div>
-            ))}
+                </>
+              );
+
+              return (
+                <div
+                  key={card.id}
+                  className={
+                    isOddCount && displayIndex === visibleCards.length - 1
+                      ? "max-md:col-span-2 max-md:mx-auto max-md:w-[calc(50%-0.5rem)]"
+                      : undefined
+                  }
+                >
+                  {live ? (
+                    <Link to={card.href} className={noteClassName} style={noteStyle}>
+                      {noteContent}
+                    </Link>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => emitComingSoon(card.title)}
+                      className={noteClassName}
+                      style={noteStyle}
+                    >
+                      {noteContent}
+                    </button>
+                  )}
+                </div>
+              );
+            })}
       </div>
     </div>
   );
