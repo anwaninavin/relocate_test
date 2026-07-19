@@ -15,6 +15,7 @@ export interface GenderThemeCustomSticker {
 
 export interface GenderThemeSettingsDTO {
   key: "Male" | "Female";
+  backgroundColor: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   accentColor: string | null;

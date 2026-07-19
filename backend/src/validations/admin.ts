@@ -187,6 +187,7 @@ const hexColorOrEmpty = z
   .regex(/^(#([0-9a-fA-F]{3}|[0-9a-fA-F]{6}))?$/, "Must be a hex color like #1e3a5f, or blank");
 
 export const genderThemeUpdateSchema = z.object({
+  backgroundColor: hexColorOrEmpty,
   primaryColor: hexColorOrEmpty,
   secondaryColor: hexColorOrEmpty,
   accentColor: hexColorOrEmpty,
